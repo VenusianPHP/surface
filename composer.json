@@ -1,0 +1,99 @@
+{
+    "name": "venusian/surface",
+    "description": "The Venusian Display Panel Framework.",
+    "keywords": [
+        "framework",
+        "venusian",
+        "scrapyard-io",
+        "display",
+        "framebuffer"
+    ],
+    "license": "MIT",
+    "version": "0.8.0",
+    "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.8.x",
+    "support": {
+        "issues": "https://github.com/VenusianPHP/surface/issues",
+        "source": "https://github.com/VenusianPHP/surface"
+    },
+    "authors": [
+        {
+            "name": "Angel Gonzalez",
+            "email": "angel@projectsaturnstudios.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4|^8.5|^8.6",
+        "venusian-voyager/io-pools": "^0.8.0",
+        "venusian-voyager/nuts-and-bolts": "^0.8.0"
+    },
+    "replace": {
+        "surface/bridge": "self.version",
+        "surface/contracts": "self.version",
+        "surface/native-windows": "self.version"
+    },
+    "suggest": {
+        "jovian/venusian-appkit": "^0.8.0 - To build apps that use MacOS Windows using AppKit",
+        "jovian/venusian-gtk": "^0.8.0 - To build apps that use Linux Windows using GTK."
+    },
+    "require-dev": {
+        "pestphp/pest": "^4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Surface\\": "src/Surface"
+        },
+        "files": [
+            "src/Surface/NativeWindows/Helpers/os.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Venusian\\Surface\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "0.8.x-dev"
+        },
+        "venusian": {
+            "providers": [
+                "Surface\\Core\\Providers\\SurfaceServiceProvider"
+            ],
+            "aliases": {
+                "Program": "Surface\\Core\\MagicAliases\\Program",
+                "OSAppBridge": "Surface\\Bridge\\MagicAliases\\OSAppBridge",
+                "NativeWindow": "Surface\\NativeWindows\\MagicAliases\\NativeWindow"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": [
+        {
+            "type": "path",
+            "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/venusian/framework/src/Voyager/IOPools",
+            "options": {
+                "symlink": true,
+                "versions": {
+                    "venusian-voyager/io-pools": "0.8.4"
+                }
+            }
+        },
+        {
+            "type": "path",
+            "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/venusian/framework/src/Voyager/Contracts",
+            "options": {
+                "symlink": true,
+                "versions": {
+                    "venusian-voyager/contracts": "0.8.4"
+                }
+            }
+        }
+    ]
+}

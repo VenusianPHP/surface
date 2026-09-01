@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         failOnWarning="true"
+         failOnRisky="true"
+>
+    <testsuites>
+        <!--
+            Everything under ./tests except the trees orphaned by the 0.8
+            view-tree teardown. Those still reference the deleted
+            Surface\NativeWindows\Views\* classes, so they are held out of the
+            default run rather than deleted until the rebuild decides what of
+            them survives. Run them deliberately with a path argument.
+        -->
+        <testsuite name="Surface">
+            <directory suffix="Test.php">./tests</directory>
+            <exclude>./tests/Views</exclude>
+            <exclude>./tests/NativeWindows/AboutTest.php</exclude>
+            <exclude>./tests/NativeWindows/WindowCloseTest.php</exclude>
+            <exclude>./tests/NativeWindows/WindowTreeTest.php</exclude>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
+</phpunit>
