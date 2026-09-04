@@ -1,18 +1,15 @@
 <?php
 
 use Surface\Contracts\Core\AboutInfo;
-use Surface\Core\ProgramShuttle;
-use Venusian\Surface\Tests\Bridge\Fakes\FakeSession;
 use Venusian\Surface\Tests\Support\Fakes\FakeWindow;
-use Venusian\Surface\Tests\Support\Fakes\FakeWindowDriver;
 
-it('registers program identity on the shuttle and hands it back', function () {
-    $program = new ProgramShuttle((new FakeSession())->connect(), new FakeWindowDriver());
+it('registers program identity on the application and hands it back', function () {
+    [$app] = liveApp();
     $info = new AboutInfo(name: 'Hello Label', version: '0.8.0');
 
-    expect($program->getAbout())->toBeNull()
-        ->and($program->setAbout($info))->toBe($program)
-        ->and($program->getAbout())->toBe($info);
+    expect($app->getAbout())->toBeNull()
+        ->and($app->setAbout($info))->toBe($app)
+        ->and($app->getAbout())->toBe($info);
 });
 
 it('presents the registered identity through the engine hook', function () {

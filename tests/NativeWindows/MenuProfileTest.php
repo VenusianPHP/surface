@@ -1,7 +1,6 @@
 <?php
 
 use Surface\Contracts\NativeWindows\WindowableException;
-use Surface\Core\ProgramShuttle;
 use Surface\NativeWindows\Enums\MenuRole;
 use Surface\NativeWindows\Menus\MenuItemSpec;
 use Venusian\Surface\Tests\Bridge\Fakes\FakeSession;
@@ -101,15 +100,15 @@ it('rejects a node that is neither folder, role, nor event', function () {
         ->toThrow(WindowableException::class);
 });
 
-// ── Registration on the shuttle ────────────────────────────────────────
+// ── Registration on the application ────────────────────────────────────────
 
-function menuShuttle(): ProgramShuttle
+function menuApp(): \Surface\Core\LiveApplication
 {
-    return new ProgramShuttle((new FakeSession())->connect(), new FakeWindowDriver());
+    return liveApp()[0];
 }
 
 it('parses profiles at registration and hands back spec trees by name', function () {
-    $program = menuShuttle();
+    $program = menuApp();
 
     $program->addMenuBarProfiles(['main_menu' => demoProfile()]);
 
@@ -119,17 +118,17 @@ it('parses profiles at registration and hands back spec trees by name', function
 });
 
 it('answers null for a profile that was never registered', function () {
-    expect(menuShuttle()->getMenuBarProfile('nope'))->toBeNull();
+    expect(menuApp()->getMenuBarProfile('nope'))->toBeNull();
 });
 
-it('returns the shuttle from registration so calls can chain', function () {
-    $program = menuShuttle();
+it('returns the application from registration so calls can chain', function () {
+    $program = menuApp();
 
     expect($program->addMenuBarProfiles(['a' => demoProfile()]))->toBe($program);
 });
 
 it('refuses a malformed profile at registration, not at election', function () {
-    expect(fn () => menuShuttle()->addMenuBarProfiles(['bad' => [['label' => 'Nothing']]]))
+    expect(fn () => menuApp()->addMenuBarProfiles(['bad' => [['label' => 'Nothing']]]))
         ->toThrow(WindowableException::class);
 });
 

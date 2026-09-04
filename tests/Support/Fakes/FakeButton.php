@@ -42,6 +42,14 @@ final class FakeButton extends Button
         $this->applied_labels[] = $label;
     }
 
+    /** @var list<bool> Every enabled write that reached the engine, in order. */
+    public array $applied_enabled = [];
+
+    protected function applyEnabled(bool $enabled): void
+    {
+        $this->applied_enabled[] = $enabled;
+    }
+
     protected function destroyNative(): void
     {
         $this->destroyed = true;
@@ -66,5 +74,13 @@ final class FakeButton extends Button
     public function click(): void
     {
         $this->fireClick();
+    }
+
+    /** @var list<bool> Every visibility write that reached the engine. */
+    public array $applied_visible = [];
+
+    protected function applyVisible(bool $visible): void
+    {
+        $this->applied_visible[] = $visible;
     }
 }

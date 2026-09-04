@@ -2,6 +2,8 @@
 
 namespace Surface\Contracts\NativeWindows;
 
+use Voyager\Contracts\IOPools\PoolPump;
+
 interface OSWindow
 {
     public function name(): string;
@@ -11,7 +13,7 @@ interface OSWindow
     public function isPresenting(): bool;
     public function setTitle(string $title): static;
     public function setMenuBar(string $profile): static;
-    public function setEventSink(\Voyager\Contracts\IOPools\EventSink $sink): static;
+    public function setPool(PoolPump $pool): static;
     public function label(string $name, string $text, int $x, int $y, int $width, int $height): Views\OSLabel;
     public function button(string $name, string $label, int $x, int $y, int $width, int $height): Views\OSButton;
     public function view(string $name): ?Views\OSView;

@@ -14,6 +14,14 @@ interface OSButton extends OSView
     /** Hook invoked when the button is clicked, during the pump that delivers it. */
     public function onClick(callable $hook): static;
 
+    /**
+     * Whether the button accepts clicks. A disabled button greys out and
+     * its native engine swallows the click — no event, no hook.
+     */
+    public function setEnabled(bool $enabled): static;
+
+    public function isEnabled(): bool;
+
     public function setTextColor(Color $color): static;
 
     public function setFont(float $size, FontWeight $weight = FontWeight::REGULAR, ?string $family = null): static;

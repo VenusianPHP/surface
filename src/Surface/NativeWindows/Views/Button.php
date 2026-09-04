@@ -3,7 +3,7 @@
 namespace Surface\NativeWindows\Views;
 
 use Closure;
-use Surface\Contracts\NativeWindows\Events\SurfaceEventType;
+use Surface\Contracts\Core\Events\SurfaceEventType;
 use Surface\Contracts\NativeWindows\Views\OSButton;
 use Surface\NativeWindows\Windowable;
 
@@ -52,9 +52,41 @@ abstract class Button extends View implements OSButton
 
     public function onClick(callable $hook): static
     {
-        $this->on_click = Closure::fromCallable($hook);
+        $this->on_click = $hook(...);
 
         return $this;
+    }
+
+    protected bool $enabled = true;
+
+    /**
+     * A disabled button greys out and the engine swallows the click —
+     * no VIEW_CLICKED mail, no hook. State lives here; the native write
+     * goes through applyEnabled().
+     */
+    public function setEnabled(bool $enabled): static
+    {
+        if ($this->enabled !== $enabled) {
+            $this->enabled = $enabled;
+            $this->applyEnabled($enabled);
+        }
+
+        return $this;
+    }
+
+    public function isEnabled(): bool
+    {
+        return $this->enabled;
+    }
+
+    public function enable(): static
+    {
+        return $this->setEnabled(true);
+    }
+
+    public function disable(): static
+    {
+        return $this->setEnabled(false);
     }
 
     /**
@@ -64,7 +96,7 @@ abstract class Button extends View implements OSButton
      */
     protected function fireClick(): void
     {
-        $this->window->emitViewEvent(SurfaceEventType::VIEW_CLICKED, $this->name);
+        $this->window->emitViewEvent(SurfaceEventType::BUTTON_CLICKED, $this->name);
 
         if (! is_null($this->on_click)) {
             ($this->on_click)();
@@ -72,4 +104,9 @@ abstract class Button extends View implements OSButton
     }
 
     abstract protected function applyLabel(string $label): void;
+
+    /**
+     * Write the enabled state to the native control.
+     */
+    abstract protected function applyEnabled(bool $enabled): void;
 }

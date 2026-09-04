@@ -46,4 +46,12 @@ final class FakeImage extends Image
     {
         $this->applied_backgrounds[] = $color;
     }
+
+    /** @var list<bool> Every visibility write that reached the engine. */
+    public array $applied_visible = [];
+
+    protected function applyVisible(bool $visible): void
+    {
+        $this->applied_visible[] = $visible;
+    }
 }

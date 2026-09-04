@@ -1,11 +1,8 @@
 <?php
 
-use Surface\Contracts\NativeWindows\Events\SurfaceEventType;
-use Surface\Core\ProgramShuttle;
-use Venusian\Surface\Tests\Bridge\Fakes\FakeSession;
+use Surface\Contracts\Core\Events\SurfaceEventType;
 use Venusian\Surface\Tests\Support\Fakes\FakeWindow;
 use Venusian\Surface\Tests\Support\Fakes\FakeWindowDriver;
-use Voyager\IOPools\EventQueue;
 
 /*
 |--------------------------------------------------------------------------
@@ -74,48 +71,49 @@ it('lays out from a 0x0 content once the first real size arrives', function () {
 });
 
 it('syncLayout answers false and pushes nothing while the size holds', function () {
-    $queue = new EventQueue();
+    $dock = bareDock();
     $window = new FakeWindow('main');
-    $window->setEventSink($queue);
+    $window->setPool($dock);
     $window->syncLayout();
-    $queue->drain();
+    $dock->drain();
 
     expect($window->syncLayout())->toBeFalse()
-        ->and($queue->drain())->toHaveCount(0);
+        ->and($dock->drain())->toHaveCount(0);
 });
 
 it('pushes WINDOW_RESIZED with the new size when it changes', function () {
-    $queue = new EventQueue();
+    $dock = bareDock();
     $window = new FakeWindow('main');
-    $window->setEventSink($queue);
+    $window->setPool($dock);
     $window->syncLayout();
-    $queue->drain();
+    $dock->drain();
 
     $window->content_size = [1024, 768];
     $window->syncLayout();
 
-    $event = $queue->drain()->get('window.resized.main');
+    $event = mailNamed($dock->drain(), 'window.resized.main');
     expect($event->type)->toBe(SurfaceEventType::WINDOW_RESIZED)
-        ->and($event->payload)->toBe(['width' => 1024, 'height' => 768]);
+        ->and($event->width)->toBe(1024.0)
+        ->and($event->height)->toBe(768.0);
 });
 
 it('tick pumps then syncs every window so layout follows the OS', function () {
-    $program = new ProgramShuttle((new FakeSession())->connect(), new FakeWindowDriver());
-    $program->provisionWindow('main', 400, 600);
-    $program->provisionWindow('inspector', 200, 300);
+    [$app, $dock] = liveApp();
+    $app->provisionWindow('main', 400, 600);
+    $app->provisionWindow('inspector', 200, 300);
     /** @var FakeWindow $main */
-    $main = $program->getWindowService()->get('main');
+    $main = $app->getWindowService()->get('main');
     $label = $main->label('title', 'Hi', 0, 0, 100, 20)->center();
-    $program->tick(16);
-    $program->events();
+    $app->tick(16);
+    $dock->drain();
 
     $main->content_size = [800, 300];
-    $program->tick(16);
+    $app->tick(16);
 
-    $events = $program->events();
+    $bag = $dock->drain();
     expect($label->frame()['x'])->toBe(350)
-        ->and($events->has('window.resized.main'))->toBeTrue()
-        ->and($events->has('window.resized.inspector'))->toBeFalse();
+        ->and(mailNamed($bag, 'window.resized.main'))->not->toBeNull()
+        ->and(mailNamed($bag, 'window.resized.inspector'))->toBeNull();
 });
 
 it('the driver lists every window it holds', function () {

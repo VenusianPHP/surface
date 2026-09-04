@@ -1,5 +1,64 @@
 # Surface Update Log
 
+## 2026-09-04 (components, wave 1 wrappers)
+* **Update**: [Components](/components.md) — seven thin primitive
+  wrappers ship as `Component` subclasses: **InputText**, **TextArea**,
+  **Slider**, **ToggleSwitch**, **ProgressBar**, **ProgressSpinner**,
+  **Select**. Each mounts one inner view that fills the root; the field
+  API delegates like IconField; programmatic setters stay silent and the
+  fake engine doors (`typeText` / `edit` / `drag` / `flip` / `pick`) fire
+  the hooks. Datepicker and DataTable stay empty stubs. Suite at 262.
+
+## 2026-09-04 (composition recipes)
+* **Update**: [Components](/components.md) — a recipe per remaining stub;
+  [Conjured views](/views.md) and [asymmetries](/engine-asymmetries.md)
+  record the Calendar/Table verdict: those natives stay unbound twins,
+  Datepicker and DataTable compose from the shipped primitives.
+
+## 2026-09-04 (visibility)
+* **Update**: [Conjured views](/views.md) — `setVisible/isVisible/show/hide`
+  on every view (change-only `applyVisible`; NSView setHidden / GtkWidget
+  setVisible — one write hides a container's subtree). Component gains the
+  same sugar via its root. Suite at 228.
+* **Update**: [Components](/components.md) — view names stay window-global
+  for content conjured into a component's body(); the component prefixes
+  only its own parts.
+
+## 2026-09-04 (GTK live smoke + text read-back)
+* **Verified**: the primitive wave runs live on the Pi (gtk4 4.18.6) —
+  all eleven kinds, every signal seam driven from the native side, group
+  hosting/cascade/subtree removal, scroll extent. ALL CHECKS PASSED.
+* **Update**: [Conjured views](/views.md) — the GTK text-read-back gap is
+  CLOSED: the gtk ext unreserved `gtk_text_buffer_get_text` (iters as
+  character offsets), `GTKTextArea` reads its buffer per edit, and the
+  null-value lane is removed — `TextChanged::$value` is `string`,
+  `TextArea::fireChanged(string)`, contracts tightened. Suite at 224.
+
+## 2026-09-04 (components, first five)
+* **Creation**: [Components](/components.md) — the opinionated tier lands:
+  abstract `Component` (root Group mount, `<component>.<part>` naming,
+  component-relative `move()`, `place()` → `layout()` responsive hook,
+  terminal subtree removal) and five concrete shapes — **Sidebar**
+  (ScrollView + ToggleButton rows, native pressed = selected, sticky,
+  glyph collapse under a breakpoint), **Card**, **Toolbar**, **Message**
+  (+ `MessageSeverity`), **IconField**. Pure PHP over the primitives —
+  zero engine code, works on both twins by construction. Suite at 225.
+
+## 2026-09-03 (primitive wave + containers)
+* **Update**: [Conjured views](/views.md) — eleven new kinds: textInput
+  (secret variant), textArea, slider, toggle, toggleButton, checkbox,
+  progressBar, dropdown, separator, and the **group** / **scrollView**
+  containers. Children conjure INTO a container (`in:` or its sugar),
+  natives parent under its surface, rules and the AppKit inversion resolve
+  against `View::layoutSpace()` (host `innerSize()` or window content);
+  relayout cascades, removal kills the subtree and frees names. New mail:
+  TextChanged / TextSubmitted / ValueChanged / Toggled / SelectionChanged,
+  named `<window>.<view>.<verb>`; hooks run in-pump like Button. Twins in
+  both engines (zero ext work — all natives already bound). Known gap:
+  gtk ext reserves `gtk_text_buffer_get_text`, so GTK textArea mails a
+  null value and value() answers the last write. Suite at 192. Twins are
+  class-load verified; live smoke on both engines still owed.
+
 ## 2026-08-31 (shared pool)
 * **Update**: [Non-blocking calls on the tick](/async.md) — `ProgramShuttle::httpPool()`
   goes public and the provider binds it under `Voyager\IOPools\HttpPool::class`, so a

@@ -56,7 +56,7 @@ final class ContractOnlyLinuxWindow implements LinuxOSWindow
         return $this;
     }
 
-    public function setEventSink(\Voyager\Contracts\IOPools\EventSink $sink): static
+    public function setPool(\Voyager\Contracts\IOPools\PoolPump $pool): static
     {
         return $this;
     }

@@ -104,7 +104,7 @@ class FakeWindow extends Windowable
         $this->presented_abouts[] = $about;
     }
 
-    protected function mintLabel(string $name, string $text): \Surface\NativeWindows\Views\Label
+    protected function mintLabel(string $name, string $text, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\Label
     {
         $label = new FakeLabel($name, $this, $text);
         $this->minted_labels[] = $label;
@@ -112,24 +112,79 @@ class FakeWindow extends Windowable
         return $label;
     }
 
-    protected function mintButton(string $name, string $label): \Surface\NativeWindows\Views\Button
+    protected function mintButton(string $name, string $label, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\Button
     {
         return new FakeButton($name, $this, $label);
     }
 
-    protected function mintSpinner(string $name): \Surface\NativeWindows\Views\Spinner
+    protected function mintSpinner(string $name, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\Spinner
     {
         return new FakeSpinner($name, $this);
     }
 
-    protected function mintImage(string $name, ?string $path): \Surface\NativeWindows\Views\Image
+    protected function mintImage(string $name, ?string $path, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\Image
     {
         return new FakeImage($name, $this, $path);
     }
 
-    protected function mintVideo(string $name, ?string $path): \Surface\NativeWindows\Views\Video
+    protected function mintVideo(string $name, ?string $path, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\Video
     {
         return new FakeVideo($name, $this, $path);
+    }
+
+    protected function mintTextInput(string $name, string $value, ?string $placeholder, bool $secret, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\TextInput
+    {
+        return new FakeTextInput($name, $this, $value, $placeholder, $secret);
+    }
+
+    protected function mintTextArea(string $name, string $value, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\TextArea
+    {
+        return new FakeTextArea($name, $this, $value);
+    }
+
+    protected function mintSlider(string $name, float $min, float $max, float $value, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\Slider
+    {
+        return new FakeSlider($name, $this, $min, $max, $value);
+    }
+
+    protected function mintToggle(string $name, bool $on, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\Toggle
+    {
+        return new FakeToggle($name, $this, $on);
+    }
+
+    protected function mintToggleButton(string $name, string $label, bool $pressed, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\ToggleButton
+    {
+        return new FakeToggleButton($name, $this, $label, $pressed);
+    }
+
+    protected function mintCheckbox(string $name, string $label, bool $checked, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\Checkbox
+    {
+        return new FakeCheckbox($name, $this, $label, $checked);
+    }
+
+    protected function mintProgressBar(string $name, float $progress, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\ProgressBar
+    {
+        return new FakeProgressBar($name, $this, $progress);
+    }
+
+    protected function mintDropdown(string $name, array $options, int $selected, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\Dropdown
+    {
+        return new FakeDropdown($name, $this, $options, $selected);
+    }
+
+    protected function mintSeparator(string $name, bool $horizontal, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\Separator
+    {
+        return new FakeSeparator($name, $this, $horizontal);
+    }
+
+    protected function mintGroup(string $name, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\Group
+    {
+        return new FakeGroup($name, $this);
+    }
+
+    protected function mintScrollView(string $name, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\ScrollView
+    {
+        return new FakeScrollView($name, $this);
     }
 
     /** Test door into the close path, as an engine's native close callback would use it. */

@@ -24,9 +24,12 @@ sources:
 
 # Overview
 
-The rebuilt view tree, flat for now: nodes are conjured straight into the
-window content, no containers yet. Kinds so far: **label**, **button**,
-**spinner**, **image**, **video**.
+The rebuilt view tree. Sixteen kinds: **label**, **button**, **spinner**,
+**image**, **video**, **textInput**, **textArea**, **slider**, **toggle**
+(the switch — PHP reserves the word), **toggleButton**, **checkbox**,
+**progressBar**, **dropdown**, **separator**, and two containers —
+**group** and **scrollView**. Nodes conjure into the window content, or
+into a container with `in:` / the container's own conjure sugar.
 
 ```php
 $window->label('title', 'Hello World!', 0, 0, 1, 1)
@@ -140,6 +143,68 @@ generator parenting fix so `NSTextFieldCell extends NSCell`; GTK:
 `measure(VERTICAL, $width)`, size request lifted first). Text and font
 changes re-measure like NATURAL; a centred wrapped label re-centres.
 
+# Controls and their mail
+
+Every interactive kind follows the Button precedent: state lives on the
+Surface view, the engine wires its native signal into a protected
+`fire*()`, the fire pushes typed mail AND runs the sketch's hook inside
+the pump. Vocabulary (`Surface\Contracts\NativeWindows\Events\View`):
+
+| Kind | Conjure | Hook | Mail, named `<window>.<view>.<verb>` |
+|---|---|---|---|
+| textInput | `textInput(name, value, x, y, w, h, placeholder:, secret:)` | `onChange(string)`, `onSubmit(string)` | `TextChanged` `.changed`, `TextSubmitted` `.submitted` |
+| textArea | `textArea(name, value, x, y, w, h)` | `onChange(string)` | `TextChanged` `.changed` |
+| slider | `slider(name, min, max, value, ...)` | `onChange(float)` | `ValueChanged` `.changed` |
+| toggle / toggleButton / checkbox | `toggle(name, on, ...)` etc. | `onToggle(bool)` | `Toggled` `.toggled` |
+| dropdown | `dropdown(name, options, selected, ...)` | `onSelect(int, ?string)` | `SelectionChanged` `.selected` |
+| progressBar / separator | `progressBar(name, progress, ...)`, `separator(name, ...)` | — output only | — |
+
+Enabled state is the shared `HasEnabledState` trait (change-only
+`applyEnabled`); values clamp Surface-side (slider into range, progress
+into 0..1, dropdown index into the options, -1 when empty). A secret
+textInput masks glyphs (NSSecureTextField / GtkPasswordEntry); GTK's
+password entry has no placeholder, ignored stated. GTK fires its signals
+for programmatic writes too, so every GTK control twin holds an
+`applying` flag to keep Surface's own setters from echoing back as mail —
+AppKit setters are silent, no flag needed.
+
+Both engines read their text buffers back on every edit (the gtk ext
+unreserved `gtk_text_buffer_get_text` on 2026-09-04, iters crossing as
+character offsets), so `TextChanged` always carries the real value and
+`value()` is what the engine holds.
+
+# Containers
+
+`group(name, x, y, w, h)` (plain NSView / own GtkFixed, overflow hidden)
+and `scrollView(name, ...)` (NSScrollView + NSView document /
+GtkScrolledWindow + inner GtkFixed). Children conjure INTO a container —
+`$window->button(..., in: $group)` or `$group->button(...)` — never
+reparent after. The window still owns the name registry (names are
+window-global, events stay `<window>.<view>` named), but the native
+parents under the container's surface, so moving the container moves the
+subtree natively, and the child's coordinates and `center()` resolve
+against the container through `View::layoutSpace()` — host `innerSize()`
+when hosted, `contentSize()` at top level. The AppKit inversion pays
+against the same space, which is what keeps 0,0 top-left inside any
+container on both engines. `ViewGroup::relayout()` cascades into
+children; removal is terminal for the whole subtree and frees every name.
+
+A scrollView's frame is the viewport; `setContentSize(w, h)` is the
+extent children lay out against (`innerSize()` answers it; unset, it
+tracks the frame and the thing behaves like a group). GTK starts scrolled
+to the top on its own; AppKit's unflipped document starts at the BOTTOM,
+so the twin re-pins the viewport to the top on every extent write.
+Scrollbars: vertical automatic, horizontal off, both engines.
+
+# Visibility
+
+Every view carries `setVisible(bool)` / `isVisible()` / `show()` /
+`hide()` — change-only through `applyVisible()` (NSView `setHidden`,
+GtkWidget `setVisible`). A hidden view keeps its frame and rules; hiding
+a container is ONE native write and the engine takes the subtree. This is
+what panel-swapping sketches and the coming Tabs/Drawer/Toast components
+toggle with.
+
 # Removal is terminal
 
 `remove()` destroys the native node and frees the name — the handle is dead
@@ -169,10 +234,13 @@ Engine translations are opinionated by design:
 
 # Not in this slice
 
-Containers, events from views, anchors/percent rules, alignment beyond
-labels. The old
-`tests/Views` fakes describe where those went last time; the exclude list
-in `phpunit.xml` gets pruned as each kind lands.
+Anchors/percent rules, alignment beyond labels, programmatic scrolling.
+Native table/tab/calendar widgets (NSTableView, GtkNotebook, NSDatePicker
+et al.) stay unbound as twins; DataTable, Tabs, Datepicker and the rest
+are composed from the shipped primitives at the Components layer —
+recipes in [components.md](/components.md). The old `tests/Views` fakes
+describe where those went last time; the exclude list in `phpunit.xml`
+gets pruned as each kind lands.
 
 [^view]: View — frame truth, centre/hug arithmetic, terminal removal
 [^label]: Label

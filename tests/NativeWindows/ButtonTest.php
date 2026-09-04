@@ -87,20 +87,38 @@ it('removal is terminal and frees the name', function () {
         ->and($window->view('go'))->toBeNull();
 });
 
-it('every click rides the queue as view.clicked.<window>.<name>', function () {
-    $queue = new \Voyager\IOPools\EventQueue();
+it('every click rides the dock as ButtonClicked mail named <window>.<name>.clicked', function () {
+    $dock = bareDock();
     $window = new FakeWindow('main');
-    $window->setEventSink($queue);
+    $window->setPool($dock);
     $button = $window->button('go', 'Go', 0, 0, 80, 30);
 
     $button->click();
 
-    $event = $queue->drain()->get('view.clicked.main.go');
-    expect($event->type)->toBe(\Surface\Contracts\NativeWindows\Events\SurfaceEventType::VIEW_CLICKED)
-        ->and($event->window)->toBe('main');
+    $event = $dock->drain()->first(
+        fn (object $mail) => $mail instanceof \Surface\Contracts\NativeWindows\Events\View\ButtonClicked,
+    );
+    expect($event)->not->toBeNull()
+        ->and($event->name)->toBe('main.go.clicked');
 });
 
-it('clicking with no sink and no hook is still safe', function () {
+it('starts enabled, and setEnabled writes through only on change', function () {
+    $window = new FakeWindow('main');
+    /** @var \Venusian\Surface\Tests\Support\Fakes\FakeButton $button */
+    $button = $window->button('go', 'Go', 0, 0, 80, 30);
+
+    expect($button->isEnabled())->toBeTrue()
+        ->and($button->applied_enabled)->toBe([]);
+
+    $button->disable();
+    $button->disable();
+    $button->enable();
+
+    expect($button->isEnabled())->toBeTrue()
+        ->and($button->applied_enabled)->toBe([false, true]);
+});
+
+it('clicking with no pool and no hook is still safe', function () {
     $window = new FakeWindow('main');
     $window->button('go', 'Go', 0, 0, 80, 30)->click();
 

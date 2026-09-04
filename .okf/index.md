@@ -14,9 +14,13 @@ calls no longer exist, so it was torn out and is being rebuilt on the
 strict 1:1 bindings via `jovian/appkit` and `jovian/gtk`.
 
 What stands today: the OS bridge lifecycle, native windows with menu-bar
-profiles and an event queue, and five conjured view kinds — label, button,
-spinner, image, video — placed, centred, wrapped, styled and played in
-top-left pixels on both engines.
+profiles and typed mail on the IOPool dock, and sixteen conjured view
+kinds — label, button, spinner, image, video, textInput, textArea,
+slider, toggle, toggleButton, checkbox, progressBar, dropdown, separator,
+plus group and scrollView containers with group-relative layout — placed,
+centred, styled and evented in top-left pixels on both engines. The
+Components layer (opinionated PrimeVue-style shapes composed from these
+primitives, engine-free) is being built.
 
 Read this index first, then open only the concepts the task needs. Every
 concept here is `status: draft` until a human verifies it.
@@ -35,6 +39,10 @@ concept here is `status: draft` until a human verifies it.
   definitions, per-window election, and each engine's role table
 * [views.md](/views.md) - conjured nodes: Surface owns the name registry and
   the top-left frame, engines translate through four hooks
+* [components.md](/components.md) - opinionated shapes over the primitives:
+  one root Group, named parts, pure PHP — twelve built (five compositions
+  plus seven thin primitive wrappers); thirteen stubs remain, Datepicker
+  and DataTable among them
 * [async.md](/async.md) - non-blocking parallel calls on the tick: curl_multi
   pool, TASK events, hooks; the transport seam and the fork prohibition
 * [testing.md](/testing.md) - suite scope, the shared fakes, and which
@@ -56,4 +64,4 @@ concept here is `status: draft` until a human verifies it.
 | Split packages | `surface/bridge`, `surface/contracts`, `surface/native-windows` |
 | Hard dependencies | `venusian-voyager/nuts-and-bolts` + `venusian-voyager/io-pools` |
 | Engines | suggested, never required |
-| Tests | `vendor/bin/pest` green at 155; orphaned view tests excluded in `phpunit.xml` |
+| Tests | `vendor/bin/pest` green at 262; orphaned view tests excluded in `phpunit.xml` |

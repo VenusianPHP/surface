@@ -87,7 +87,7 @@ binding.
 # Election flow
 
 `Windowable::setMenuBar(string)` resolves the profile — through the
-`os-program` container alias in production, overridable in fakes so the
+`live-app` container alias in production, overridable in fakes so the
 flow is provable container-free[^windowable] — and hands the spec tree to
 the abstract `applyMenuBar()` hook. Unknown profile raises
 `WindowableException` at election; malformed definitions raise at

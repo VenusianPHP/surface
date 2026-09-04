@@ -3,23 +3,56 @@
 namespace Surface\NativeWindows;
 
 use Surface\Contracts\Core\AboutInfo;
+use Surface\Contracts\Core\Events\SurfaceEventType;
+use Surface\Contracts\NativeWindows\Events\Menu\MenuOccurrence;
+use Surface\Contracts\NativeWindows\Events\QuitRequested;
+use Surface\Contracts\NativeWindows\Events\View\ButtonClicked;
+use Surface\Contracts\NativeWindows\Events\View\SelectionChanged;
+use Surface\Contracts\NativeWindows\Events\View\TextChanged;
+use Surface\Contracts\NativeWindows\Events\View\TextSubmitted;
+use Surface\Contracts\NativeWindows\Events\View\Toggled;
+use Surface\Contracts\NativeWindows\Events\View\ValueChanged;
+use Surface\Contracts\NativeWindows\Events\View\ViewComponentOccurrence;
+use Surface\Contracts\NativeWindows\Events\Window\WindowClosed;
+use Surface\Contracts\NativeWindows\Events\Window\WindowResized;
 use Surface\Contracts\NativeWindows\OSWindow;
-use Surface\Contracts\NativeWindows\WindowableException;
-use Voyager\Contracts\IOPools\EventSink;
-use Surface\Contracts\NativeWindows\Events\SurfaceEvent;
-use Surface\Contracts\NativeWindows\Events\SurfaceEventType;
 use Surface\Contracts\NativeWindows\Views\OSButton;
-use Surface\Contracts\NativeWindows\Views\OSLabel;
-use Surface\Contracts\NativeWindows\Views\OSView;
-use Surface\NativeWindows\Menus\MenuItemSpec;
+use Surface\Contracts\NativeWindows\Views\OSCheckbox;
+use Surface\Contracts\NativeWindows\Views\OSDropdown;
+use Surface\Contracts\NativeWindows\Views\OSGroup;
 use Surface\Contracts\NativeWindows\Views\OSImage;
+use Surface\Contracts\NativeWindows\Views\OSLabel;
+use Surface\Contracts\NativeWindows\Views\OSProgressBar;
+use Surface\Contracts\NativeWindows\Views\OSScrollView;
+use Surface\Contracts\NativeWindows\Views\OSSeparator;
+use Surface\Contracts\NativeWindows\Views\OSSlider;
 use Surface\Contracts\NativeWindows\Views\OSSpinner;
+use Surface\Contracts\NativeWindows\Views\OSTextArea;
+use Surface\Contracts\NativeWindows\Views\OSTextInput;
+use Surface\Contracts\NativeWindows\Views\OSToggle;
+use Surface\Contracts\NativeWindows\Views\OSToggleButton;
 use Surface\Contracts\NativeWindows\Views\OSVideo;
+use Surface\Contracts\NativeWindows\Views\OSView;
+use Surface\Contracts\NativeWindows\WindowableException;
+use Surface\NativeWindows\Menus\MenuItemSpec;
 use Surface\NativeWindows\Views\Button;
+use Surface\NativeWindows\Views\Checkbox;
+use Surface\NativeWindows\Views\Dropdown;
+use Surface\NativeWindows\Views\Group;
 use Surface\NativeWindows\Views\Image;
 use Surface\NativeWindows\Views\Label;
+use Surface\NativeWindows\Views\ProgressBar;
+use Surface\NativeWindows\Views\ScrollView;
+use Surface\NativeWindows\Views\Separator;
+use Surface\NativeWindows\Views\Slider;
 use Surface\NativeWindows\Views\Spinner;
+use Surface\NativeWindows\Views\TextArea;
+use Surface\NativeWindows\Views\TextInput;
+use Surface\NativeWindows\Views\Toggle;
+use Surface\NativeWindows\Views\ToggleButton;
 use Surface\NativeWindows\Views\Video;
+use Surface\NativeWindows\Views\View;
+use Voyager\Contracts\IOPools\PoolPump;
 use Voyager\NutsAndBolts\Collection;
 
 abstract class Windowable implements OSWindow
@@ -40,10 +73,10 @@ abstract class Windowable implements OSWindow
 
     /**
      * Where this window's engine drops what it observes during a pump.
-     * Handed over by ProgramShuttle at provisioning.
-     * @var EventSink|null
+     * Handed over by LiveApplication at provisioning.
+     * @var PoolPump|null
      */
-    protected ?EventSink $event_sink = null;
+    protected ?PoolPump $io_pool = null;
 
     public function __construct(
         public readonly string $name
@@ -85,7 +118,7 @@ abstract class Windowable implements OSWindow
      * What electing means is the engine's truth: AppKit swaps the one real
      * bar, GTK builds widgets into this window's scaffold.
      *
-     * @param string $profile Name registered through ProgramShuttle::addMenuBarProfiles().
+     * @param string $profile Name registered through LiveApplication::addMenuBarProfiles().
      * @return $this
      * @throws WindowableException When no profile is registered under that name.
      */
@@ -109,100 +142,243 @@ abstract class Windowable implements OSWindow
      */
     protected function resolveMenuBarProfile(string $profile): ?array
     {
-        return app('os-program')->getMenuBarProfile($profile);
+        return app('live-app')->getMenuBarProfile($profile);
     }
 
     /**
-     * Conjure a label into the content and place it. Top-left pixels.
+     * The shared tail of every conjure: guard the name BEFORE minting,
+     * register, wire the host, place. `$in` is the group the view was
+     * conjured into — the engine already parented the native under it, so
+     * the wiring here is Surface's half: rules resolve against the group
+     * and the group cascades into the view.
+     *
+     * @throws WindowableException When the name is already taken.
+     */
+    protected function guardName(string $name): void
+    {
+        if ($this->views->has($name)) {
+            throw new WindowableException("View '{$name}' already exists in window '{$this->name}'.");
+        }
+    }
+
+    protected function settle(View $view, ?OSGroup $in, int $x, int $y, int $width, int $height): View
+    {
+        $this->views->put($view->name(), $view);
+
+        if (! is_null($in)) {
+            $view->hostIn($in);
+            $in->registerChild($view);
+        }
+
+        $view->place($x, $y, $width, $height);
+
+        return $view;
+    }
+
+    /**
+     * Conjure a label and place it. Top-left pixels, relative to the
+     * window content — or to `$in` when conjured into a group.
      *
      * The engine mints the native node through mintLabel(); Surface owns
      * the name registry and the frame.
      *
      * @throws WindowableException When the name is already taken.
      */
-    public function label(string $name, string $text, int $x, int $y, int $width, int $height): OSLabel
+    public function label(string $name, string $text, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSLabel
     {
-        if ($this->views->has($name)) {
-            throw new WindowableException("View '{$name}' already exists in window '{$this->name}'.");
-        }
+        $this->guardName($name);
 
-        $label = $this->mintLabel($name, $text);
-        $this->views->put($name, $label);
-        $label->place($x, $y, $width, $height);
-
-        return $label;
+        /** @var Label */
+        return $this->settle($this->mintLabel($name, $text, $in), $in, $x, $y, $width, $height);
     }
 
     /**
-     * Conjure a button into the content and place it. Top-left pixels.
+     * Conjure a button and place it. Top-left pixels, window- or group-relative.
      * @throws WindowableException When the name is already taken.
      */
-    public function button(string $name, string $label, int $x, int $y, int $width, int $height): OSButton
+    public function button(string $name, string $label, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSButton
     {
-        if ($this->views->has($name)) {
-            throw new WindowableException("View '{$name}' already exists in window '{$this->name}'.");
-        }
+        $this->guardName($name);
 
-        $button = $this->mintButton($name, $label);
-        $this->views->put($name, $button);
-        $button->place($x, $y, $width, $height);
-
-        return $button;
+        /** @var Button */
+        return $this->settle($this->mintButton($name, $label, $in), $in, $x, $y, $width, $height);
     }
 
     /**
-     * Conjure an indeterminate busy spinner into the content and place it.
-     * Top-left pixels. Conjured stopped — the sketch decides when to spin.
+     * Conjure an indeterminate busy spinner and place it. Conjured stopped —
+     * the sketch decides when to spin.
      * @throws WindowableException When the name is already taken.
      */
-    public function spinner(string $name, int $x, int $y, int $width, int $height): OSSpinner
+    public function spinner(string $name, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSSpinner
     {
-        if ($this->views->has($name)) {
-            throw new WindowableException("View '{$name}' already exists in window '{$this->name}'.");
-        }
+        $this->guardName($name);
 
-        $spinner = $this->mintSpinner($name);
-        $this->views->put($name, $spinner);
-        $spinner->place($x, $y, $width, $height);
-
-        return $spinner;
+        /** @var Spinner */
+        return $this->settle($this->mintSpinner($name, $in), $in, $x, $y, $width, $height);
     }
 
     /**
-     * Conjure an image into the content and place it. Top-left pixels.
-     * A null path conjures an empty picture to setPath() into later.
+     * Conjure an image and place it. A null path conjures an empty picture
+     * to setPath() into later.
      * @throws WindowableException When the name is already taken.
      */
-    public function image(string $name, ?string $path, int $x, int $y, int $width, int $height): OSImage
+    public function image(string $name, ?string $path, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSImage
     {
-        if ($this->views->has($name)) {
-            throw new WindowableException("View '{$name}' already exists in window '{$this->name}'.");
-        }
+        $this->guardName($name);
 
-        $image = $this->mintImage($name, $path);
-        $this->views->put($name, $image);
-        $image->place($x, $y, $width, $height);
-
-        return $image;
+        /** @var Image */
+        return $this->settle($this->mintImage($name, $path, $in), $in, $x, $y, $width, $height);
     }
 
     /**
-     * Conjure a video player into the content and place it. Top-left pixels.
-     * A null path conjures an empty player to setPath() into later; playback
-     * starts paused either way.
+     * Conjure a video player and place it. A null path conjures an empty
+     * player to setPath() into later; playback starts paused either way.
      * @throws WindowableException When the name is already taken.
      */
-    public function video(string $name, ?string $path, int $x, int $y, int $width, int $height): OSVideo
+    public function video(string $name, ?string $path, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSVideo
     {
-        if ($this->views->has($name)) {
-            throw new WindowableException("View '{$name}' already exists in window '{$this->name}'.");
-        }
+        $this->guardName($name);
 
-        $video = $this->mintVideo($name, $path);
-        $this->views->put($name, $video);
-        $video->place($x, $y, $width, $height);
+        /** @var Video */
+        return $this->settle($this->mintVideo($name, $path, $in), $in, $x, $y, $width, $height);
+    }
 
-        return $video;
+    /**
+     * Conjure a single-line text field and place it. A secret field masks
+     * its glyphs; engines without an honest secret placeholder ignore it.
+     * @throws WindowableException When the name is already taken.
+     */
+    public function textInput(string $name, string $value, int $x, int $y, int $width, int $height, ?string $placeholder = null, bool $secret = false, ?OSGroup $in = null): OSTextInput
+    {
+        $this->guardName($name);
+
+        /** @var TextInput */
+        return $this->settle($this->mintTextInput($name, $value, $placeholder, $secret, $in), $in, $x, $y, $width, $height);
+    }
+
+    /**
+     * Conjure a multi-line text editor and place it.
+     * @throws WindowableException When the name is already taken.
+     */
+    public function textArea(string $name, string $value, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSTextArea
+    {
+        $this->guardName($name);
+
+        /** @var TextArea */
+        return $this->settle($this->mintTextArea($name, $value, $in), $in, $x, $y, $width, $height);
+    }
+
+    /**
+     * Conjure a slider over [$min, $max] holding $value, and place it.
+     * @throws WindowableException When the name is already taken.
+     */
+    public function slider(string $name, float $min, float $max, float $value, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSSlider
+    {
+        $this->guardName($name);
+
+        /** @var Slider */
+        return $this->settle($this->mintSlider($name, $min, $max, $value, $in), $in, $x, $y, $width, $height);
+    }
+
+    /**
+     * Conjure an on/off switch and place it.
+     * @throws WindowableException When the name is already taken.
+     */
+    public function toggle(string $name, bool $on, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSToggle
+    {
+        $this->guardName($name);
+
+        /** @var Toggle */
+        return $this->settle($this->mintToggle($name, $on, $in), $in, $x, $y, $width, $height);
+    }
+
+    /**
+     * Conjure a press-and-stay button and place it.
+     * @throws WindowableException When the name is already taken.
+     */
+    public function toggleButton(string $name, string $label, bool $pressed, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSToggleButton
+    {
+        $this->guardName($name);
+
+        /** @var ToggleButton */
+        return $this->settle($this->mintToggleButton($name, $label, $pressed, $in), $in, $x, $y, $width, $height);
+    }
+
+    /**
+     * Conjure a labelled checkbox and place it.
+     * @throws WindowableException When the name is already taken.
+     */
+    public function checkbox(string $name, string $label, bool $checked, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSCheckbox
+    {
+        $this->guardName($name);
+
+        /** @var Checkbox */
+        return $this->settle($this->mintCheckbox($name, $label, $checked, $in), $in, $x, $y, $width, $height);
+    }
+
+    /**
+     * Conjure a determinate progress bar holding $progress (0..1) and place it.
+     * @throws WindowableException When the name is already taken.
+     */
+    public function progressBar(string $name, float $progress, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSProgressBar
+    {
+        $this->guardName($name);
+
+        /** @var ProgressBar */
+        return $this->settle($this->mintProgressBar($name, $progress, $in), $in, $x, $y, $width, $height);
+    }
+
+    /**
+     * Conjure a dropdown over $options with $selected picked, and place it.
+     *
+     * @param list<string> $options
+     * @throws WindowableException When the name is already taken.
+     */
+    public function dropdown(string $name, array $options, int $selected, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSDropdown
+    {
+        $this->guardName($name);
+
+        /** @var Dropdown */
+        return $this->settle($this->mintDropdown($name, array_values($options), $selected, $in), $in, $x, $y, $width, $height);
+    }
+
+    /**
+     * Conjure a thin dividing line and place it. Orientation comes from the
+     * frame's aspect — wider than tall is horizontal — and is fixed for life.
+     * @throws WindowableException When the name is already taken.
+     */
+    public function separator(string $name, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSSeparator
+    {
+        $this->guardName($name);
+
+        /** @var Separator */
+        return $this->settle($this->mintSeparator($name, $width >= $height, $in), $in, $x, $y, $width, $height);
+    }
+
+    /**
+     * Conjure a plain container and place it. Children are conjured into it
+     * with `in:` or its own conjure sugar, never reparented in.
+     * @throws WindowableException When the name is already taken.
+     */
+    public function group(string $name, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSGroup
+    {
+        $this->guardName($name);
+
+        /** @var Group */
+        return $this->settle($this->mintGroup($name, $in), $in, $x, $y, $width, $height);
+    }
+
+    /**
+     * Conjure a scrolling container and place it. The frame is the
+     * viewport; setContentSize() on the view is the scrollable extent.
+     * @throws WindowableException When the name is already taken.
+     */
+    public function scrollView(string $name, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSScrollView
+    {
+        $this->guardName($name);
+
+        /** @var ScrollView */
+        return $this->settle($this->mintScrollView($name, $in), $in, $x, $y, $width, $height);
     }
 
     /**
@@ -238,7 +414,7 @@ abstract class Windowable implements OSWindow
      */
     protected function resolveAbout(): ?AboutInfo
     {
-        return app('os-program')->getAbout();
+        return app('live-app')->getAbout();
     }
 
     /**
@@ -248,7 +424,7 @@ abstract class Windowable implements OSWindow
 
     /**
      * Detect a content resize and, if there was one, re-resolve every view
-     * and push WINDOW_RESIZED. ProgramShuttle::tick() calls this per window
+     * and push WINDOW_RESIZED. The OS-level resource calls this per window
      * after each pump; the sketch is not involved.
      *
      * @return bool Whether the content size changed since the last call.
@@ -287,44 +463,118 @@ abstract class Windowable implements OSWindow
     abstract public function contentSize(): array;
 
     /**
-     * Mint a native label wrapped in the engine's Label subclass. The node is
-     * attached to the content but not yet placed — Windowable::label() does that.
+     * Mint a native label wrapped in the engine's Label subclass. The node
+     * is attached to `$in`'s surface — or the window content on null — but
+     * not yet placed; Windowable::label() does that. Every mint hook reads
+     * `$in` the same way.
      */
-    abstract protected function mintLabel(string $name, string $text): Label;
+    abstract protected function mintLabel(string $name, string $text, ?OSGroup $in): Label;
 
     /**
      * Mint a native button wrapped in the engine's Button subclass, with its
      * click already wired to fireClick(). Attached but not yet placed.
      */
-    abstract protected function mintButton(string $name, string $label): Button;
+    abstract protected function mintButton(string $name, string $label, ?OSGroup $in): Button;
 
     /**
      * Mint a native indeterminate spinner wrapped in the engine's Spinner
      * subclass, attached but stopped and not yet placed.
      */
-    abstract protected function mintSpinner(string $name): Spinner;
+    abstract protected function mintSpinner(string $name, ?OSGroup $in): Spinner;
 
     /**
      * Mint a native image view wrapped in the engine's Image subclass,
      * attached but not yet placed; a non-null $path is already loaded.
      */
-    abstract protected function mintImage(string $name, ?string $path): Image;
+    abstract protected function mintImage(string $name, ?string $path, ?OSGroup $in): Image;
 
     /**
      * Mint a native video player wrapped in the engine's Video subclass,
      * attached but not yet placed; a non-null $path is already loaded,
      * paused.
      */
-    abstract protected function mintVideo(string $name, ?string $path): Video;
+    abstract protected function mintVideo(string $name, ?string $path, ?OSGroup $in): Video;
+
+    /**
+     * Mint a native single-line text field wrapped in the engine's
+     * TextInput subclass, with edit and submit wired to fireChanged() /
+     * fireSubmitted(). Attached but not yet placed.
+     */
+    abstract protected function mintTextInput(string $name, string $value, ?string $placeholder, bool $secret, ?OSGroup $in): TextInput;
+
+    /**
+     * Mint a native multi-line editor wrapped in the engine's TextArea
+     * subclass, with its buffer change wired to fireChanged(). Attached but
+     * not yet placed.
+     */
+    abstract protected function mintTextArea(string $name, string $value, ?OSGroup $in): TextArea;
+
+    /**
+     * Mint a native slider wrapped in the engine's Slider subclass, with
+     * its value change wired to fireChanged(). Attached but not yet placed.
+     */
+    abstract protected function mintSlider(string $name, float $min, float $max, float $value, ?OSGroup $in): Slider;
+
+    /**
+     * Mint a native on/off switch wrapped in the engine's Toggle subclass,
+     * with its flip wired to fireToggled(). Attached but not yet placed.
+     */
+    abstract protected function mintToggle(string $name, bool $on, ?OSGroup $in): Toggle;
+
+    /**
+     * Mint a native two-state button wrapped in the engine's ToggleButton
+     * subclass, with its toggle wired to fireToggled(). Attached but not
+     * yet placed.
+     */
+    abstract protected function mintToggleButton(string $name, string $label, bool $pressed, ?OSGroup $in): ToggleButton;
+
+    /**
+     * Mint a native checkbox wrapped in the engine's Checkbox subclass,
+     * with its toggle wired to fireToggled(). Attached but not yet placed.
+     */
+    abstract protected function mintCheckbox(string $name, string $label, bool $checked, ?OSGroup $in): Checkbox;
+
+    /**
+     * Mint a native determinate progress bar wrapped in the engine's
+     * ProgressBar subclass, attached but not yet placed.
+     */
+    abstract protected function mintProgressBar(string $name, float $progress, ?OSGroup $in): ProgressBar;
+
+    /**
+     * Mint a native dropdown wrapped in the engine's Dropdown subclass,
+     * with its selection change wired to fireSelected(). Attached but not
+     * yet placed.
+     * @param list<string> $options
+     */
+    abstract protected function mintDropdown(string $name, array $options, int $selected, ?OSGroup $in): Dropdown;
+
+    /**
+     * Mint a native separator line wrapped in the engine's Separator
+     * subclass, attached but not yet placed.
+     */
+    abstract protected function mintSeparator(string $name, bool $horizontal, ?OSGroup $in): Separator;
+
+    /**
+     * Mint a native container wrapped in the engine's Group subclass,
+     * attached but not yet placed. Later mints with this group as `$in`
+     * parent their natives under its surface.
+     */
+    abstract protected function mintGroup(string $name, ?OSGroup $in): Group;
+
+    /**
+     * Mint a native scrolling container wrapped in the engine's ScrollView
+     * subclass, attached but not yet placed, scrollbars owned by the engine.
+     */
+    abstract protected function mintScrollView(string $name, ?OSGroup $in): ScrollView;
 
     /**
      * Receive the sink this window reports through.
-     * @param EventSink $sink
+     * @param PoolPump $pool
      * @return $this
      */
-    public function setEventSink(EventSink $sink): static
+    public function setPool(PoolPump $pool): static
     {
-        $this->event_sink = $sink;
+        $this->io_pool = $pool;
 
         return $this;
     }
@@ -346,15 +596,11 @@ abstract class Windowable implements OSWindow
      */
     protected function emitWindowClosed(): void
     {
-        if (is_null($this->event_sink)) {
+        if (is_null($this->io_pool)) {
             return;
         }
 
-        $this->event_sink->push(new SurfaceEvent(
-            type: SurfaceEventType::WINDOW_CLOSED,
-            name: SurfaceEventType::WINDOW_CLOSED->value . ".{$this->name}",
-            window: $this->name,
-        ));
+        $this->io_pool->push(new WindowClosed($this->name));
     }
 
     /**
@@ -367,16 +613,24 @@ abstract class Windowable implements OSWindow
      */
     public function emitViewEvent(SurfaceEventType $type, string $view, array $payload = []): void
     {
-        if (is_null($this->event_sink)) {
+        if (is_null($this->io_pool)) {
             return;
         }
 
-        $this->event_sink->push(new SurfaceEvent(
-            type: $type,
-            name: "{$type->value}.{$this->name}.{$view}",
-            window: $this->name,
-            payload: $payload,
-        ));
+        match($type) {
+            SurfaceEventType::BUTTON_CLICKED => $this->io_pool->push(new ButtonClicked($view, $this->name)),
+            SurfaceEventType::TEXT_CHANGED => $this->io_pool->push(new TextChanged($view, $this->name, (string) ($payload['value'] ?? ''))),
+            SurfaceEventType::TEXT_SUBMITTED => $this->io_pool->push(new TextSubmitted($view, $this->name, (string) ($payload['value'] ?? ''))),
+            SurfaceEventType::VALUE_CHANGED => $this->io_pool->push(new ValueChanged($view, $this->name, (float) ($payload['value'] ?? 0.0))),
+            SurfaceEventType::TOGGLED => $this->io_pool->push(new Toggled($view, $this->name, (bool) ($payload['on'] ?? false))),
+            SurfaceEventType::SELECTION_CHANGED => $this->io_pool->push(new SelectionChanged($view, $this->name, (int) ($payload['index'] ?? -1), $payload['option'] ?? null)),
+            default => $this->io_pool->push(new ViewComponentOccurrence(
+                $this->name,
+                $type,
+                "{$type->value}.{$this->name}.{$view}",
+                $payload
+            ))
+        };
     }
 
     /**
@@ -385,29 +639,26 @@ abstract class Windowable implements OSWindow
      */
     protected function emitWindowResized(int $width, int $height): void
     {
-        if (is_null($this->event_sink)) {
+        if (is_null($this->io_pool)) {
             return;
         }
 
-        $this->event_sink->push(new SurfaceEvent(
-            type: SurfaceEventType::WINDOW_RESIZED,
-            name: SurfaceEventType::WINDOW_RESIZED->value . ".{$this->name}",
-            window: $this->name,
-            payload: ['width' => $width, 'height' => $height],
-        ));
+        $this->io_pool->push(new WindowResized($this->name, $width, $height));
     }
 
     protected function emitMenuEvent(MenuItemSpec $item): void
     {
-        if (is_null($this->event_sink) || is_null($item->event)) {
+        if (is_null($this->io_pool) || is_null($item->event)) {
             return;
         }
 
-        $this->event_sink->push(new SurfaceEvent(
-            type: SurfaceEventType::MENU,
-            name: $item->event,
-            window: $this->name,
-            payload: ['id' => $item->id, 'label' => $item->label],
-        ));
+        match($item->event) {
+            'quit' => $this->io_pool->push(new QuitRequested()),
+            default => $this->io_pool->push(new MenuOccurrence(
+                $this->name, $item->event, $item->id, $item->label
+            ))
+        };
+
+
     }
 }

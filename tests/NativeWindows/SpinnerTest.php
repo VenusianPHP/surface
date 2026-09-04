@@ -11,7 +11,7 @@ use Venusian\Surface\Tests\Support\Fakes\FakeWindow;
 |
 | An indeterminate busy indicator. Surface holds the spinning flag it
 | believes in; engines receive every transition through applySpinning().
-| There is no determinate mode — the HttpPool cannot report mid-flight
+| There is no determinate mode — OS-level occurrences carry no mid-flight
 | progress, so Surface refuses to fake one.
 |
 */

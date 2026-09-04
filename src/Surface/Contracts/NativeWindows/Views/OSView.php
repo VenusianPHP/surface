@@ -34,6 +34,19 @@ interface OSView
     /** Fill the view's own frame with a colour. */
     public function setBackground(Color $color): static;
 
+    /**
+     * Show or hide the view — and, for a container, its whole subtree.
+     * A hidden view keeps its frame and rules; showing restores it as it
+     * was.
+     */
+    public function setVisible(bool $visible): static;
+
+    public function isVisible(): bool;
+
+    public function show(): static;
+
+    public function hide(): static;
+
     /** Terminal: destroys the native node and frees the name. The handle is dead after. */
     public function remove(): void;
 }

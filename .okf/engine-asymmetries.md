@@ -78,6 +78,20 @@ pull on both every tick and synthesise its own event.
 returning a bool through an `NSWindowDelegate`, and `close-request`
 return-value writeback on GTK.
 
+# Resolved in the control wave (2026-09-03)
+
+| | AppKit | GTK4 | Surface picked |
+|---|---|---|---|
+| Programmatic writes | Setters are silent — no action fires | `changed` / `toggled` / `value-changed` / `notify::*` fire for setters too | Every GTK control twin carries an `applying` suppression flag (the PHP-side route the gap below predicted) |
+| Text read-back | `stringValue()` / `NSText::string_()` | GtkEditable `getText()`; `GtkTextBuffer::getText(startOffset, endOffset, includeHidden)` — ext unreserved 2026-09-04, iters cross as char offsets, -1 = end | Both engines read back; `TextChanged` always carries the value |
+| Scroll start | Unflipped document shows its BOTTOM first | Top, always | `AppKitScrollView` re-pins the viewport to the top on every extent write |
+| Container | Plain `NSView` (clips only once layered) | Own `GtkFixed`, `setOverflow(HIDDEN)` clips | Group-relative frames via `View::layoutSpace()`; AppKit pays its inversion against the host's inner height |
+| Bare stepper | `NSStepper` (arrows only) | Only `GtkSpinButton`, entry fused in | No stepper primitive — InputNumber composes TextInput + two Buttons at the Components layer |
+| Selection signal | `NSPopUpButton` target/action | `GtkDropDown` has no dedicated signal; `Bridge::connect('notify::selected')` | Detailed notify through the generic connect — Pi smoke still owed |
+| Toggle statics | `state()` int 0/1 | `getActive()` bool | Surface stores bool; twins translate |
+| Calendar | `NSDatePicker` bound | GtkCalendar not bound in the ext | No calendar primitive — Datepicker composes a Button grid at the Components layer (recipe in components.md) |
+| Table | `NSTableView`/`NSOutlineView` bound | `GtkListBox`/`GtkColumnView` unbound as twins | No table primitive — DataTable composes ScrollView + Label rows (recipe in components.md); a native-table lane remains open for later |
+
 # Capability gaps to design around
 
 Neither engine offers these through its 0.8.0 projection:

@@ -3,6 +3,7 @@
 namespace Surface\NativeWindows\Views;
 
 use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Contracts\NativeWindows\Views\OSGroup;
 use Surface\Contracts\NativeWindows\Views\OSView;
 use Surface\NativeWindows\Enums\PlacementRule;
 use Surface\NativeWindows\Enums\SizeRule;
@@ -44,6 +45,13 @@ abstract class View implements OSView
     protected int $height = 0;
 
     /**
+     * The group this view was conjured into, or null for a window-content
+     * view. Set once by Windowable during conjuring, before place().
+     * @var OSGroup|null
+     */
+    protected ?OSGroup $host = null;
+
+    /**
      * @param string $name Registry name inside the window.
      * @param Windowable $window The window this node lives in.
      */
@@ -51,6 +59,31 @@ abstract class View implements OSView
         public readonly string $name,
         protected Windowable $window,
     ) {}
+
+    /**
+     * Conjure-time wiring: record the group this view lives inside. Not a
+     * reparenting door — the native already sits in the group's surface.
+     */
+    public function hostIn(OSGroup $host): void
+    {
+        $this->host = $host;
+    }
+
+    public function hostedBy(): ?OSGroup
+    {
+        return $this->host;
+    }
+
+    /**
+     * The space this view's rules resolve against: the host group's inner
+     * size, or the window content for a top-level view. Engine frame hooks
+     * that owe a coordinate inversion pay it against this same space.
+     * @return array{int, int} [width, height]
+     */
+    public function layoutSpace(): array
+    {
+        return is_null($this->host) ? $this->window->contentSize() : $this->host->innerSize();
+    }
 
     public function name(): string
     {
@@ -120,12 +153,12 @@ abstract class View implements OSView
         }
 
         if ($this->placement === PlacementRule::CENTER || $this->placement === PlacementRule::CENTER_X) {
-            [$content_width, $content_height] = $this->window->contentSize();
+            [$content_width, $content_height] = $this->layoutSpace();
             $this->x = (int) floor(($content_width - $this->width) / 2) + $this->center_dx;
         }
 
         if ($this->placement === PlacementRule::CENTER) {
-            [, $content_height] = $this->window->contentSize();
+            [, $content_height] = $this->layoutSpace();
             $this->y = (int) floor(($content_height - $this->height) / 2) + $this->center_dy;
         }
 
@@ -140,6 +173,38 @@ abstract class View implements OSView
         $this->applyBackground($color);
 
         return $this;
+    }
+
+    protected bool $visible = true;
+
+    /**
+     * Show or hide the view — a container takes its subtree with it, the
+     * engine's own truth on both platforms. The frame and rules survive
+     * hiding; the native write is change-only through applyVisible().
+     */
+    public function setVisible(bool $visible): static
+    {
+        if ($this->visible !== $visible) {
+            $this->visible = $visible;
+            $this->applyVisible($visible);
+        }
+
+        return $this;
+    }
+
+    public function isVisible(): bool
+    {
+        return $this->visible;
+    }
+
+    public function show(): static
+    {
+        return $this->setVisible(true);
+    }
+
+    public function hide(): static
+    {
+        return $this->setVisible(false);
     }
 
     public function remove(): void
@@ -165,6 +230,12 @@ abstract class View implements OSView
      * @return void
      */
     abstract protected function destroyNative(): void;
+
+    /**
+     * Write the visibility to the native node.
+     * @return void
+     */
+    abstract protected function applyVisible(bool $visible): void;
 
     /**
      * Fill the node's frame with a colour. An engine with no honest path

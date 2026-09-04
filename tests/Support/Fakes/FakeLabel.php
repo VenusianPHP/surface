@@ -91,4 +91,12 @@ final class FakeLabel extends Label
 
         return $this->wrapped_height;
     }
+
+    /** @var list<bool> Every visibility write that reached the engine. */
+    public array $applied_visible = [];
+
+    protected function applyVisible(bool $visible): void
+    {
+        $this->applied_visible[] = $visible;
+    }
 }

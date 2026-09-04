@@ -2,12 +2,13 @@
 
 namespace Surface\Core\Providers;
 
+use Voyager\IOPools\IOPoolDock;
+use Surface\Core\LiveApplication;
+use Voyager\Contracts\Vessel\Vessel;
 use Surface\Bridge\BridgeServiceProvider;
-use Surface\Core\ProgramShuttle;
-use Surface\NativeWindows\NativeWindowsServiceProvider;
-use Surface\NativeWindows\WindowManager;
+use Surface\Core\IOPools\OSLevelResourceDriver;
 use Voyager\NutsAndBolts\AggregateServiceProvider;
-use Voyager\Vessel\Vessel;
+use Surface\NativeWindows\NativeWindowsServiceProvider;
 
 class SurfaceServiceProvider extends AggregateServiceProvider
 {
@@ -20,16 +21,27 @@ class SurfaceServiceProvider extends AggregateServiceProvider
     {
         parent::register();
 
-        $this->app->singleton(ProgramShuttle::class, fn (Vessel $app) => new ProgramShuttle(
+        $this->app->singleton('live-app', fn ($app) => $app->make(LiveApplication::class));
+        $this->app->singleton(OSLevelResourceDriver::class, function (Vessel $app) {
+            /** @var IOPoolDock $dock */
+            $dock = $this->app->make('io-pool');
+            $session = $app->get('os-bridge')->connect();
+            $window_service = app('native-window')->driver();
+            $driver = new OSLevelResourceDriver($dock, $session, $window_service);
+            $dock->resource('os', $driver);
+
+            return $driver;
+        });
+
+        $this->app->singleton(LiveApplication::class, fn (Vessel $app) => new LiveApplication(
+            $app->make('io-pool'),
             $app->get('os-bridge')->connect(),
             app('native-window')->driver(),
         ));
+    }
 
-        $this->app->singleton('os-program', fn ($app) => $app->make(ProgramShuttle::class));
-
-        // The program's HTTP pool under its own class name, so packages
-        // that only know voyager/io-pools (an API client, say) dispatch
-        // through the same pool the sketch's callHttp() rides.
-        $this->app->singleton(\Voyager\IOPools\HttpPool::class, fn ($app) => $app->make('os-program')->httpPool());
+    public function boot(): void
+    {
+        $this->app->make(OSLevelResourceDriver::class);
     }
 }
