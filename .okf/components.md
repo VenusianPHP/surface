@@ -6,7 +6,7 @@ description: >-
   named <component>.<part>, pure PHP — no engine code per component.
 tags: [surface, native-windows, components, composition]
 status: draft
-generated: { by: cursor-grok-4.6/cursor, at: "2026-09-04T18:20:00Z" }
+generated: { by: cursor-grok-4.6/cursor, at: "2026-09-05T00:10:00Z" }
 sources:
   - id: base
     resource: src/Surface/NativeWindows/Components/Component.php
@@ -23,6 +23,12 @@ sources:
   - id: wrappers
     resource: src/Surface/NativeWindows/Components/InputText.php
     title: InputText — first of the seven primitive wrappers
+  - id: wave2
+    resource: src/Surface/NativeWindows/Components/Badge.php
+    title: Badge — first of the five Wave 2 compositions
+  - id: wave3
+    resource: src/Surface/NativeWindows/Components/Tabs.php
+    title: Tabs — first of the six Wave 3 panels
 ---
 
 # The layer
@@ -53,7 +59,7 @@ is written.[^base]
   `layout()` — responsive behaviour lives there. `remove()` kills the
   subtree and frees every name.
 
-# Built (12 of 25)
+# Built (23 of 25)
 
 | Component | Shape | Notable |
 |---|---|---|
@@ -69,6 +75,17 @@ is written.[^base]
 | **ProgressBar** | `progressBar` filling the root | `load.bar`; progress 0..1, clamp lives on the view |
 | **ProgressSpinner** | `spinner` filling the root | `busy.spinner`; conjured stopped; start/stop |
 | **Select** | `dropdown` filling the root | `planet.dropdown`; options/select/onSelect; programmatic `select` silent |
+| **Badge** | one Label in a padded root | optional `MessageSeverity` paint; muted `#e5e7eb` / `#374151` when none; sketch owns the frame[^wave2] |
+| **Chip** | Label + optional close Button | Message minus severity; `×` removes then `onRemove`; pad 8, close 22 |
+| **InputNumber** | TextInput + stacked `+`/`-` Buttons | `qty.input` / `qty.up` / `qty.down`; null min/max unbounded; `setValue` silent; non-numeric typeText ignored |
+| **SelectButton** | flowed ToggleButton options | Sidebar sticky exclusive selection, Toolbar hug/centre; parts `option.<key>` |
+| **Breadcrumb** | flowed Buttons + `›` Labels | every item is a Button; last is disabled with a no-op click; `onSelect` for non-last only |
+| **Tabs** | ToggleButton headers + stacked Group panels | header strip 32, pad 8, gap 4, headers hug; only the selected panel `show()`s; first tab selects itself silently; Sidebar sticky rules[^wave3] |
+| **Drawer** | the component IS the panel | `DrawerSide` recorded, no auto-dock; starts hidden; `open()`/`close()` fire `onOpen`/`onClose` (the user-facing verbs); `body()` is Card's hole |
+| **Toast** | empty host of nested Messages | `push` returns `msg.1`, `msg.2`, …; stack from y=0 gap 8 height 40; a Message `×` drops that part and re-lays the rest |
+| **ListBox** | ScrollView + ToggleButton rows | Sidebar minus collapse, icons, and breakpoint; parts `scroll` / `item.<key>`; same PAD/GAP/ROW_HEIGHT and sticky select |
+| **Skeleton** | painted root, no inner parts | `SkeletonShape` RECTANGLE or CIRCLE (CIRCLE is still a square — no oval clip); fill `#e5e7eb` |
+| **DataView** | ScrollView of sketch-filled slots | Card `body()` repeated; `addItem` returns the group; LIST only, pad 8 gap 8, default height 72 |
 
 Hooks follow the view rule: in-pump, one per slot, replace not stack.
 Typed mail still flows from the underlying primitives (`Toggled` from
@@ -77,38 +94,21 @@ listen instead of hooking, same two doors as everywhere.
 
 # Remaining stubs
 
-Every remaining stub composes from the sixteen shipped primitives, the
-same way the twelve built shapes do. Where a native widget exists for the
-same job (NSTableView, NSDatePicker, GtkNotebook), it stays an unbound
-twin: composition is the decided route, chosen at the primitive
-inventory because those natives have no peer on the other engine. A
-composition that needs a native call bound in the ext but missing from a
-jovian wrapper exposes it just-in-time.
-
 Datepicker and DataTable stay empty stubs until a date or table
-primitive is worth it — they do not compose from today's list.
+primitive is worth it — they do not compose from today's list. Where a
+native widget exists for the same job (NSTableView, NSDatePicker,
+GtkNotebook), it stays an unbound twin: composition is the decided
+route.
 
 | Stub | Recipe |
 |---|---|
-| Badge / Chip | Group + Label; Chip adds a close Button — Message minus severity |
-| Breadcrumb | Buttons + '›' Labels flowed like Toolbar |
 | DataTable | empty stub — revisit when a table primitive is worth it |
-| DataView | ScrollView + a card-ish Group per item |
 | Datepicker | empty stub — revisit when a date primitive is worth it |
-| Drawer | Group slid on/off with place() + show/hide |
-| InputNumber | TextInput + two small Buttons (no stepper primitive — see engine-asymmetries) |
-| ListBox | ScrollView + selectable Group rows — Sidebar minus the collapse |
-| SelectButton | ToggleButton row with exclusive selection — Sidebar's sticky logic, horizontal |
-| Skeleton | Groups with a grey setBackground |
-| Tabs | ToggleButton headers + one Group panel per tab toggled with setVisible |
-| Toast | Message in a Group placed over the content, show/hide |
-
-Copy the closest exemplar: selection shapes copy Sidebar, callouts copy
-Message, form fields copy IconField, flowed strips copy Toolbar, titled
-containers copy Card.
 
 [^base]: Component — root mount, parts, move/place, subtree removal
 [^sidebar]: Sidebar — scroll, sticky selection, collapse breakpoint
 [^iconfield]: IconField — the thin-wrapper recipe Wave 1 copies
 [^tests]: Sidebar tests
 [^wrappers]: InputText — first of the seven primitive wrappers
+[^wave2]: Badge — first of the five Wave 2 compositions
+[^wave3]: Tabs — first of the six Wave 3 panels

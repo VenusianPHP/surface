@@ -40,9 +40,8 @@ concept here is `status: draft` until a human verifies it.
 * [views.md](/views.md) - conjured nodes: Surface owns the name registry and
   the top-left frame, engines translate through four hooks
 * [components.md](/components.md) - opinionated shapes over the primitives:
-  one root Group, named parts, pure PHP — twelve built (five compositions
-  plus seven thin primitive wrappers); thirteen stubs remain, Datepicker
-  and DataTable among them
+  one root Group, named parts, pure PHP — twenty-three built;
+  Datepicker and DataTable remain stubs
 * [async.md](/async.md) - non-blocking parallel calls on the tick: curl_multi
   pool, TASK events, hooks; the transport seam and the fork prohibition
 * [testing.md](/testing.md) - suite scope, the shared fakes, and which
@@ -64,4 +63,4 @@ concept here is `status: draft` until a human verifies it.
 | Split packages | `surface/bridge`, `surface/contracts`, `surface/native-windows` |
 | Hard dependencies | `venusian-voyager/nuts-and-bolts` + `venusian-voyager/io-pools` |
 | Engines | suggested, never required |
-| Tests | `vendor/bin/pest` green at 262; orphaned view tests excluded in `phpunit.xml` |
+| Tests | `vendor/bin/pest` green at 331; orphaned view tests excluded in `phpunit.xml` |

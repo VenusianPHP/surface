@@ -6,7 +6,7 @@ description: >-
   and the top-left frame, engines translate through four hooks.
 tags: [surface, native-windows, views, coordinates]
 status: draft
-generated: { by: claude-opus-5/claude-code, at: "2026-08-30T08:00:00Z" }
+generated: { by: cursor-grok-4.6/cursor, at: "2026-09-05T00:10:00Z" }
 sources:
   - id: view
     resource: src/Surface/NativeWindows/Views/View.php
@@ -202,7 +202,7 @@ Every view carries `setVisible(bool)` / `isVisible()` / `show()` /
 `hide()` — change-only through `applyVisible()` (NSView `setHidden`,
 GtkWidget `setVisible`). A hidden view keeps its frame and rules; hiding
 a container is ONE native write and the engine takes the subtree. This is
-what panel-swapping sketches and the coming Tabs/Drawer/Toast components
+what panel-swapping sketches and the Tabs/Drawer/Toast components
 toggle with.
 
 # Removal is terminal
@@ -236,9 +236,10 @@ Engine translations are opinionated by design:
 
 Anchors/percent rules, alignment beyond labels, programmatic scrolling.
 Native table/tab/calendar widgets (NSTableView, GtkNotebook, NSDatePicker
-et al.) stay unbound as twins; DataTable, Tabs, Datepicker and the rest
-are composed from the shipped primitives at the Components layer —
-recipes in [components.md](/components.md). The old `tests/Views` fakes
+et al.) stay unbound as twins; Datepicker and DataTable stay empty
+stubs until a date or table primitive is worth it. The rest of the
+catalogue (Tabs included) is composed from the shipped primitives at
+the Components layer — recipes in [components.md](/components.md). The old `tests/Views` fakes
 describe where those went last time; the exclude list in `phpunit.xml`
 gets pruned as each kind lands.
 

@@ -1,5 +1,25 @@
 # Surface Update Log
 
+## 2026-09-04 (components, wave 3 panels)
+* **Update**: [Components](/components.md) — six panel `Component`
+  subclasses ship: **Tabs**, **Drawer**, **Toast**, **ListBox**,
+  **Skeleton**, **DataView**. Visibility is how Tabs/Drawer/Toast swap
+  (`show`/`hide`); ListBox and DataView are scroll stacks; Skeleton is a
+  painted placeholder (`SkeletonShape` documents CIRCLE without an oval
+  clip). `DrawerSide` is recorded, not docked. Datepicker and DataTable
+  stay empty stubs. Suite at 331.
+
+## 2026-09-04 (components, wave 2 compositions)
+* **Update**: [Components](/components.md) — five more `Component`
+  subclasses ship: **Badge**, **Chip**, **InputNumber**, **SelectButton**,
+  **Breadcrumb**. Badge reuses `MessageSeverity` paint (muted defaults
+  when none); Chip is Message minus severity with `onRemove`; InputNumber
+  is a text field plus stacked steppers (null min/max unbounded,
+  `setValue` silent, non-numeric typeText ignored); SelectButton is
+  Toolbar flow plus Sidebar sticky selection; Breadcrumb is a button
+  trail whose last crumb is disabled. Datepicker and DataTable stay
+  empty stubs. Suite at 296.
+
 ## 2026-09-04 (components, wave 1 wrappers)
 * **Update**: [Components](/components.md) — seven thin primitive
   wrappers ship as `Component` subclasses: **InputText**, **TextArea**,
