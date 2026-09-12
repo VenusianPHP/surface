@@ -60,7 +60,7 @@
                 "Surface\\Core\\Providers\\SurfaceServiceProvider"
             ],
             "aliases": {
-                "Program": "Surface\\Core\\MagicAliases\\Program",
+                "LiveApp": "Surface\\Core\\MagicAliases\\LiveApp",
                 "OSAppBridge": "Surface\\Bridge\\MagicAliases\\OSAppBridge",
                 "NativeWindow": "Surface\\NativeWindows\\MagicAliases\\NativeWindow"
             }
