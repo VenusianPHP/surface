@@ -30,11 +30,16 @@
         "surface/bridge": "self.version",
         "surface/contracts": "self.version",
         "surface/drawing": "self.version",
-        "surface/native-windows": "self.version"
+        "surface/native-windows": "self.version",
+        "surface/stage": "self.version"
     },
     "suggest": {
         "jovian/venusian-appkit": "^0.8.0 - To build apps that use MacOS Windows using AppKit",
-        "jovian/venusian-gtk": "^0.8.0 - To build apps that use Linux Windows using GTK."
+        "jovian/venusian-gtk": "^0.8.0 - To build apps that use Linux Windows using GTK.",
+        "jovian/venusian-sdl3": "^0.8.0 - The sdl3 stage host (engine-owned SDL windows) and the sdl3 GPU engine (SDL_GPU).",
+        "jovian/venusian-metal": "^0.8.0 - The metal GPU engine (macOS).",
+        "jovian/venusian-ogx": "^0.8.0 - The opengl GPU engine.",
+        "jovian/venusian-vulkan": "^0.8.0 - The vulkan GPU engine (MoltenVK on macOS, a lent VkSurfaceKHR elsewhere)."
     },
     "require-dev": {
         "pestphp/pest": "^4"
@@ -64,7 +69,8 @@
                 "LiveApp": "Surface\\Core\\MagicAliases\\LiveApp",
                 "OSAppBridge": "Surface\\Bridge\\MagicAliases\\OSAppBridge",
                 "NativeWindow": "Surface\\NativeWindows\\MagicAliases\\NativeWindow",
-                "GPU": "Surface\\Drawing\\MagicAliases\\GPU"
+                "GPU": "Surface\\Drawing\\MagicAliases\\GPU",
+                "Stage": "Surface\\Stage\\MagicAliases\\Stage"
             }
         }
     },

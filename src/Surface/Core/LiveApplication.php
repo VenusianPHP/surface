@@ -7,6 +7,7 @@ use Surface\Contracts\Core\AboutInfo;
 use Surface\Contracts\NativeWindows\OSWindowDriver;
 use Surface\Contracts\NativeWindows\WindowableException;
 use Surface\NativeWindows\Menus\MenuItemSpec;
+use Surface\Stage\StageManager;
 use Voyager\Contracts\IOPools\PoolService;
 use Voyager\IOPools\IOEventBag;
 use Voyager\NutsAndBolts\Collection;
@@ -25,6 +26,7 @@ class LiveApplication
         public readonly PoolService $io_pool,
         public readonly BridgedOSSession $session,
         public readonly OSWindowDriver   $window_service,
+        protected readonly ?StageManager $stages = null,
     ) {
         $this->menu_bar_profiles = new Collection();
     }
@@ -45,12 +47,21 @@ class LiveApplication
         return $this->io_pool->drain()->keyBy('name');
     }
 
+    /**
+     * Stages first (closed, host sessions disconnected), then the windows,
+     * then the bridge. A stage failure still tears the rest down; it
+     * propagates after.
+     */
     public function destroy(): void
     {
-        $this->window_service->destroyAll();
-        if ($this->session->connected()) {
-            $this->session->pump(0);
-            $this->session->disconnect();
+        try {
+            $this->stages?->destroy();
+        } finally {
+            $this->window_service->destroyAll();
+            if ($this->session->connected()) {
+                $this->session->pump(0);
+                $this->session->disconnect();
+            }
         }
     }
 

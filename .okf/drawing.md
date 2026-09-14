@@ -66,15 +66,20 @@ honestly (blending false → opaque).
 - **One frame per tick**: `OSLevelResourceDriver::tick()` pumps,
   `syncLayout()`, then `renderFrames()` per window. A twin that drives its
   own frames (`drivesOwnFrames()`) is only queued.
-- **Two seam shapes, chosen by `SurfaceKind`.** `GPUEngineDriver::surfaceKind()`
-  is read *before* `attach()`. `LAYER`: the engine hands back layer pointer
-  bits and the window engine adopts them (Metal, and Vulkan through
-  MoltenVK). `GL_CONTEXT`: the window engine mints a GL surface, passes it
-  as `GPUHost->gl`, and the engine draws inside a context it never made
-  (OpenGL). A kind a window engine cannot mint is
-  `GPUViewException::unsupported()` — decided by enum, no package named.
-  GTK still refuses `LAYER`. A Linux Vulkan / Wayland host is a later
-  slice.[^slice2][^slice3]
+- **Four seam shapes, chosen by `SurfaceKind`:** `LAYER`, `GL_CONTEXT`,
+  `VULKAN_SURFACE` (host lends a `VulkanSurfaceLender` via `GPUHost->vk`),
+  `HOST_WINDOW` (engine drives the host's own window, `GPUHost->native_view`).
+  `GPUEngineDriver::surfaceKind()` is read *before* `attach()`. `LAYER`: the
+  engine hands back layer pointer bits and the window engine adopts them
+  (Metal, and Vulkan through MoltenVK). `GL_CONTEXT`: the window engine
+  mints a GL surface, passes it as `GPUHost->gl`, and the engine draws
+  inside a context it never made (OpenGL). A kind a window engine cannot
+  mint is `GPUViewException::unsupported()` — decided by enum, no package
+  named. GTK hosts only `GL_CONTEXT`. The SDL stage host lends
+  `VULKAN_SURFACE` on Linux.[^slice2][^slice3]
+- **A host may lend a layer it owns** (`GPUHost->layer`); a LAYER engine
+  adopts it and answers `layer_pointer 0`.
+- **The frame loop is `RunsFrames`**, shared by GPUView and StagedWindow.
 - **`GLSurface` is three verbs.** `makeCurrent()` before a frame,
   `present()` after, `drawableSize()` in pixels. The host owns the
   context; the engine owns GL state. Mint order is native → surface →
@@ -83,18 +88,18 @@ honestly (blending false → opaque).
 - **A self-driving twin runs the hook inside the pump.** `GtkGLArea`'s
   `render` signal calls `renderFrame()`; the tick only queues. On AppKit
   the tick drives, for Metal and GL alike.
-- **Blending is real on OpenGL and Vulkan.** `capabilities()->blending` is
-  true there and false on Metal until slice 5; the Painter degrades per
-  engine.
-- **Vulkan is a LAYER engine.** `jovian/venusian-vulkan` mints a
-  `CAMetalLayer` and answers the same pointer bits Metal does. Surface
-  and AppKit do not change. Engines today: `metal`, `opengl`, `vulkan`.
+- **Blending is real on every engine.** `capabilities()->blending` is true
+  on OpenGL, Vulkan, Metal and SDL_GPU; the Painter still degrades on an
+  engine that answers false.
+- **Vulkan is `LAYER` on Darwin, `VULKAN_SURFACE` elsewhere.** On macOS
+  `jovian/venusian-vulkan` mints (or adopts a lent) `CAMetalLayer` and
+  answers the same pointer bits Metal does; elsewhere the host lends a
+  `VkSurfaceKHR`. Engines today: `metal`, `opengl`, `vulkan`, `sdl3`.
 
 # Not in this slice
 
-Text, depth, alpha blending on Metal, Stage, embedded panels, a Linux
-Vulkan host. (Slice 2 landed OpenGL on both boxes. Slice 3 landed Vulkan
-on the Mac through MoltenVK.)
+Text, depth, embedded panels. (Slice 2 landed OpenGL on both boxes.
+Slice 3 landed Vulkan on the Mac through MoltenVK.)
 
 [^contracts]: Drawing contracts
 [^painter]: Painter

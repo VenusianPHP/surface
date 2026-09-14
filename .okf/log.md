@@ -1,6 +1,52 @@
 # Surface Update Log
 
 ## 2026-09-14
+* **Update**: [stage.md](/stage.md) — `StageManager::destroy()` (close
+  stages, disconnect host sessions, keep going, rethrow first), called by
+  `LiveApplication::destroy()` before the windows; `StageSession::disconnect()`
+  ends disconnected on a throwing hook; `StageException::attachFailed`.
+* **Update**: [drawing.md](/drawing.md), [index](/index.md) — four seam
+  shapes; GTK hosts only `GL_CONTEXT`; SDL lends `VULKAN_SURFACE` on
+  Linux; Metal blends; engines `metal`, `opengl`, `vulkan`, `sdl3`.
+
+## 2026-09-14 (Stage, slice 4 — Surface side)
+* **Creation**: [Stage — engine-owned windows](/stage.md) — whole windows
+  an engine draws every pixel of; `Stage::open($name, $engine, $w, $h,
+  $host)` names a host by alias (`stage.<host>`) and an engine by alias
+  (`gpu.<engine>`), mints a `StagedWindow` hidden, same
+  `onDraw(fn (Drawing2D $g, Frame $f))` as a GPUView. Rules: engine start
+  lazy at first `connect()`; a stage renders only once shown
+  (`frameVisible()` open && shown, never auto-shown by `StageManager::open()`);
+  `resized()` is change-only, resizes the executor, requests a frame, then
+  mails; `close()` is terminal and idempotent — release → `destroyNative()`
+  in a `finally` so a throwing release still destroys the native — and
+  announces `StageClosed` once; `closeRequested()` announces `StageClosed`
+  once and leaves the window open, latching only when the mail was
+  actually pushed so a request before `setPool()` is not spent. Loop: dock
+  resource `stage.<host>` pumps (skipped for AppKit when `os` is on the
+  dock), then one frame per open stage; the pump never waits.
+* **Creation**: [Components to come — HumanInput, Fonts](/components-to-come.md)
+  — two reserved directories, no code, the facts each will need recorded
+  ahead of the work: AppKit has no PHP-side key/mouse events yet, SDL3
+  read-side events exist but are unread by the stage session, no glyph
+  rasteriser exists in the stack.
+* **Update**: [GPU drawing](/drawing.md) — four seam shapes now:
+  `LAYER`, `GL_CONTEXT`, `VULKAN_SURFACE` (host lends a
+  `VulkanSurfaceLender` via `GPUHost->vk`), `HOST_WINDOW` (engine drives
+  the host's own window via `GPUHost->native_view`). A host may also lend
+  a layer it owns (`GPUHost->layer`) for a LAYER engine to adopt. The
+  frame loop (`RunsFrames`) is shared by GPUView and StagedWindow.
+* **Probe**: native windows and engine-owned stages coexist in one
+  process. Mac: `PROBE_COEXIST_OK`, a native AppKit window plus an SDL3
+  window. Pi: `PROBE_COEXIST_OK` with `DISPLAY=:0` — GTK on Wayland, SDL
+  on XWayland, because the Pi's hand-built `/usr/local` libSDL3 3.4.9 has
+  no Wayland video driver (without `DISPLAY` set, `SDL_Init(VIDEO)` finds
+  no available video device). Durable rule: an SDL stage's video driver
+  follows what libSDL3 was built with; coexistence with GTK holds either
+  way because the display connections are separate.
+* Suite at 452.
+
+## 2026-09-14
 * **Update**: [GPU drawing](/drawing.md) — slice 3: Vulkan is a `LAYER`
   engine (MoltenVK → `CAMetalLayer`); engines list is metal / opengl /
   vulkan; blending true on OpenGL and Vulkan; a Linux Vulkan host is a

@@ -56,13 +56,16 @@ as-is deliberately; do not "fix" it in passing.
 - Composer: `venusian/surface` **0.8.0**. PHP `^8.4|^8.5|^8.6`.
 - Namespace root is `Surface\` at `src/Surface`.
 - **Split packages.** `surface/bridge`, `surface/contracts`,
- `surface/drawing`, and `surface/native-windows` are subtree splits, each
- with its own `.gitattributes` and `LICENSE` under `src/Surface/*`, and
- each declared in the root `replace` map. A new component directory needs
- all three.
+ `surface/drawing`, `surface/native-windows`, and `surface/stage` are
+ subtree splits, each with its own `.gitattributes` and `LICENSE` under
+ `src/Surface/*`, and each declared in the root `replace` map. A new
+ component directory needs all three.
 - **GPU regions draw through `Surface\Contracts\Drawing`.** The Painter is
  the only 2D implementation; engines implement `Executor` in their own
  package. See [`.okf/drawing.md`](.okf/drawing.md).
+- **Stages.** Hosts are reached by `stage.<host>` alias and engines by
+  `gpu.<engine>`; Surface never names SDL, GLFW or AppKit in code. See
+  [`.okf/stage.md`](.okf/stage.md).
 - **Never import a `Jovian\` symbol.** Surface resolves the container alias
  `mac.bridge` or `linux.bridge` and knows nothing else about an engine. No
  `class_exists`, no `method_exists`, no engine package name in code — a

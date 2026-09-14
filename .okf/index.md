@@ -7,9 +7,10 @@ okf_version: "0.2"
 Surface is the engine-agnostic layer for native OS windows, GPU drawing to
 window views, and drawing to embedded IC displays. Native windows and the
 engine-free GPU drawing contracts / Painter / GPUView are in, including
-the two seam shapes (`LAYER` / `GL_CONTEXT`). OpenGL engines live in
-`jovian/venusian-ogx`; Metal remains a layer attach. Embedded displays
-are later slices.
+the four seam shapes (`LAYER` / `GL_CONTEXT` / `VULKAN_SURFACE` /
+`HOST_WINDOW`), plus whole engine-owned windows (Stage). Engines: `metal`,
+`opengl` (`jovian/venusian-ogx`), `vulkan`, `sdl3`. Embedded displays are
+later slices.
 
 The package is mid-rebuild. The 0.8 native-window view tree was written
 against an older, opinionated `ext-appkit` / `ext-gtk` whose convenience
@@ -44,6 +45,10 @@ concept here is `status: draft` until a human verifies it.
   the top-left frame, engines translate through four hooks; nineteen kinds
 * [drawing.md](/drawing.md) - GPU regions: engine-free contracts, the
   Painter, GPUView, the per-tick frame pass
+* [stage.md](/stage.md) - engine-owned windows: hosts and engines by alias,
+  one Drawing2D
+* [components-to-come.md](/components-to-come.md) - HumanInput and Fonts:
+  reserved, facts recorded
 * [components.md](/components.md) - opinionated shapes over the primitives:
   one root Group, named parts, pure PHP — twenty-five built, including
   Datepicker and DataTable wrapping datePicker / table
@@ -65,7 +70,7 @@ concept here is `status: draft` until a human verifies it.
 |---|---|
 | Version | 0.8.0, PHP `^8.4\|^8.5\|^8.6` |
 | Namespace | `Surface\` at `src/Surface` |
-| Split packages | `surface/bridge`, `surface/contracts`, `surface/drawing`, `surface/native-windows` |
+| Split packages | `surface/bridge`, `surface/contracts`, `surface/drawing`, `surface/native-windows`, `surface/stage` |
 | Hard dependencies | `venusian-voyager/nuts-and-bolts` + `venusian-voyager/io-pools` |
 | Engines | suggested, never required |
-| Tests | `vendor/bin/pest` green at 412; orphaned view tests excluded in `phpunit.xml` |
+| Tests | `vendor/bin/pest` green at 452; orphaned view tests excluded in `phpunit.xml` |

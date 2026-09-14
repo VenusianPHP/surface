@@ -3,9 +3,9 @@
 namespace Surface\Contracts\Drawing;
 
 /**
- * What a window engine hands a GPU engine: raw pointer bits of the native
- * host node (0 when the engine has none), the host size in points, and the
- * backing scale. The GPU engine never boxes native_view — it is opaque here.
+ * What a host hands an engine at attach: its native view or window handle as
+ * pointer bits, the size in points, the backing scale, and at most one of the
+ * things it lends — a GL surface, a CAMetalLayer it owns, a Vulkan surface lender.
  */
 final readonly class GPUHost
 {
@@ -14,7 +14,8 @@ final readonly class GPUHost
         public int $width,
         public int $height,
         public float $scale,
-        /** The GL surface the window engine minted for a GL_CONTEXT attach; null for a layer attach. */
         public ?GLSurface $gl = null,
+        public int $layer = 0,
+        public ?VulkanSurfaceLender $vk = null,
     ) {}
 }

@@ -70,6 +70,12 @@ code. Building it one layer down would couple them.
 
 See [bridge-lifecycle](/bridge-lifecycle.md) for what crosses the seam.
 
+# Stage hosts
+
+`stage.appkit`, `stage.sdl3` (and `stage.glfw` later) are the same seam: a
+container string, bound by the host package's provider. `config/stage.php`
+rebinds.
+
 [^mac-action]: BuildMacOSSession
 [^composer]: Package metadata 0.8.0
 [^appkit-projection]: jovian/appkit projection rule

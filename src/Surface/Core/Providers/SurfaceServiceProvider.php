@@ -8,6 +8,7 @@ use Voyager\Contracts\Vessel\Vessel;
 use Surface\Bridge\BridgeServiceProvider;
 use Surface\Core\IOPools\OSLevelResourceDriver;
 use Surface\Drawing\DrawingServiceProvider;
+use Surface\Stage\StageServiceProvider;
 use Voyager\NutsAndBolts\AggregateServiceProvider;
 use Surface\NativeWindows\NativeWindowsServiceProvider;
 
@@ -16,6 +17,7 @@ class SurfaceServiceProvider extends AggregateServiceProvider
     protected array $providers = [
         BridgeServiceProvider::class,
         DrawingServiceProvider::class,
+        StageServiceProvider::class,
         NativeWindowsServiceProvider::class,
     ];
 
@@ -39,6 +41,7 @@ class SurfaceServiceProvider extends AggregateServiceProvider
             $app->make('io-pool'),
             $app->get('os-bridge')->connect(),
             app('native-window')->driver(),
+            $app->bound('stages') ? $app->make('stages') : null,
         ));
     }
 
