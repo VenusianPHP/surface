@@ -7,6 +7,8 @@ use Surface\Contracts\Core\Events\SurfaceEventType;
 use Surface\Contracts\NativeWindows\Events\Menu\MenuOccurrence;
 use Surface\Contracts\NativeWindows\Events\QuitRequested;
 use Surface\Contracts\NativeWindows\Events\View\ButtonClicked;
+use Surface\Contracts\NativeWindows\Events\View\DateChanged;
+use Surface\Contracts\NativeWindows\Events\View\RowSelected;
 use Surface\Contracts\NativeWindows\Events\View\SelectionChanged;
 use Surface\Contracts\NativeWindows\Events\View\TextChanged;
 use Surface\Contracts\NativeWindows\Events\View\TextSubmitted;
@@ -15,9 +17,13 @@ use Surface\Contracts\NativeWindows\Events\View\ValueChanged;
 use Surface\Contracts\NativeWindows\Events\View\ViewComponentOccurrence;
 use Surface\Contracts\NativeWindows\Events\Window\WindowClosed;
 use Surface\Contracts\NativeWindows\Events\Window\WindowResized;
+use Surface\Contracts\Drawing\GPUEngine;
+use Surface\Contracts\Drawing\GPUEngineDriver;
 use Surface\Contracts\NativeWindows\OSWindow;
 use Surface\Contracts\NativeWindows\Views\OSButton;
+use Surface\Contracts\NativeWindows\Views\OSGPUView;
 use Surface\Contracts\NativeWindows\Views\OSCheckbox;
+use Surface\Contracts\NativeWindows\Views\OSDatePicker;
 use Surface\Contracts\NativeWindows\Views\OSDropdown;
 use Surface\Contracts\NativeWindows\Views\OSGroup;
 use Surface\Contracts\NativeWindows\Views\OSImage;
@@ -27,6 +33,7 @@ use Surface\Contracts\NativeWindows\Views\OSScrollView;
 use Surface\Contracts\NativeWindows\Views\OSSeparator;
 use Surface\Contracts\NativeWindows\Views\OSSlider;
 use Surface\Contracts\NativeWindows\Views\OSSpinner;
+use Surface\Contracts\NativeWindows\Views\OSTable;
 use Surface\Contracts\NativeWindows\Views\OSTextArea;
 use Surface\Contracts\NativeWindows\Views\OSTextInput;
 use Surface\Contracts\NativeWindows\Views\OSToggle;
@@ -37,7 +44,9 @@ use Surface\Contracts\NativeWindows\WindowableException;
 use Surface\NativeWindows\Menus\MenuItemSpec;
 use Surface\NativeWindows\Views\Button;
 use Surface\NativeWindows\Views\Checkbox;
+use Surface\NativeWindows\Views\DatePicker;
 use Surface\NativeWindows\Views\Dropdown;
+use Surface\NativeWindows\Views\GPUView;
 use Surface\NativeWindows\Views\Group;
 use Surface\NativeWindows\Views\Image;
 use Surface\NativeWindows\Views\Label;
@@ -46,6 +55,7 @@ use Surface\NativeWindows\Views\ScrollView;
 use Surface\NativeWindows\Views\Separator;
 use Surface\NativeWindows\Views\Slider;
 use Surface\NativeWindows\Views\Spinner;
+use Surface\NativeWindows\Views\Table;
 use Surface\NativeWindows\Views\TextArea;
 use Surface\NativeWindows\Views\TextInput;
 use Surface\NativeWindows\Views\Toggle;
@@ -343,6 +353,33 @@ abstract class Windowable implements OSWindow
     }
 
     /**
+     * Conjure a graphical day picker holding $date (`Y-m-d`, or null) and place it.
+     * @throws WindowableException When the name is already taken or $date is not Y-m-d.
+     */
+    public function datePicker(string $name, ?string $date, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSDatePicker
+    {
+        $this->guardName($name);
+
+        /** @var DatePicker */
+        return $this->settle($this->mintDatePicker($name, $date, $in), $in, $x, $y, $width, $height);
+    }
+
+    /**
+     * Conjure a read-only string table with $columns and $rows, and place it.
+     *
+     * @param list<string> $columns
+     * @param list<list<string>> $rows
+     * @throws WindowableException When the name is already taken.
+     */
+    public function table(string $name, array $columns, array $rows, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSTable
+    {
+        $this->guardName($name);
+
+        /** @var Table */
+        return $this->settle($this->mintTable($name, array_values($columns), $rows, $in), $in, $x, $y, $width, $height);
+    }
+
+    /**
      * Conjure a thin dividing line and place it. Orientation comes from the
      * frame's aspect — wider than tall is horizontal — and is fixed for life.
      * @throws WindowableException When the name is already taken.
@@ -379,6 +416,48 @@ abstract class Windowable implements OSWindow
 
         /** @var ScrollView */
         return $this->settle($this->mintScrollView($name, $in), $in, $x, $y, $width, $height);
+    }
+
+    /**
+     * Conjure a GPU region drawn by the named engine and place it. The engine
+     * is resolved through the GPU engine manager by name — null takes the
+     * configured default. The window engine mints the native host and hands
+     * it to the GPU engine through mintGPU().
+     *
+     * @throws WindowableException When the name is already taken.
+     * @throws \Surface\Contracts\NativeWindows\GPUViewException When this window engine cannot host that GPU engine.
+     */
+    public function gpu(string $name, GPUEngine|string|null $engine, int $x, int $y, int $width, int $height, ?OSGroup $in = null): OSGPUView
+    {
+        $this->guardName($name);
+        $driver = $this->resolveGPUEngine($engine);
+
+        /** @var GPUView */
+        return $this->settle($this->mintGPU($name, $driver, $in), $in, $x, $y, $width, $height);
+    }
+
+    /**
+     * Look an engine up by name. Overridable so the flow is provable without a container.
+     */
+    protected function resolveGPUEngine(GPUEngine|string|null $engine): GPUEngineDriver
+    {
+        $name = $engine instanceof GPUEngine ? $engine->value : $engine;
+
+        return app('gpu-engines')->driver($name);
+    }
+
+    /**
+     * Run one frame on every GPU region in this window — or, for a twin that
+     * drives its own frames, queue one natively. The OS-level resource calls
+     * this per window after syncLayout(), so a resize lands before the frame.
+     */
+    public function renderFrames(): void
+    {
+        foreach ($this->views as $view) {
+            if ($view instanceof GPUView) {
+                $view->drivesOwnFrames() ? $view->requestFrame() : $view->renderFrame();
+            }
+        }
     }
 
     /**
@@ -549,6 +628,22 @@ abstract class Windowable implements OSWindow
     abstract protected function mintDropdown(string $name, array $options, int $selected, ?OSGroup $in): Dropdown;
 
     /**
+     * Mint a native day picker wrapped in the engine's DatePicker
+     * subclass, with its day change wired to fireChanged(). Attached but
+     * not yet placed. $date is `Y-m-d` or null.
+     */
+    abstract protected function mintDatePicker(string $name, ?string $date, ?OSGroup $in): DatePicker;
+
+    /**
+     * Mint a native table wrapped in the engine's Table subclass, with
+     * its row selection wired to fireSelected(). Attached but not yet
+     * placed.
+     * @param list<string> $columns
+     * @param list<list<string>> $rows
+     */
+    abstract protected function mintTable(string $name, array $columns, array $rows, ?OSGroup $in): Table;
+
+    /**
      * Mint a native separator line wrapped in the engine's Separator
      * subclass, attached but not yet placed.
      */
@@ -566,6 +661,15 @@ abstract class Windowable implements OSWindow
      * subclass, attached but not yet placed, scrollbars owned by the engine.
      */
     abstract protected function mintScrollView(string $name, ?OSGroup $in): ScrollView;
+
+    /**
+     * Mint the native host node for a GPU region, build a GPUHost (pointer
+     * bits, size in points, backing scale), call $driver->attach($host), wire
+     * the attachment into the native, and return the twin. Throws
+     * GPUViewException::unsupported() when this window engine cannot give
+     * that GPU engine a region.
+     */
+    abstract protected function mintGPU(string $name, GPUEngineDriver $driver, ?OSGroup $in): GPUView;
 
     /**
      * Receive the sink this window reports through.
@@ -624,6 +728,8 @@ abstract class Windowable implements OSWindow
             SurfaceEventType::VALUE_CHANGED => $this->io_pool->push(new ValueChanged($view, $this->name, (float) ($payload['value'] ?? 0.0))),
             SurfaceEventType::TOGGLED => $this->io_pool->push(new Toggled($view, $this->name, (bool) ($payload['on'] ?? false))),
             SurfaceEventType::SELECTION_CHANGED => $this->io_pool->push(new SelectionChanged($view, $this->name, (int) ($payload['index'] ?? -1), $payload['option'] ?? null)),
+            SurfaceEventType::DATE_CHANGED => $this->io_pool->push(new DateChanged($view, $this->name, (int) ($payload['year'] ?? 0), (int) ($payload['month'] ?? 0), (int) ($payload['day'] ?? 0), (string) ($payload['date'] ?? ''))),
+            SurfaceEventType::ROW_SELECTED => $this->io_pool->push(new RowSelected($view, $this->name, (int) ($payload['row'] ?? -1), is_array($payload['cells'] ?? null) ? $payload['cells'] : [])),
             default => $this->io_pool->push(new ViewComponentOccurrence(
                 $this->name,
                 $type,

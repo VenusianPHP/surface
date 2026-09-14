@@ -1,5 +1,70 @@
 # Surface Update Log
 
+## 2026-09-14
+* **Update**: [GPU drawing](/drawing.md) — slice 3: Vulkan is a `LAYER`
+  engine (MoltenVK → `CAMetalLayer`); engines list is metal / opengl /
+  vulkan; blending true on OpenGL and Vulkan; a Linux Vulkan host is a
+  later slice. Zero Surface code change — AppKit already adopts any
+  LAYER pointer; GTK still refuses LAYER by enum.
+
+## 2026-09-13
+* **Update**: [GPU drawing](/drawing.md) — slice 2: `SurfaceKind`, `GLSurface`, `GPUHost->gl`; two seam shapes; the self-driving twin; blending real on OpenGL first.
+* **Proof**: `orbit metal` and `orbit opengl` on the Mac, `orbit` on the Pi (GTK + GLES 3.1) — the same scene on three targets; alpha real on OpenGL, opaque on Metal, on purpose. Angel confirmed the Pi panel (windowed GtkGLArea, clean close, no `Gtk-CRITICAL`).
+* **Note**: Headless ogx Feature tests on this Pi: 21 passed / 4 failed — the EGL surfaceless desktop context has no GLSL 1.50 (only 1.40 + ES 3.00). Windowed GtkGLArea is ES.
+* **Update**: [Where AppKit and GTK disagree](/engine-asymmetries.md) — the GPU-region rows (context owner, target FBO, dialect, GLES gate, no-drawable, present, frame driver, drawable size, blending).
+* **Update**: [Test suite](/testing.md) — `FakeGLSurface`; the GL route through `FakeWindow` and `FakeLinuxWindow`; mint order held by the fake.
+
+## 2026-09-13 (GPU drawing, slice 1 — Surface side)
+* **Creation**: [GPU drawing](/drawing.md) — `Surface\Contracts\Drawing`
+  (Executor, Drawing2D, DrawTarget, GPUEngineDriver, values, enums, Frame),
+  the `surface/drawing` split (Painter, GPUEngineManager, `config/gpu.php`,
+  `GPU` alias), `GPUView` + `Windowable::gpu()` + `renderFrames()` on the
+  tick after layout. Decisions: projection-only Transform with the affine
+  stack folded into vertices; mid-frame `readPixels()`; Frame in contracts;
+  release-before-destroy in the abstract. Suite at 405.
+* **Update**: [Conjured views](/views.md) — nineteen kinds. [Test
+  suite](/testing.md) — FakeExecutor and friends.
+
+## 2026-09-13 (LiveApplication replaces ProgramShuttle)
+* **Update**: [Window provisioning](/window-provisioning.md),
+  [Menu-bar profiles](/menu-profiles.md), [Conjured views](/views.md) —
+  `ProgramShuttle` / `Program` (`os-program`) → `LiveApplication` /
+  `LiveApp` (`live-app`). The engine pump and `syncLayout()` run in
+  `OSLevelResourceDriver`, registered on the IOPool dock as `os`. Menu mail
+  is `MenuOccurrence` named `menu.<window>` with the author's event on
+  `event_name`; an item whose event is `quit` pushes `QuitRequested`.
+* **Update**: [The loop and the IOPool dock](/async.md) — rewritten.
+  `callHttp()` / `register()` / `sink()` are gone: HTTP is the dock's `http`
+  resource (`MultiCurlResourceDriver` → `Presumption`), periodic work
+  registers as a dock resource.
+* **Update**: index — suite at 359.
+* **Fix**: [A container alias is the only seam to an engine](/engine-seam.md)
+  — hard dependencies are `nuts-and-bolts` and `io-pools`.
+
+## 2026-09-12 (Datepicker becomes a field + dropped calendar)
+* **Update**: [Components](/components.md) — **Datepicker** is no
+  longer a thin wrap that fills its frame with the month grid. It is a
+  TextInput plus a `▾` trigger; the `datePicker` calendar is conjured
+  into the host under the field on open and removed on close; a pick
+  resolves the field to `Y-m-d`, collapses the calendar, and fires
+  `onChange`. Typed whole dates resolve too. Recorded why the field
+  itself cannot open it yet (no focus hook on `textInput`).
+  [Views](/views.md) and [Asymmetries](/engine-asymmetries.md) — the
+  "AppKit setters are silent" claim is narrowed: `NSDatePicker` and
+  `NSTableView` re-enter their delegates on programmatic writes, so
+  those two AppKit twins hold the `applying` flag as well.
+
+## 2026-09-12 (datePicker + table primitives)
+* **Update**: [Conjured views](/views.md) — eighteen kinds. `datePicker`
+  (day-only, `Y-m-d`, `DateChanged`) and `table` (read-only string cells,
+  single-row selection, `RowSelected`) join the tree with contracts,
+  abstracts, Windowable/ViewGroup sugar, fakes, and typed mail.
+  [Components](/components.md) — **Datepicker** and **DataTable** wrap
+  those primitives the Select way; catalogue is 25 of 25, stubs gone.
+  [Asymmetries](/engine-asymmetries.md) — GTK calendar month is 0-based;
+  AppKit `NSDate` crosses through `NSDateFormatter`; table twins are
+  ColumnView / NSTableView.
+
 ## 2026-09-04 (components, wave 3 panels)
 * **Update**: [Components](/components.md) — six panel `Component`
   subclasses ship: **Tabs**, **Drawer**, **Toast**, **ListBox**,

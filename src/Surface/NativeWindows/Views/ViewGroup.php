@@ -2,8 +2,11 @@
 
 namespace Surface\NativeWindows\Views;
 
+use Surface\Contracts\Drawing\GPUEngine;
 use Surface\Contracts\NativeWindows\Views\OSButton;
+use Surface\Contracts\NativeWindows\Views\OSGPUView;
 use Surface\Contracts\NativeWindows\Views\OSCheckbox;
+use Surface\Contracts\NativeWindows\Views\OSDatePicker;
 use Surface\Contracts\NativeWindows\Views\OSDropdown;
 use Surface\Contracts\NativeWindows\Views\OSGroup;
 use Surface\Contracts\NativeWindows\Views\OSImage;
@@ -13,6 +16,7 @@ use Surface\Contracts\NativeWindows\Views\OSScrollView;
 use Surface\Contracts\NativeWindows\Views\OSSeparator;
 use Surface\Contracts\NativeWindows\Views\OSSlider;
 use Surface\Contracts\NativeWindows\Views\OSSpinner;
+use Surface\Contracts\NativeWindows\Views\OSTable;
 use Surface\Contracts\NativeWindows\Views\OSTextArea;
 use Surface\Contracts\NativeWindows\Views\OSTextInput;
 use Surface\Contracts\NativeWindows\Views\OSToggle;
@@ -156,6 +160,16 @@ abstract class ViewGroup extends View implements OSGroup
         return $this->window->dropdown($name, $options, $selected, $x, $y, $width, $height, in: $this);
     }
 
+    public function datePicker(string $name, ?string $date, int $x, int $y, int $width, int $height): OSDatePicker
+    {
+        return $this->window->datePicker($name, $date, $x, $y, $width, $height, in: $this);
+    }
+
+    public function table(string $name, array $columns, array $rows, int $x, int $y, int $width, int $height): OSTable
+    {
+        return $this->window->table($name, $columns, $rows, $x, $y, $width, $height, in: $this);
+    }
+
     public function separator(string $name, int $x, int $y, int $width, int $height): OSSeparator
     {
         return $this->window->separator($name, $x, $y, $width, $height, in: $this);
@@ -169,5 +183,10 @@ abstract class ViewGroup extends View implements OSGroup
     public function scrollView(string $name, int $x, int $y, int $width, int $height): OSScrollView
     {
         return $this->window->scrollView($name, $x, $y, $width, $height, in: $this);
+    }
+
+    public function gpu(string $name, GPUEngine|string|null $engine, int $x, int $y, int $width, int $height): OSGPUView
+    {
+        return $this->window->gpu($name, $engine, $x, $y, $width, $height, in: $this);
     }
 }

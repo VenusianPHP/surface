@@ -81,6 +81,10 @@ final class ContractOnlyLinuxWindow implements LinuxOSWindow
         return false;
     }
 
+    public function renderFrames(): void
+    {
+    }
+
     public function showAbout(): void
     {
     }

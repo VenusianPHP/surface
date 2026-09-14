@@ -6,7 +6,7 @@ description: >-
   named <component>.<part>, pure PHP — no engine code per component.
 tags: [surface, native-windows, components, composition]
 status: draft
-generated: { by: cursor-grok-4.6/cursor, at: "2026-09-05T00:10:00Z" }
+generated: { by: cursor-grok-4.6/cursor, at: "2026-09-12T19:40:00Z" }
 sources:
   - id: base
     resource: src/Surface/NativeWindows/Components/Component.php
@@ -59,7 +59,7 @@ is written.[^base]
   `layout()` — responsive behaviour lives there. `remove()` kills the
   subtree and frees every name.
 
-# Built (23 of 25)
+# Built (25 of 25)
 
 | Component | Shape | Notable |
 |---|---|---|
@@ -86,24 +86,24 @@ is written.[^base]
 | **ListBox** | ScrollView + ToggleButton rows | Sidebar minus collapse, icons, and breakpoint; parts `scroll` / `item.<key>`; same PAD/GAP/ROW_HEIGHT and sticky select |
 | **Skeleton** | painted root, no inner parts | `SkeletonShape` RECTANGLE or CIRCLE (CIRCLE is still a square — no oval clip); fill `#e5e7eb` |
 | **DataView** | ScrollView of sketch-filled slots | Card `body()` repeated; `addItem` returns the group; LIST only, pad 8 gap 8, default height 72 |
+| **Datepicker** | TextInput + `▾` trigger Button; a `datePicker` calendar dropped under the field while open | `when.input` / `when.trigger` / `when.calendar` (open only); trigger toggles `open()`/`close()`; a pick resolves the field to `Y-m-d`, collapses the calendar, fires `onChange(y, m, d)`; typing a whole real `Y-m-d` resolves the same way, partial text is mid-edit; `setDate` silent; calendar conjures into the **host** (not the root) on open and is removed on close so it lands above later siblings; default calendar 280×190; hide/disable collapse |
+| **DataTable** | `table` filling the root | `list.table`; columns/rows/selectRow/onSelect; `selectRow` silent; `setRows` clears selection |
 
 Hooks follow the view rule: in-pump, one per slot, replace not stack.
 Typed mail still flows from the underlying primitives (`Toggled` from
 sidebar rows, `TextChanged` from an IconField's input) — a sketch may
 listen instead of hooking, same two doors as everywhere.
 
-# Remaining stubs
+# No remaining stubs
 
-Datepicker and DataTable stay empty stubs until a date or table
-primitive is worth it — they do not compose from today's list. Where a
-native widget exists for the same job (NSTableView, NSDatePicker,
-GtkNotebook), it stays an unbound twin: composition is the decided
-route.
-
-| Stub | Recipe |
-|---|---|
-| DataTable | empty stub — revisit when a table primitive is worth it |
-| Datepicker | empty stub — revisit when a date primitive is worth it |
+DataTable wraps the `table` primitive the same way Select wraps
+`dropdown`. Datepicker is a **composition**: the `datePicker` primitive
+is the always-visible month grid, and a datepicker is a field that drops
+that grid on demand. Neither text primitive exposes a focus hook yet, so
+the field itself cannot open the calendar — the trigger button does;
+an `onFocus` on `textInput` is the follow-up that would let a click on
+the field open it. Sorting, cell editing, and a time-of-day picker are
+follow-ups on the primitives, not new components.
 
 [^base]: Component — root mount, parts, move/place, subtree removal
 [^sidebar]: Sidebar — scroll, sticky selection, collapse breakpoint

@@ -7,6 +7,7 @@ description: >-
 tags: [surface, bridge, layering, decision]
 status: draft
 generated: { by: claude-opus-5/cursor, at: "2026-08-29T21:00:00Z" }
+revised: { by: claude-opus-5/claude-code, at: "2026-09-13T00:00:00Z", note: "hard dependencies include io-pools" }
 sources:
   - id: mac-action
     resource: src/Surface/Bridge/Actions/BuildMacOSSession.php
@@ -28,7 +29,8 @@ session singleton behind that alias. **Installing the package is the whole
 of the enablement.**
 
 `composer.json` suggests the engine packages and requires neither.[^composer]
-Surface's only hard dependency is `venusian-voyager/nuts-and-bolts`.
+Surface's hard dependencies are `venusian-voyager/nuts-and-bolts` and
+`venusian-voyager/io-pools` — framework packages, never an engine.
 
 # Rejected: probing for the package
 

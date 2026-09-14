@@ -29,6 +29,7 @@
     "replace": {
         "surface/bridge": "self.version",
         "surface/contracts": "self.version",
+        "surface/drawing": "self.version",
         "surface/native-windows": "self.version"
     },
     "suggest": {
@@ -62,7 +63,8 @@
             "aliases": {
                 "LiveApp": "Surface\\Core\\MagicAliases\\LiveApp",
                 "OSAppBridge": "Surface\\Bridge\\MagicAliases\\OSAppBridge",
-                "NativeWindow": "Surface\\NativeWindows\\MagicAliases\\NativeWindow"
+                "NativeWindow": "Surface\\NativeWindows\\MagicAliases\\NativeWindow",
+                "GPU": "Surface\\Drawing\\MagicAliases\\GPU"
             }
         }
     },

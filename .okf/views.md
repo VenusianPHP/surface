@@ -6,7 +6,8 @@ description: >-
   and the top-left frame, engines translate through four hooks.
 tags: [surface, native-windows, views, coordinates]
 status: draft
-generated: { by: cursor-grok-4.6/cursor, at: "2026-09-05T00:10:00Z" }
+generated: { by: cursor-grok-4.6/cursor, at: "2026-09-12T19:40:00Z" }
+revised: { by: cursor-grok-4.6/cursor, at: "2026-09-14T00:10:00Z", note: "nineteen kinds; GPUView hook row" }
 sources:
   - id: view
     resource: src/Surface/NativeWindows/Views/View.php
@@ -24,12 +25,14 @@ sources:
 
 # Overview
 
-The rebuilt view tree. Sixteen kinds: **label**, **button**, **spinner**,
+The rebuilt view tree. Nineteen kinds: **label**, **button**, **spinner**,
 **image**, **video**, **textInput**, **textArea**, **slider**, **toggle**
 (the switch — PHP reserves the word), **toggleButton**, **checkbox**,
-**progressBar**, **dropdown**, **separator**, and two containers —
-**group** and **scrollView**. Nodes conjure into the window content, or
-into a container with `in:` / the container's own conjure sugar.
+**progressBar**, **dropdown**, **datePicker**, **table**, **separator**,
+**gpu** (a GPU region — see [drawing.md](/drawing.md)),
+and two containers — **group** and **scrollView**. Nodes conjure into
+the window content, or into a container with `in:` / the container's own
+conjure sugar.
 
 ```php
 $window->label('title', 'Hello World!', 0, 0, 1, 1)
@@ -55,8 +58,9 @@ fixed; `center()` and `hug()` flip one rule each and re-resolve. Engines
 only ever receive a decided frame through `applyFrame()`.[^view]
 
 That is what makes resize effortless, HTML/CSS style: nothing is told to
-move. `ProgramShuttle::tick()` pumps, then calls `syncLayout()` on every
-window; a window whose `contentSize()` changed re-resolves all its views
+move. `LiveApplication::tick()` pumps the IOPool dock; its `os` resource
+(`OSLevelResourceDriver`) pumps the session, then calls `syncLayout()` on
+every window; a window whose `contentSize()` changed re-resolves all its views
 and pushes `window.resized.<window>` with `{width, height}`. The sketch
 is not in the loop — the event exists for a sketch that wants to react
 beyond layout. Detection is a uniform poll on both engines (GTK4 has no
@@ -80,6 +84,7 @@ Four hooks per node kind:
 | `measure` | `sizeToFit()` then read the frame | `measure(HORIZONTAL/VERTICAL, -1)['natural']`, size request lifted first |
 | `applyText` | `setStringValue` | `setText` |
 | `destroyNative` | `removeFromSuperview` | `GtkFixed::remove` |
+| `GPUView` | `applyFrame` must `executor->resize()` in pixels and refresh scale; `measure` answers the frame; `destroyNative` drops the native after the abstract released the executor; `applyBackground` ignored | slice 1 `mintGPU()` throws `GPUViewException::unsupported` |
 
 Label adds `applyAlignment`: `NSTextAlignment` on AppKit; `setJustify` plus
 `setXalign` on GTK, because justify only affects multi-line and xalign is
@@ -120,16 +125,15 @@ pre-layout measure) so new control kinds stop copying them.
 
 `$window->spinner('busy', x, y, w, h)` — indeterminate only, conjured
 stopped; `start()`/`stop()` cross through `applySpinning(bool)`. No
-determinate bar: the HttpPool cannot report mid-flight progress and
-Surface will not fake one. AppKit `NSProgressIndicator` (SPINNING style,
+determinate mode: determinate progress is the `progressBar` kind. AppKit `NSProgressIndicator` (SPINNING style,
 hidden when stopped) is a plain NSView, not an NSControl, so it cannot
 share `TranslatesAppKitFrames` — it pays the same inversion itself. GTK
 `GtkSpinner` aliases `GtkSpinnerWidget` (case-insensitive collision,
 again).
 
 `$window->image('pic', $path|null, x, y, w, h)` — loaded from a **file
-path**, the one loading story both engines share; bytes from `callHttp`
-go through a temp file. `setPath()` swaps the picture (re-measures under
+path**, the one loading story both engines share; bytes from the dock's
+`http` resource go through a temp file. `setPath()` swaps the picture (re-measures under
 NATURAL). Proportional fit is baked in: `NSImageScaling`
 PROPORTIONALLY_UP_OR_DOWN, `GtkContentFit` CONTAIN + can-shrink — without
 can-shrink a big picture floors `measure()` at its full size and refuses
@@ -157,16 +161,25 @@ the pump. Vocabulary (`Surface\Contracts\NativeWindows\Events\View`):
 | slider | `slider(name, min, max, value, ...)` | `onChange(float)` | `ValueChanged` `.changed` |
 | toggle / toggleButton / checkbox | `toggle(name, on, ...)` etc. | `onToggle(bool)` | `Toggled` `.toggled` |
 | dropdown | `dropdown(name, options, selected, ...)` | `onSelect(int, ?string)` | `SelectionChanged` `.selected` |
+| datePicker | `datePicker(name, ?string date, ...)` | `onChange(int y, int m, int d)` | `DateChanged` `.changed` |
+| table | `table(name, columns, rows, ...)` | `onSelect(int, array cells)` | `RowSelected` `.selected` |
 | progressBar / separator | `progressBar(name, progress, ...)`, `separator(name, ...)` | — output only | — |
 
 Enabled state is the shared `HasEnabledState` trait (change-only
 `applyEnabled`); values clamp Surface-side (slider into range, progress
-into 0..1, dropdown index into the options, -1 when empty). A secret
+into 0..1, dropdown index into the options, table row into the rows, -1
+when empty). A date picker stores `Y-m-d` (or null) and speaks ints to
+the twins; month is **1-based** on the contract. A table starts
+unselected (`-1`) even when it has rows; `setRows()` replaces data and
+clears the selection; `selectRow()` is silent. A secret
 textInput masks glyphs (NSSecureTextField / GtkPasswordEntry); GTK's
 password entry has no placeholder, ignored stated. GTK fires its signals
 for programmatic writes too, so every GTK control twin holds an
-`applying` flag to keep Surface's own setters from echoing back as mail —
-AppKit setters are silent, no flag needed.
+`applying` flag to keep Surface's own setters from echoing back as mail.
+AppKit setters are silent for the older controls, but `NSDatePicker`
+`setDateValue:` and `NSTableView` `reloadData` / `selectRowIndexes:`
+do re-enter their delegate paths, so the AppKit date picker and table
+twins hold the same flag.
 
 Both engines read their text buffers back on every edit (the gtk ext
 unreserved `gtk_text_buffer_get_text` on 2026-09-04, iters crossing as
@@ -235,13 +248,13 @@ Engine translations are opinionated by design:
 # Not in this slice
 
 Anchors/percent rules, alignment beyond labels, programmatic scrolling.
-Native table/tab/calendar widgets (NSTableView, GtkNotebook, NSDatePicker
-et al.) stay unbound as twins; Datepicker and DataTable stay empty
-stubs until a date or table primitive is worth it. The rest of the
-catalogue (Tabs included) is composed from the shipped primitives at
-the Components layer — recipes in [components.md](/components.md). The old `tests/Views` fakes
+Table sorting and cell editing are follow-ups — this pass is read-only
+string cells, headers, and single-row selection. The date picker is
+day-only (GTK has no time on `GtkCalendar`). The rest of the catalogue
+is composed from the shipped primitives at the Components layer —
+recipes in [components.md](/components.md). The old `tests/Views` fakes
 describe where those went last time; the exclude list in `phpunit.xml`
-gets pruned as each kind lands.
+stays — those orphans are out of scope.
 
 [^view]: View — frame truth, centre/hug arithmetic, terminal removal
 [^label]: Label

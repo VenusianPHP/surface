@@ -43,6 +43,12 @@ class FakeWindow extends Windowable
     /** @var list<\Surface\Contracts\Core\AboutInfo|null> Every About presented, in order. */
     public array $presented_abouts = [];
 
+    /** Backing scale the fake hands GPU engines. */
+    public float $backing_scale = 1.0;
+
+    /** The GPU engine driver the fake resolver hands back. */
+    public ?FakeGPUEngineDriver $gpu_driver = null;
+
     public function setTitle(string $title): static
     {
         $this->window_title = $title;
@@ -172,6 +178,16 @@ class FakeWindow extends Windowable
         return new FakeDropdown($name, $this, $options, $selected);
     }
 
+    protected function mintDatePicker(string $name, ?string $date, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\DatePicker
+    {
+        return new FakeDatePicker($name, $this, $date);
+    }
+
+    protected function mintTable(string $name, array $columns, array $rows, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\Table
+    {
+        return new FakeTable($name, $this, $columns, $rows);
+    }
+
     protected function mintSeparator(string $name, bool $horizontal, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\Separator
     {
         return new FakeSeparator($name, $this, $horizontal);
@@ -185,6 +201,27 @@ class FakeWindow extends Windowable
     protected function mintScrollView(string $name, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\ScrollView
     {
         return new FakeScrollView($name, $this);
+    }
+
+    /** Resolve from the fake's own driver, so the flow is provable without a container. */
+    protected function resolveGPUEngine(\Surface\Contracts\Drawing\GPUEngine|string|null $engine): \Surface\Contracts\Drawing\GPUEngineDriver
+    {
+        $name = $engine instanceof \Surface\Contracts\Drawing\GPUEngine ? $engine : \Surface\Contracts\Drawing\GPUEngine::tryFrom($engine ?? 'metal') ?? \Surface\Contracts\Drawing\GPUEngine::METAL;
+
+        return $this->gpu_driver ??= new FakeGPUEngineDriver($name);
+    }
+
+    /**
+     * Mint order is the contract: the surface exists before attach(), the twin
+     * is built after it — a twin built before its executor exists is a test
+     * failure here, not a runtime surprise in an engine package.
+     */
+    protected function mintGPU(string $name, \Surface\Contracts\Drawing\GPUEngineDriver $driver, ?\Surface\Contracts\NativeWindows\Views\OSGroup $in): \Surface\NativeWindows\Views\GPUView
+    {
+        $gl = $driver->surfaceKind() === \Surface\Contracts\Drawing\SurfaceKind::GL_CONTEXT ? new FakeGLSurface() : null;
+        $attachment = $driver->attach(new \Surface\Contracts\Drawing\GPUHost(0, 0, 0, $this->backing_scale, $gl));
+
+        return new FakeGPUView($name, $this, $driver->engine(), $attachment->executor, $this->backing_scale, $gl);
     }
 
     /** Test door into the close path, as an engine's native close callback would use it. */

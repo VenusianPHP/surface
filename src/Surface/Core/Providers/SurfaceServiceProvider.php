@@ -7,6 +7,7 @@ use Surface\Core\LiveApplication;
 use Voyager\Contracts\Vessel\Vessel;
 use Surface\Bridge\BridgeServiceProvider;
 use Surface\Core\IOPools\OSLevelResourceDriver;
+use Surface\Drawing\DrawingServiceProvider;
 use Voyager\NutsAndBolts\AggregateServiceProvider;
 use Surface\NativeWindows\NativeWindowsServiceProvider;
 
@@ -14,6 +15,7 @@ class SurfaceServiceProvider extends AggregateServiceProvider
 {
     protected array $providers = [
         BridgeServiceProvider::class,
+        DrawingServiceProvider::class,
         NativeWindowsServiceProvider::class,
     ];
 

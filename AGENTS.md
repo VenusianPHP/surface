@@ -30,11 +30,13 @@ The package is **mid-rebuild**. The 0.8 native-window view tree was written
 against an older, opinionated extension whose convenience calls no longer
 exist, and was torn out.
 
-What stands today is two slices: the OS bridge lifecycle, and provisioning /
-holding / presenting a bare native window on top of it. **There are no views
-inside that window.** Anything that draws, lays out, or styles does not
-exist — do not assume a control, a frame, or a colour has a home yet. See
-[`.okf/window-provisioning.md`](.okf/window-provisioning.md).
+What stands today: the OS bridge lifecycle, native windows with menu-bar
+profiles and typed mail, nineteen conjured view kinds (including
+`datePicker`, `table`, and `gpu`), and the 25-component catalogue wrapping those
+primitives. See [`.okf/views.md`](.okf/views.md) and
+[`.okf/window-provisioning.md`](.okf/window-provisioning.md). Anything
+that draws, lays out, or styles **inside** a window lives on those view
+kinds — do not invent a second tree.
 
 `tests/Views/**` and three files under `tests/NativeWindows/**` are orphaned
 from that removal and reference deleted classes. They are **excluded in
@@ -42,8 +44,9 @@ from that removal and reference deleted classes. They are **excluded in
 [`.okf/testing.md`](.okf/testing.md) for why they were kept. Run them
 deliberately with a path argument if you are mining them for the rebuild.
 
-**Known deviation:** `src/Surface/Core` holds `SurfaceServiceProvider` and
-`ProgramShuttle` but is not a split package — no `.gitattributes`, no
+**Known deviation:** `src/Surface/Core` holds `SurfaceServiceProvider`,
+`LiveApplication`, and the dock's `os` resource driver but is not a split
+package — no `.gitattributes`, no
 `LICENSE`, no entry in the root `replace` map. No component carries its own
 `composer.json` either, unlike `venusian/framework`'s `src/Voyager/*`. Left
 as-is deliberately; do not "fix" it in passing.
@@ -52,15 +55,19 @@ as-is deliberately; do not "fix" it in passing.
 
 - Composer: `venusian/surface` **0.8.0**. PHP `^8.4|^8.5|^8.6`.
 - Namespace root is `Surface\` at `src/Surface`.
-- **Split packages.** `surface/bridge`, `surface/contracts`, and
-  `surface/native-windows` are subtree splits, each with its own
-  `.gitattributes` and `LICENSE` under `src/Surface/*`, and each declared in
-  the root `replace` map. A new component directory needs all three.
+- **Split packages.** `surface/bridge`, `surface/contracts`,
+ `surface/drawing`, and `surface/native-windows` are subtree splits, each
+ with its own `.gitattributes` and `LICENSE` under `src/Surface/*`, and
+ each declared in the root `replace` map. A new component directory needs
+ all three.
+- **GPU regions draw through `Surface\Contracts\Drawing`.** The Painter is
+ the only 2D implementation; engines implement `Executor` in their own
+ package. See [`.okf/drawing.md`](.okf/drawing.md).
 - **Never import a `Jovian\` symbol.** Surface resolves the container alias
-  `mac.bridge` or `linux.bridge` and knows nothing else about an engine. No
-  `class_exists`, no `method_exists`, no engine package name in code — a
-  string literal is not code awareness, a class name is. See
-  [`.okf/engine-seam.md`](.okf/engine-seam.md).
+ `mac.bridge` or `linux.bridge` and knows nothing else about an engine. No
+ `class_exists`, no `method_exists`, no engine package name in code — a
+ string literal is not code awareness, a class name is. See
+ [`.okf/engine-seam.md`](.okf/engine-seam.md).
 - **Engines are `suggest`, never `require`.** Hard dependencies are
   `venusian-voyager/nuts-and-bolts` and `venusian-voyager/io-pools` — the
   loop/event/async primitives live in the framework so headless sketches
@@ -98,8 +105,8 @@ php -l <file>                     # syntax gate for touched files
 ```
 
 Surface has no application container in tests. Cover shared policy with
-fakes that count calls — the session state machine, the window registry, the
-shuttle are all provable with no extension present and no engine package
+fakes that count calls — the session state machine, the window registry,
+`LiveApplication` are all provable with no extension present and no engine package
 installed, and that is where the coverage belongs. Shared fakes live in
 `tests/Support/Fakes`; add to them rather than minting a one-off.
 

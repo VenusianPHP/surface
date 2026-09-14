@@ -2,11 +2,12 @@
 type: Architecture
 title: Menu-bar profiles
 description: >-
-  Named engine-neutral menu definitions registered on the shuttle, elected
-  per window, translated by each engine's half of a role table.
+  Named engine-neutral menu definitions registered on LiveApplication,
+  elected per window, translated by each engine's half of a role table.
 tags: [surface, native-windows, menus]
 status: draft
 generated: { by: claude-opus-5/claude-code, at: "2026-08-30T04:30:00Z" }
+revised: { by: claude-opus-5/claude-code, at: "2026-09-13T00:00:00Z", note: "ProgramShuttle replaced by LiveApplication; menu mail is MenuOccurrence on the dock" }
 sources:
   - id: spec
     resource: src/Surface/NativeWindows/Menus/MenuItemSpec.php
@@ -20,6 +21,9 @@ sources:
   - id: tests
     resource: tests/NativeWindows/MenuProfileTest.php
     title: Menu profile tests
+  - id: mail
+    resource: tests/NativeWindows/WindowMailTest.php
+    title: Window mail tests
 ---
 
 # Overview
@@ -27,7 +31,7 @@ sources:
 The two engines disagree about what a menu bar *is* — macOS has one
 process-global bar, Linux builds widgets inside each window. Surface's
 reconciliation: **profiles**. A sketch registers named definitions once on
-`ProgramShuttle::addMenuBarProfiles()`; a window elects one by name with
+`LiveApplication::addMenuBarProfiles()`; a window elects one by name with
 `setMenuBar('profile')`; the engine decides what electing means. AppKit
 swaps the one real bar (focus-following later); GTK prepends a bar widget
 into the window's scaffold.
@@ -41,7 +45,7 @@ the sketch loop drains, `separator`. `label` required except separators;
 `id` optional, derived from the label path (`file.quit`) when absent;
 `hotkey` is a bare char, the engine adds its platform's primary modifier.
 
-`WINDOW_CLOSED` rides the same queue: each engine's native close path —
+`WINDOW_CLOSED` rides the same dock: each engine's native close path —
 `windowShouldClose:` through an `NSWindowDelegate` on macOS (answering
 true; close only hides there), `close-request` on GTK (answering false so
 GTK destroys; the delegate marks itself closed and guards every later
@@ -53,14 +57,22 @@ collapse. GTK's QUIT role emits it too before destroying, so quitting from
 the menu and closing from the chrome look the same to the loop.
 
 Nothing user-authored executes inside a pump. An activated `event` item
-pushes `SurfaceEvent(MENU, name, window, {id, label})` into the shuttle's
-`EventQueue` through the shared `Windowable::emitMenuEvent()`; the sketch
-drains with `$program->events()` after its tick — a Collection keyed by
-event name (`has('do-thing')` / `get('do-thing')`), same-name pushes within
-one tick collapsing to the last. Event vocabulary (`EventSink`,
-`SurfaceEvent`, `SurfaceEventType`) lives in `Surface\Contracts` so the
-contracts split stays free of sibling types; the queue implementation lives
-in native-windows.
+pushes a `MenuOccurrence` into the IOPool dock through the shared
+`Windowable::emitMenuEvent()`: named `menu.<window>`, the author's event
+on `event_name`, plus `id` and `label`. An item whose event is `quit`
+pushes `QuitRequested` (named `quit`) instead. Role items push
+nothing.[^mail]
+
+The drained bag is ordered and same-name mail stacks — two picks in one
+tick are two entries.[^mail] `LiveApplication::events()` re-keys that bag
+by `name`, so read that way two picks from one window in one tick collapse
+to the last `menu.<window>`. See [async](/async.md).
+
+Vocabulary: `SurfaceEvent` + `SurfaceEventType` in
+`Surface\Contracts\Core\Events`; typed mail under
+`Surface\Contracts\NativeWindows\Events\{Menu,View,Window}` plus
+`QuitRequested`. All implement the framework's `Occurrence`, so the dock
+carries them without knowing Surface.
 
 `MenuRole` (string-backed enum)[^role] carries intent — QUIT, ABOUT, HIDE,
 CLOSE_WINDOW, MINIMIZE, FULLSCREEN. Each engine owns its half of the
@@ -73,7 +85,7 @@ and kills the process from the OS side, GTK QUIT destroys the window.
 A sketch that needs portable quit behaviour uses an `event` item instead.
 
 ABOUT is native on both engines and needs identity: `AboutInfo`
-(`Surface\Contracts\Core`) registered once via `ProgramShuttle::setAbout()`
+(`Surface\Contracts\Core`) registered once via `LiveApplication::setAbout()`
 — program-level, like the app menu. The role lands in
 `Windowable::showAbout()` → engine `presentAbout()`: AppKit
 `orderFrontStandardAboutPanelWithOptions:` (name/version/copyright; the
@@ -124,3 +136,4 @@ election replaces it.
 [^role]: MenuRole
 [^windowable]: Windowable election flow
 [^tests]: Menu profile tests
+[^mail]: Window mail tests

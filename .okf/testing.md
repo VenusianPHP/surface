@@ -7,6 +7,7 @@ description: >-
 tags: [surface, testing]
 status: draft
 generated: { by: claude-opus-5/claude-code, at: "2026-08-30T02:30:00Z" }
+revised: { by: cursor-grok-4.6/cursor, at: "2026-09-14T03:00:00Z", note: "FakeGLSurface, kind-aware GPU driver, Linux LAYER refusal" }
 sources:
   - id: phpunit
     resource: phpunit.xml
@@ -33,10 +34,17 @@ Shared fakes live in `tests/Support/Fakes`.[^fakes]
 | Fake | Stands in for |
 |---|---|
 | `FakeSession` | the abstract session; counts every engine hook and window request |
-| `FakeWindow` | a `Windowable` delegate; counts presentations and destructions |
-| `FakeMacWindow` / `FakeLinuxWindow` | the same, carrying one OS marker interface |
-| `ContractOnlyLinuxWindow` | a `LinuxOSWindow` built from the contract alone, with no public `$name` |
+| `FakeWindow` | a `Windowable` delegate; counts presentations and destructions; mints every view kind including `FakeDatePicker` / `FakeTable` / `FakeGPUView` |
+| `FakeDatePicker` | datePicker policy; door `pickDate(y,m,d)` |
+| `FakeTable` | table policy; door `pickRow(int)` |
+| `FakeMacWindow` / `FakeLinuxWindow` | the same, carrying one OS marker interface; Linux `mintGPU()` refuses `LAYER` and hosts `GL_CONTEXT` |
+| `ContractOnlyLinuxWindow` | a `LinuxOSWindow` built from the contract alone, with no public `$name`; implements `renderFrames()` |
 | `FakeWindowDriver` | a driver with no marker check, isolating the shared registry |
+| `FakeExecutor` | records every Executor call; configurable `beginFrame` / capabilities; unpacks `g9`; mid-frame `readPixels()`; lends through `$gl` when set |
+| `FakeGLSurface` | a `GLSurface` that counts `makeCurrent()`/`present()` and logs order with the `FakeExecutor` |
+| `FakeGPUEngineDriver` | attach records the host and mints a `FakeExecutor`; configurable `surfaceKind`; a `GL_CONTEXT` fake refuses a host with no `gl` |
+| `FakeGPUView` | GPUView twin; records frames, queues, rescale door; holds `$gl` |
+| `FakeBindingVessel` + `FakeConfigRepository` | enough vessel for a `Manager` |
 
 # Excluded directories
 

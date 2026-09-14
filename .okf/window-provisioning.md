@@ -3,14 +3,18 @@ type: Architecture
 title: Window provisioning
 description: >-
   How a sketch gets a native window: the session mints it, a per-OS driver
-  registers it, and ProgramShuttle is the only place the two meet.
+  registers it, and LiveApplication is the only place the two meet.
 tags: [surface, native-windows, windows, lifecycle]
 status: draft
 generated: { by: claude-opus-5/claude-code, at: "2026-08-30T02:30:00Z" }
+revised: { by: claude-opus-5/claude-code, at: "2026-09-13T00:00:00Z", note: "ProgramShuttle replaced by LiveApplication" }
 sources:
-  - id: shuttle
-    resource: src/Surface/Core/ProgramShuttle.php
-    title: ProgramShuttle
+  - id: app
+    resource: src/Surface/Core/LiveApplication.php
+    title: LiveApplication
+  - id: provider
+    resource: src/Surface/Core/Providers/SurfaceServiceProvider.php
+    title: SurfaceServiceProvider — binds live-app
   - id: driver
     resource: src/Surface/NativeWindows/Drivers/NativeWindowDriver.php
     title: NativeWindowDriver, the shared registry
@@ -21,22 +25,27 @@ sources:
     resource: src/Surface/NativeWindows/WindowManager.php
     title: WindowManager
   - id: tests
-    resource: tests/Core/ProgramShuttleTest.php
-    title: ProgramShuttle tests
+    resource: tests/Core/LiveApplicationTest.php
+    title: LiveApplication tests
 ---
 
 # Overview
 
 The layer above [bridge-lifecycle](/bridge-lifecycle.md). A sketch holds one
-`ProgramShuttle`, which pairs one connected session with one window
-driver.[^shuttle]
+`LiveApplication`, which pairs one connected session with one window driver
+and the IOPool dock the loop runs on.[^app]
 
 ```text
-Program (MagicAlias, accessor 'os-program')
-  └── Surface\Core\ProgramShuttle          (singleton: session + driver)
+LiveApp (MagicAlias, accessor 'live-app')
+  └── Surface\Core\LiveApplication         (singleton: dock + session + driver)
         ├── BridgedOSSession->provisionNewWindow()   mints the delegate
+        ├── Windowable->setPool(dock)                hands it the mailbox
         └── OSWindowDriver->add() / presentWindow()  registers and shows it
 ```
+
+`SurfaceServiceProvider` builds the singleton from `os-bridge->connect()`,
+so resolving `live-app` connects the session.[^provider] The loop itself is
+in [async](/async.md).
 
 Minting and holding are split. The **session** is the only engine-aware
 object Surface can reach, so it is the factory. The **driver** is a
@@ -67,8 +76,11 @@ Proven with a fake session and a fake driver, no engine present.[^tests][^driver
 
 - `provisionWindow()` answers `false` and mints nothing when the name is
   taken. It never replaces a live window behind the caller's back.
-- `presentWindow()` raises `WindowableException` for an unknown name, and
-  will not re-present a window already on screen.
+- `showWindow()` goes through the driver's `presentWindow()`, which raises
+  `WindowableException` for an unknown name and will not re-present a
+  window already on screen.
+- Every provisioned window is handed the dock, so its mail lands in the
+  same bag the sketch drains.
 - `destroyAll()` destroys every window and empties the registry, so a
   driver can be refilled after teardown.
 - `destroy()` tears the windows down **before** draining, so the engine sees
@@ -104,8 +116,9 @@ Marker interfaces make that a typed failure rather than a native crash:
   only, so a portable sketch cannot reach it, and GTK4 has no positioning at
   all. See [engine-asymmetries](/engine-asymmetries.md).
 
-[^shuttle]: ProgramShuttle
+[^app]: LiveApplication
+[^provider]: SurfaceServiceProvider — binds live-app
 [^driver]: NativeWindowDriver, the shared registry
 [^windowable]: Windowable
 [^manager]: WindowManager
-[^tests]: ProgramShuttle tests
+[^tests]: LiveApplication tests

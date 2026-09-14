@@ -6,7 +6,7 @@ description: >-
   Surface abstraction has to reconcile, and which truth was picked.
 tags: [surface, appkit, gtk4, portability]
 status: draft
-generated: { by: claude-opus-5/cursor, at: "2026-08-29T21:00:00Z" }
+generated: { by: cursor-grok-4.6/cursor, at: "2026-09-12T19:40:00Z" }
 sources:
   - id: jovian-appkit
     resource: https://github.com/jovian/appkit
@@ -82,15 +82,15 @@ return-value writeback on GTK.
 
 | | AppKit | GTK4 | Surface picked |
 |---|---|---|---|
-| Programmatic writes | Setters are silent — no action fires | `changed` / `toggled` / `value-changed` / `notify::*` fire for setters too | Every GTK control twin carries an `applying` suppression flag (the PHP-side route the gap below predicted) |
+| Programmatic writes | Setters are silent for the control-wave views — no action fires. `NSDatePicker::setDateValue:` and `NSTableView` `reloadData` / `selectRowIndexes:` are the exceptions: they re-enter the delegate | `changed` / `toggled` / `value-changed` / `notify::*` fire for setters too | Every GTK control twin, plus the AppKit date picker and table twins, carries an `applying` suppression flag (the PHP-side route the gap below predicted) |
 | Text read-back | `stringValue()` / `NSText::string_()` | GtkEditable `getText()`; `GtkTextBuffer::getText(startOffset, endOffset, includeHidden)` — ext unreserved 2026-09-04, iters cross as char offsets, -1 = end | Both engines read back; `TextChanged` always carries the value |
 | Scroll start | Unflipped document shows its BOTTOM first | Top, always | `AppKitScrollView` re-pins the viewport to the top on every extent write |
 | Container | Plain `NSView` (clips only once layered) | Own `GtkFixed`, `setOverflow(HIDDEN)` clips | Group-relative frames via `View::layoutSpace()`; AppKit pays its inversion against the host's inner height |
 | Bare stepper | `NSStepper` (arrows only) | Only `GtkSpinButton`, entry fused in | No stepper primitive — InputNumber composes TextInput + two Buttons at the Components layer |
 | Selection signal | `NSPopUpButton` target/action | `GtkDropDown` has no dedicated signal; `Bridge::connect('notify::selected')` | Detailed notify through the generic connect — Pi smoke still owed |
 | Toggle statics | `state()` int 0/1 | `getActive()` bool | Surface stores bool; twins translate |
-| Calendar | `NSDatePicker` bound | GtkCalendar not bound in the ext | No calendar primitive — Datepicker composes a Button grid at the Components layer (recipe in components.md) |
-| Table | `NSTableView`/`NSOutlineView` bound | `GtkListBox`/`GtkColumnView` unbound as twins | No table primitive — DataTable composes ScrollView + Label rows (recipe in components.md); a native-table lane remains open for later |
+| Calendar | `NSDatePicker` (`CLOCK_AND_CALENDAR`, `YEAR_MONTH_DAY`, `SINGLE`); `dateValue()` is an `NSDate` handle — `NSDateFormatter` turns it into `Y-m-d` in the picker's default time zone | `GtkCalendar` ints; **month is 0-based**; `get_date`/`select_day` are `GDateTime*` and stay `@reserved` | Date-only graphical picker. Surface value is `Y-m-d`; twins speak ints. GTK twin adds 1 to month on the way out, subtracts 1 on the way in. AppKit twin formats through `NSDateFormatter` |
+| Table | `NSTableView` in an `NSScrollView`; data source + delegate answer row count, cell views, and selection | `GtkColumnView` + `GtkSignalListItemFactory` per column; `GtkStringList` of row placeholders; `GtkListItem::getPosition` looks up `rows[pos][col]` in `bind`; `GtkSingleSelection` (`notify::selected`) | Read-only string cells, headers, single-row selection. `setRows()` replaces data and clears selection. Sorting and editing are follow-ups |
 
 # Capability gaps to design around
 
@@ -112,8 +112,20 @@ Neither engine offers these through its 0.8.0 projection:
   controls only. There is no `NSLayoutConstraint` at all.
 - **GTK callbacks deliver raw handles.** The caller boxes through the
   Registry. AppKit's bridge boxes DTOs for you.
-- **No `GtkDrawingArea` or `GtkGLArea` bound.** Relevant to the later GPU
-  slices, not to windows.
+
+# GPU regions (slice 2)
+
+| Truth | AppKit (`NSOpenGLView`) | GTK (`GtkGLArea`) | Surface's pick |
+|---|---|---|---|
+| Who owns the GL context | the view's `NSOpenGLContext`; we make it current | GDK; current only inside `render` | host lends via `GLSurface`; engine never creates one |
+| Target framebuffer | 0 (the window's back buffer) | GtkGLArea's own FBO, already bound | engine reads `DRAW_FRAMEBUFFER_BINDING` at `beginFrame()`; never assumes 0 |
+| Dialect | GL 4.1 core → `#version 150 core` | GLES 3.1 → `#version 300 es` | chosen from `GL_VERSION` at init; `CORE_140` absent |
+| Version gate | ext-opengl samples the desktop version | the gate cannot see GLES | GLES-safe intersection only, no desktop-only names |
+| "No drawable" tick | none | none | `beginFrame()` always true on GL; only Metal's `nextDrawable` can say no |
+| Present | `flushBuffer()` by the surface | GTK swaps on signal return; `present()` no-op | engine calls `present()`; the surface decides what that means |
+| Who drives frames | the tick (no `drawRect:` for this) | GTK's frame clock via `render` | `drivesOwnFrames()`; tick queues for GTK |
+| Drawable size | `convertRectToBacking(bounds)` | `getWidth/Height × getScaleFactor` | pixels, from the surface |
+| Blending | on | on | `capabilities()->blending` true on OpenGL; Metal false until slice 5 |
 
 [^jovian-appkit]: jovian/appkit 0.8.0, read at src/NS and src/Runtime
 [^jovian-gtk]: jovian/gtk 0.8.0, read at src/Gtk and src/Runtime

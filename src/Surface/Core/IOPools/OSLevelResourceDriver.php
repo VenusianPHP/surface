@@ -36,5 +36,9 @@ class OSLevelResourceDriver implements ResourceDriverContract
         foreach ($this->window_service->all() as $window) {
             $window->syncLayout();
         }
+
+        foreach ($this->window_service->all() as $window) {
+            $window->renderFrames();
+        }
     }
 }

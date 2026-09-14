@@ -18,5 +18,7 @@ enum SurfaceEventType: string
     case VALUE_CHANGED = 'value.changed';
     case TOGGLED = 'toggled';
     case SELECTION_CHANGED = 'selection.changed';
+    case DATE_CHANGED = 'date.changed';
+    case ROW_SELECTED = 'row.selected';
     case QUIT = 'quit';
 }

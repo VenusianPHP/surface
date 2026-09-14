@@ -18,6 +18,8 @@ interface OSWindow
     public function button(string $name, string $label, int $x, int $y, int $width, int $height): Views\OSButton;
     public function view(string $name): ?Views\OSView;
     public function syncLayout(): bool;
+    /** One frame on every GPU region in this window. Called per tick after layout. */
+    public function renderFrames(): void;
     public function showAbout(): void;
     public function title(?string $title = null): string|static|null;
 }
