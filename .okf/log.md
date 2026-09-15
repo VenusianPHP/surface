@@ -1,5 +1,11 @@
 # Surface Update Log
 
+## 2026-09-14 (split manifests)
+* **Update**: [index](/index.md) — every component except Core carries a
+  `composer.json`; `surface/embedded-panels`, `surface/fonts`,
+  `surface/human-input` join the root `replace` map. Eight split packages.
+  Each manifest declares its own provider and alias under `extra.venusian`.
+
 ## 2026-09-14
 * **Update**: [stage.md](/stage.md) — `StageManager::destroy()` (close
   stages, disconnect host sessions, keep going, rethrow first), called by

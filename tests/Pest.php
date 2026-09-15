@@ -3,6 +3,12 @@
 use Surface\Contracts\Core\Events\SurfaceEvent;
 use Surface\Core\IOPools\OSLevelResourceDriver;
 use Surface\Core\LiveApplication;
+use Surface\Contracts\Drawing\GPUEngine;
+use Surface\Drawing\GPUEngineManager;
+use Surface\Stage\StageManager;
+use Venusian\Surface\Tests\Support\Fakes\FakeBindingVessel;
+use Venusian\Surface\Tests\Support\Fakes\FakeConfigRepository;
+use Venusian\Surface\Tests\Support\Fakes\FakeGPUEngineDriver;
 use Venusian\Surface\Tests\Bridge\Fakes\FakeSession;
 use Venusian\Surface\Tests\Support\Fakes\FakeVessel;
 use Venusian\Surface\Tests\Support\Fakes\FakeWindowDriver;
@@ -54,6 +60,29 @@ function liveApp(bool $connected = true): array
     $dock->resource('os', new OSLevelResourceDriver($dock, $session, $driver));
 
     return [new LiveApplication($dock, $session, $driver), $dock, $session, $driver];
+}
+
+/**
+ * A StageManager over a flat-map vessel: metal and opengl fakes behind their
+ * gpu aliases, a bare dock, and whatever stage host sessions the test binds.
+ *
+ * @return array{StageManager, IOPoolDock, FakeBindingVessel}
+ */
+function stageManager(array $stage_config = ['default' => 'sdl3'], array $bindings = []): array
+{
+    $dock = bareDock();
+    $vessel = new FakeBindingVessel([
+        'config' => new FakeConfigRepository([
+            'stage' => $stage_config,
+            'gpu' => ['default' => 'metal', 'engines' => ['metal' => ['alias' => 'gpu.metal'], 'opengl' => ['alias' => 'gpu.opengl']]],
+        ]),
+        'gpu.metal' => new FakeGPUEngineDriver(GPUEngine::METAL),
+        'gpu.opengl' => new FakeGPUEngineDriver(GPUEngine::OPENGL),
+        'io-pool' => $dock,
+    ] + $bindings);
+    $vessel->instance('gpu-engines', new GPUEngineManager($vessel));
+
+    return [new StageManager($vessel), $dock, $vessel];
 }
 
 /** The first piece of mail carrying this name, or null — the drained bag is a list, not an index. */

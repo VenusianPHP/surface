@@ -30,6 +30,9 @@
         "surface/bridge": "self.version",
         "surface/contracts": "self.version",
         "surface/drawing": "self.version",
+        "surface/embedded-panels": "self.version",
+        "surface/fonts": "self.version",
+        "surface/human-input": "self.version",
         "surface/native-windows": "self.version",
         "surface/stage": "self.version"
     },

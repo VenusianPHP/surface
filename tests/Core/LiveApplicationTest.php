@@ -1,6 +1,9 @@
 <?php
 
 use Surface\Contracts\NativeWindows\WindowableException;
+use Surface\Core\LiveApplication;
+use Venusian\Surface\Tests\Support\Fakes\FakeExecutor;
+use Venusian\Surface\Tests\Support\Fakes\FakeStageSession;
 use Voyager\Contracts\IOPools\IOResourceDriver;
 
 /*
@@ -156,4 +159,40 @@ it('survives a second destroy', function () {
 
     expect($session->engine_disconnections)->toBe(1)
         ->and($session->pumps)->toBe([0, 0]);
+});
+
+it('closes stages and disconnects their hosts before the windows go', function () {
+    [, $dock, $session, $driver] = liveApp();
+    $host = new FakeStageSession();
+    [$stages] = stageManager(bindings: ['stage.sdl3' => $host]);
+    $app = new LiveApplication($dock, $session, $driver, $stages);
+    $app->provisionWindow('main', 400, 600);
+    $stage = $stages->open('scene', 'metal', 10, 10);
+    $windows_at_stage_teardown = null;
+    $host->on_disconnect = function () use ($driver, &$windows_at_stage_teardown): void {
+        $windows_at_stage_teardown = $driver->has('main');
+    };
+
+    $app->destroy();
+
+    expect($stage->isOpen())->toBeFalse()
+        ->and($host->connected())->toBeFalse()
+        ->and($windows_at_stage_teardown)->toBeTrue()
+        ->and($driver->has('main'))->toBeFalse()
+        ->and($session->connected())->toBeFalse();
+});
+
+it('still tears windows and the bridge down when a stage teardown throws, then rethrows', function () {
+    [, $dock, $session, $driver] = liveApp();
+    [$stages] = stageManager(bindings: ['stage.sdl3' => new FakeStageSession()]);
+    $app = new LiveApplication($dock, $session, $driver, $stages);
+    $app->provisionWindow('main', 400, 600);
+    $window = $driver->get('main');
+    $executor = $stages->open('scene', 'metal', 10, 10)->executor();
+    assert($executor instanceof FakeExecutor);
+    $executor->release_failure = new RuntimeException('release failed');
+
+    expect(fn () => $app->destroy())->toThrow(RuntimeException::class, 'release failed')
+        ->and($window->destructions)->toBe(1)
+        ->and($session->connected())->toBeFalse();
 });

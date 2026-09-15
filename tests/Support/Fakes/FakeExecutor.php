@@ -50,6 +50,9 @@ final class FakeExecutor implements Executor
 
     public bool $throw_on_drawable = false;
 
+    /** When set, release() records the call, marks released, then throws this. */
+    public ?\Throwable $release_failure = null;
+
     private int $next_texture = 1;
 
     /** When set, beginFrame() makes current first and endFrame() presents last — the GL contract. */
@@ -180,6 +183,10 @@ final class FakeExecutor implements Executor
     {
         $this->calls[] = 'release';
         $this->released = true;
+
+        if (! is_null($this->release_failure)) {
+            throw $this->release_failure;
+        }
     }
 
     /** @return list<list<float>> rows of 9 floats for one recorded draw */

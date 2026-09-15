@@ -46,20 +46,23 @@ deliberately with a path argument if you are mining them for the rebuild.
 
 **Known deviation:** `src/Surface/Core` holds `SurfaceServiceProvider`,
 `LiveApplication`, and the dock's `os` resource driver but is not a split
-package — no `.gitattributes`, no
-`LICENSE`, no entry in the root `replace` map. No component carries its own
-`composer.json` either, unlike `venusian/framework`'s `src/Voyager/*`. Left
-as-is deliberately; do not "fix" it in passing.
+package — no `.gitattributes`, no `LICENSE`, no `composer.json`, no entry in
+the root `replace` map. Left as-is deliberately; do not "fix" it in passing.
 
 ## Package rules (quick) — 0.8.x
 
 - Composer: `venusian/surface` **0.8.0**. PHP `^8.4|^8.5|^8.6`.
 - Namespace root is `Surface\` at `src/Surface`.
 - **Split packages.** `surface/bridge`, `surface/contracts`,
- `surface/drawing`, `surface/native-windows`, and `surface/stage` are
- subtree splits, each with its own `.gitattributes` and `LICENSE` under
- `src/Surface/*`, and each declared in the root `replace` map. A new
- component directory needs all three.
+ `surface/drawing`, `surface/embedded-panels`, `surface/fonts`,
+ `surface/human-input`, `surface/native-windows`, and `surface/stage` are
+ subtree splits, each with its own `composer.json`, `.gitattributes` and
+ `LICENSE` under `src/Surface/*`, and each declared in the root `replace`
+ map. A new component directory needs all four. Manifests require what the
+ code imports and declare own provider + alias under `extra.venusian` —
+ Core's aggregate provider ships only with `venusian/surface`. Known gap:
+ `device_os_family()` ships only in `surface/native-windows`
+ (`Helpers/os.php`), yet Bridge, Drawing and Stage managers call it.
 - **GPU regions draw through `Surface\Contracts\Drawing`.** The Painter is
  the only 2D implementation; engines implement `Executor` in their own
  package. See [`.okf/drawing.md`](.okf/drawing.md).

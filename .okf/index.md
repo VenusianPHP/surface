@@ -70,7 +70,7 @@ concept here is `status: draft` until a human verifies it.
 |---|---|
 | Version | 0.8.0, PHP `^8.4\|^8.5\|^8.6` |
 | Namespace | `Surface\` at `src/Surface` |
-| Split packages | `surface/bridge`, `surface/contracts`, `surface/drawing`, `surface/native-windows`, `surface/stage` |
+| Split packages | `surface/bridge`, `surface/contracts`, `surface/drawing`, `surface/embedded-panels`, `surface/fonts`, `surface/human-input`, `surface/native-windows`, `surface/stage` — each with own `composer.json`; Core is not split |
 | Hard dependencies | `venusian-voyager/nuts-and-bolts` + `venusian-voyager/io-pools` |
 | Engines | suggested, never required |
 | Tests | `vendor/bin/pest` green at 452; orphaned view tests excluded in `phpunit.xml` |
