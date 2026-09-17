@@ -26,6 +26,13 @@ interface StageSession
     public function sharesNativePump(): bool;
 
     /**
+     * True when this host must be the one draining the OS event queue (SDL on
+     * macOS reads keys only inside its own pump): the os resource then skips
+     * its native pump and hands this host the tick's idle wait.
+     */
+    public function ownsNativePump(): bool;
+
+    /**
      * Mint a stage, hidden, with the engine attached to it.
      * @throws StageException When disconnected, when this host cannot give the engine its surface kind, or when the
      *                         engine's attach() fails (StageException::attachFailed, the engine's exception as previous).

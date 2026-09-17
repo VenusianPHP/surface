@@ -44,6 +44,9 @@ Shared fakes live in `tests/Support/Fakes`.[^fakes]
 | `FakeGLSurface` | a `GLSurface` that counts `makeCurrent()`/`present()` and logs order with the `FakeExecutor` |
 | `FakeGPUEngineDriver` | attach records the host and mints a `FakeExecutor`; configurable `surfaceKind`; a `GL_CONTEXT` fake refuses a host with no `gl` |
 | `FakeGPUView` | GPUView twin; records frames, queues, rescale door; holds `$gl` |
+| `FakeInputEngine` | an `InputEngineDriver`; counts connect/disconnect/poll, serves whatever keyboard/mouse/pads a test hands it |
+| `FakeButtonPad` | a `Circuits\ButtonPad`; test sets `down` directly, edge queries answer false — `ICInput` derives edges from `isDown()` |
+| `FakeControllerPad` | a `Circuits\GameController`; adds axis values to `FakeButtonPad`'s shape |
 | `FakeBindingVessel` + `FakeConfigRepository` | enough vessel for a `Manager` |
 
 # Excluded directories

@@ -105,12 +105,11 @@ it('tick pumps then syncs every window so layout follows the OS', function () {
     $main = $app->getWindowService()->get('main');
     $label = $main->label('title', 'Hi', 0, 0, 100, 20)->center();
     $app->tick(16);
-    $dock->drain();
 
     $main->content_size = [800, 300];
     $app->tick(16);
 
-    $bag = $dock->drain();
+    $bag = $app->mail();
     expect($label->frame()['x'])->toBe(350)
         ->and(mailNamed($bag, 'window.resized.main'))->not->toBeNull()
         ->and(mailNamed($bag, 'window.resized.inspector'))->toBeNull();

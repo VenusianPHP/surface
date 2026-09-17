@@ -37,7 +37,8 @@ The sketch owns the loop. Each turn:
 ```php
 $app = LiveApp::get();      // accessor 'live-app'
 $app->tick(16);             // idle budget, integer ms
-$events = $app->events();   // IOEventBag keyed by name
+$events = $app->events();   // this tick's mail keyed by name (last wins per name)
+$mail = $app->mail();       // this tick's mail, every piece, in order
 ```
 
 `tick($ms)` aims the `os` resource's wait budget, then `pump()`s the dock,
@@ -50,6 +51,7 @@ input — never a blind sleep.[^os]
 | `IOPoolDock` | framework `voyager/io-pools` | named resources + the mail bag; `push()`, `pump()`, `drain()`[^dock] |
 | `OSLevelResourceDriver` | Surface, registered as `os` | pumps the session with the budget, then `syncLayout()` on every window[^os] |
 | `http` resource | framework, `resources.http.enabled` in `config/io-pools.php` | `MultiCurlResourceDriver`, named non-blocking calls[^http] |
+| `input` resource | Surface, registered as `input` | polls every connected `HumanInputManager` engine and attached circuit, mails gamepad hot-plug; registers in `Application::booted()` so it lands after `os` — see [human-input](/human-input.md) |
 | `Windowable` | Surface | handed the dock at provisioning; pushes typed mail for views, menus, close, resize |
 
 `SurfaceServiceProvider::boot()` builds `OSLevelResourceDriver` and
@@ -60,11 +62,13 @@ ticks alongside `os` on every turn.[^tests]
 
 # Mail
 
-The dock's bag is an ordered list of `QueuedIO`; `drain()` hands it over
-and starts a fresh one. `LiveApplication::events()` re-keys the drained
-bag by `name`, so keyed that way same-name entries from one tick collapse
-to the last. Surface's vocabulary and its names are in
-[views](/views.md) and [menu-profiles](/menu-profiles.md).
+The dock's bag is an ordered list of `QueuedIO`; `tick()` pumps, then
+`drain()`s it once into the application's per-tick bag. `mail()` returns
+that bag whole and in order — two edges of one pin in one tick are two
+entries. `events()` is the same bag keyed by `name`, so same-name entries
+collapse to the last; use it for lookups, `mail()` for counting. Both read
+the same drain, so a sketch may call both in one tick. Surface's vocabulary
+and its names are in [views](/views.md) and [menu-profiles](/menu-profiles.md).
 
 # HTTP
 

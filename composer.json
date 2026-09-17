@@ -42,7 +42,11 @@
         "jovian/venusian-sdl3": "^0.8.0 - The sdl3 stage host (engine-owned SDL windows) and the sdl3 GPU engine (SDL_GPU).",
         "jovian/venusian-metal": "^0.8.0 - The metal GPU engine (macOS).",
         "jovian/venusian-ogx": "^0.8.0 - The opengl GPU engine.",
-        "jovian/venusian-vulkan": "^0.8.0 - The vulkan GPU engine (MoltenVK on macOS, a lent VkSurfaceKHR elsewhere)."
+        "jovian/venusian-vulkan": "^0.8.0 - The vulkan GPU engine (MoltenVK on macOS, a lent VkSurfaceKHR elsewhere).",
+        "scrapyard-io/framework": "^0.8.0 - GPIO buses for input circuits.",
+        "dept-of-scrapyard-robotics/wii-connector": "^0.8.0 - Nunchuck, Wii Classic, NES and SNES Classic Mini controllers as input circuits.",
+        "dept-of-scrapyard-robotics/seesaw-mini-gamepad": "^0.8.0 - The Adafruit Mini I2C Gamepad as an input circuit.",
+        "microscrap/scrapyard-evdev": "^0.8.0 - Linux evdev gamepads as input circuits."
     },
     "require-dev": {
         "pestphp/pest": "^4"
@@ -62,7 +66,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "0.8.x-dev"
+            "dev-main": "0.8.x-dev"
         },
         "venusian": {
             "providers": [
@@ -73,7 +77,8 @@
                 "OSAppBridge": "Surface\\Bridge\\MagicAliases\\OSAppBridge",
                 "NativeWindow": "Surface\\NativeWindows\\MagicAliases\\NativeWindow",
                 "GPU": "Surface\\Drawing\\MagicAliases\\GPU",
-                "Stage": "Surface\\Stage\\MagicAliases\\Stage"
+                "Stage": "Surface\\Stage\\MagicAliases\\Stage",
+                "HumanInput": "Surface\\HumanInput\\MagicAliases\\HumanInput"
             }
         }
     },

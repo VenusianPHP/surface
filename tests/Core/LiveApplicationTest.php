@@ -3,6 +3,7 @@
 use Surface\Contracts\NativeWindows\WindowableException;
 use Surface\Core\LiveApplication;
 use Venusian\Surface\Tests\Support\Fakes\FakeExecutor;
+use Venusian\Surface\Tests\Support\Fakes\FakeInputEngine;
 use Venusian\Surface\Tests\Support\Fakes\FakeStageSession;
 use Voyager\Contracts\IOPools\IOResourceDriver;
 
@@ -195,4 +196,42 @@ it('still tears windows and the bridge down when a stage teardown throws, then r
     expect(fn () => $app->destroy())->toThrow(RuntimeException::class, 'release failed')
         ->and($window->destructions)->toBe(1)
         ->and($session->connected())->toBeFalse();
+});
+
+it('tears the input engines down with the rest', function () {
+    $sdl = new FakeInputEngine();
+    [$manager] = inputManager(['default' => 'sdl3'], ['input.sdl3' => $sdl]);
+    $manager->engine();
+    [, $dock, $session, $driver] = liveApp();
+    $app = new LiveApplication($dock, $session, $driver, null, $manager);
+
+    $app->destroy();
+
+    expect($sdl->disconnects)->toBe(1);
+});
+
+it('keeps every piece of mail from a tick: events() keys by name, mail() is the full ordered list', function () {
+    [$app, $dock] = liveApp();
+    $dock->resource('edges', new class($dock) implements IOResourceDriver {
+        public function __construct(private \Voyager\Contracts\IOPools\PoolPump $pool) {}
+
+        public function tick(): void
+        {
+            $this->pool->push(new \Surface\Contracts\Stage\Events\StageClosed('a'));
+            $this->pool->push(new \Surface\Contracts\Stage\Events\StageClosed('a'));
+            $this->pool->push(new \Surface\Contracts\Stage\Events\StageClosed('b'));
+        }
+    });
+
+    $app->tick();
+
+    expect($app->mail()->map(fn ($m) => $m->name)->all())->toBe(['stage.closed.a', 'stage.closed.a', 'stage.closed.b'])
+        ->and($app->events()->keys()->all())->toBe(['stage.closed.a', 'stage.closed.b'])
+        ->and($app->events()->has('stage.closed.b'))->toBeTrue()
+        ->and($app->mail())->toHaveCount(3);
+
+    $app->tick();
+
+    expect($app->mail())->toHaveCount(3)
+        ->and($app->events()->keys()->all())->toBe(['stage.closed.a', 'stage.closed.b']);
 });

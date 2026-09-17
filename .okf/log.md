@@ -1,5 +1,52 @@
 # Surface Update Log
 
+## 2026-09-17 (hardware)
+* **Update**: [HumanInput](/human-input.md) — `# Proven on`: Mac sdl3/appkit, Pi 5 gtk/sdl3, seesaw circuit.
+
+## 2026-09-17 (HumanInput fix wave)
+* **Update**: [HumanInput](/human-input.md) — focus-loss rule (deactivate
+  releases every key and mouse button); `window()` = name under the pointer
+  or null; wheel in lines, `dy > 0` = rolled away (physical). `ICInput`
+  keeps sub-tick taps from circuit edges; a throwing circuit faults
+  (`faulted()`/`fault()`), releases, zeroes, reads disconnected, never polled
+  again, recovered by `detach()` + `attach()`. I2C circuit polls sleep;
+  unbooted circuits read disconnected. "Who sees what" table: appkit covers
+  appkit stages, sdl3 pads need no window, GTK 4.8 hides natural scroll.
+
+## 2026-09-17 (HumanInput, Surface side)
+* **Creation**: [HumanInput](/human-input.md) — keyboards, mice, game pads,
+  game controllers behind one vocabulary. Same seam as GPU/Stage:
+  `input.<engine>` container alias (sdl3 default, `INPUT_ENGINE` env) →
+  `InputEngineDriver`; IC circuits (`Circuits\ButtonPad`/`GameController`)
+  attach by name → `HumanInputManager` → `input` dock resource. Engine start
+  lazy at first `engine()`; the `input` resource never starts one.
+  `keyboard()`/`mouse()` read the default engine only; `gamePads()`/
+  `gameControllers()` merge every connected engine plus attached circuits,
+  a same-named circuit replacing an engine device. Edge rule: `settle()`
+  then `update()`, ORed within a tick, so a tap inside one poll shows
+  `isPressed()` and `wasReleased()` together. Axes clamp on write
+  (sticks −1…1, triggers 0…1). GamePad vs GameController decided once by
+  axis set (`LEFT_X`/`RIGHT_X` present). A disconnected circuit stops
+  polling and reads released but stays attached until `detach()`. Mail
+  `input.gamepad.connected.<id>` / `.disconnected.<id>`, diffed per tick,
+  no per-key mail. `input` registers on the dock inside
+  `Application::booted()`, landing after `os`. `LiveApplication::destroy()`
+  order: input engines, then stages, then windows, then the bridge — a
+  throw at any step still runs the rest. None of the three engine packages
+  (sdl3, appkit, gtk) ship yet; they are being built in `jovian/venusian-*`
+  against this contract.
+* **Update**: [Components to come](/components-to-come.md) — HumanInput
+  section removed (shipped); Fonts only.
+* **Update**: [index](/index.md) — HumanInput concept linked; "What stands
+  today" gains it; suite at 499.
+* **Update**: [async](/async.md) — `input` dock resource row.
+* **Update**: [engine-seam](/engine-seam.md) — `# Input engines` section,
+  mirroring `# Stage hosts`.
+* **Update**: [stage](/stage.md) — `# Not here` drops input; points at
+  [human-input](/human-input.md) instead.
+* **Update**: [testing](/testing.md) — `FakeInputEngine`, `FakeButtonPad`,
+  `FakeControllerPad` join the fakes table.
+
 ## 2026-09-14 (split manifests)
 * **Update**: [index](/index.md) — every component except Core carries a
   `composer.json`; `surface/embedded-panels`, `surface/fonts`,
@@ -329,3 +376,9 @@
 * **Creation**: [Where AppKit and GTK disagree](/engine-asymmetries.md) — the engine
   differences measured against jovian 0.8.0, split into what the bridge slice settled
   and what the window slice still has to decide.
+
+## 2026-09-17
+* **Update**: [async](/async.md) — `tick()` drains once into a per-tick bag; `mail()` returns it whole and ordered, `events()` keyed by name. Same-name mail in one tick is no longer lost.
+
+## 2026-09-17
+* **Update**: [stage](/stage.md) — a host may own the native pump (`ownsNativePump()`; SDL on macOS): the `os` resource then skips its NSApp drain and hands that host the idle wait, since SDL reads keys only inside its own pump.

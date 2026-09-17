@@ -76,6 +76,12 @@ See [bridge-lifecycle](/bridge-lifecycle.md) for what crosses the seam.
 container string, bound by the host package's provider. `config/stage.php`
 rebinds.
 
+# Input engines
+
+`input.sdl3`, `input.appkit`, `input.gtk` are the same seam: a container
+string, bound by the engine package's provider. `config/human-input.php`
+rebinds. See [human-input](/human-input.md).
+
 [^mac-action]: BuildMacOSSession
 [^composer]: Package metadata 0.8.0
 [^appkit-projection]: jovian/appkit projection rule

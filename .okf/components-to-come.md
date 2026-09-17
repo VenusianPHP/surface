@@ -1,25 +1,13 @@
 ---
 type: Roadmap
-title: Components to come — HumanInput, Fonts
+title: Components to come — Fonts
 description: >-
-  Two Surface components with directories reserved and no code. Facts each
-  will need, recorded so the work starts from them.
-tags: [surface, roadmap, input, fonts]
+  One Surface component with a directory reserved and no code. Facts it will
+  need, recorded so the work starts from them.
+tags: [surface, roadmap, fonts]
 status: draft
-generated: { by: claude-opus-5/claude-code, at: "2026-09-14T00:00:00Z" }
+generated: { by: claude-sonnet/claude-code, at: "2026-09-17T04:37:15Z" }
 ---
-
-# HumanInput
-
-Separate component (tubes lineage). Stages are draw-only until it lands.
-
-- AppKit gives PHP no key/mouse events: `Bridge::pump` dispatches inside C;
-  NSEvent monitors are blocks (reserved). Needs an ext-appkit Bridge tap.
-- SDL3: key, text, motion, button, wheel payloads readable today via
-  `SDLReadEvent`; gamepad payloads are not. SDL stage session currently
-  frees input events unread.
-- Starting shapes: tubes' `Keyboard`, `Mouse`, `GamePad`, `AnalogStick`,
-  `DigitalButton`.
 
 # Fonts
 

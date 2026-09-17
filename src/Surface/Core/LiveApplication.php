@@ -6,6 +6,7 @@ use Surface\Contracts\Bridge\BridgedOSSession;
 use Surface\Contracts\Core\AboutInfo;
 use Surface\Contracts\NativeWindows\OSWindowDriver;
 use Surface\Contracts\NativeWindows\WindowableException;
+use Surface\HumanInput\HumanInputManager;
 use Surface\NativeWindows\Menus\MenuItemSpec;
 use Surface\Stage\StageManager;
 use Voyager\Contracts\IOPools\PoolService;
@@ -15,6 +16,9 @@ use Voyager\NutsAndBolts\Collection;
 class LiveApplication
 {
     protected Collection $menu_bar_profiles;
+
+    /** What the last tick() drained. */
+    protected IOEventBag $mail;
 
     /**
      * Program identity for the OS About panel, or null for the bare panel.
@@ -27,8 +31,10 @@ class LiveApplication
         public readonly BridgedOSSession $session,
         public readonly OSWindowDriver   $window_service,
         protected readonly ?StageManager $stages = null,
+        protected readonly ?HumanInputManager $inputs = null,
     ) {
         $this->menu_bar_profiles = new Collection();
+        $this->mail = new IOEventBag();
     }
 
     /**
@@ -40,22 +46,37 @@ class LiveApplication
     {
         $this->io_pool->os()?->waitBudget($ms);
         $this->io_pool->pump();
-    }
-
-    public function events() : IOEventBag
-    {
-        return $this->io_pool->drain()->keyBy('name');
+        $this->mail = $this->io_pool->drain();
     }
 
     /**
-     * Stages first (closed, host sessions disconnected), then the windows,
-     * then the bridge. A stage failure still tears the rest down; it
-     * propagates after.
+     * This tick's mail keyed by name — one entry per name, the last wins.
+     * Lookup by name; for every piece, including repeats, read mail().
+     */
+    public function events() : IOEventBag
+    {
+        return $this->mail->keyBy('name');
+    }
+
+    /** This tick's mail, every piece, in arrival order. Two edges of one pin in one tick are two entries. */
+    public function mail(): IOEventBag
+    {
+        return $this->mail;
+    }
+
+    /**
+     * Input engines first, then stages, then the windows, then the bridge.
+     * Stages close and disconnect their host sessions. A failure at any
+     * step still tears the rest down; it propagates after.
      */
     public function destroy(): void
     {
         try {
-            $this->stages?->destroy();
+            try {
+                $this->inputs?->destroy();
+            } finally {
+                $this->stages?->destroy();
+            }
         } finally {
             $this->window_service->destroyAll();
             if ($this->session->connected()) {

@@ -24,7 +24,10 @@ slider, toggle, toggleButton, checkbox, progressBar, dropdown, datePicker,
 table, separator, gpu, plus group and scrollView containers with group-relative
 layout — placed, centred, styled and evented in top-left pixels on both
 engines. The Components layer (opinionated PrimeVue-style shapes composed
-from these primitives, engine-free) is complete at 25 of 25.
+from these primitives, engine-free) is complete at 25 of 25. HumanInput
+(keyboards, mice, game pads, game controllers, `input.<engine>` seam plus
+attached IC circuits, `input` dock resource) is in on the Surface side; the
+three engine packages are being built now.
 
 Read this index first, then open only the concepts the task needs. Every
 concept here is `status: draft` until a human verifies it.
@@ -47,8 +50,11 @@ concept here is `status: draft` until a human verifies it.
   Painter, GPUView, the per-tick frame pass
 * [stage.md](/stage.md) - engine-owned windows: hosts and engines by alias,
   one Drawing2D
-* [components-to-come.md](/components-to-come.md) - HumanInput and Fonts:
-  reserved, facts recorded
+* [human-input.md](/human-input.md) - keyboards, mice, game pads, game
+  controllers: the `input.<engine>` seam, IC circuits, the `input` dock
+  resource
+* [components-to-come.md](/components-to-come.md) - Fonts: reserved, facts
+  recorded
 * [components.md](/components.md) - opinionated shapes over the primitives:
   one root Group, named parts, pure PHP — twenty-five built, including
   Datepicker and DataTable wrapping datePicker / table
@@ -73,4 +79,4 @@ concept here is `status: draft` until a human verifies it.
 | Split packages | `surface/bridge`, `surface/contracts`, `surface/drawing`, `surface/embedded-panels`, `surface/fonts`, `surface/human-input`, `surface/native-windows`, `surface/stage` — each with own `composer.json`; Core is not split |
 | Hard dependencies | `venusian-voyager/nuts-and-bolts` + `venusian-voyager/io-pools` |
 | Engines | suggested, never required |
-| Tests | `vendor/bin/pest` green at 452; orphaned view tests excluded in `phpunit.xml` |
+| Tests | `vendor/bin/pest` green at 499; orphaned view tests excluded in `phpunit.xml` |

@@ -5,6 +5,7 @@ use Surface\Core\IOPools\OSLevelResourceDriver;
 use Surface\Core\LiveApplication;
 use Surface\Contracts\Drawing\GPUEngine;
 use Surface\Drawing\GPUEngineManager;
+use Surface\HumanInput\HumanInputManager;
 use Surface\Stage\StageManager;
 use Venusian\Surface\Tests\Support\Fakes\FakeBindingVessel;
 use Venusian\Surface\Tests\Support\Fakes\FakeConfigRepository;
@@ -83,6 +84,23 @@ function stageManager(array $stage_config = ['default' => 'sdl3'], array $bindin
     $vessel->instance('gpu-engines', new GPUEngineManager($vessel));
 
     return [new StageManager($vessel), $dock, $vessel];
+}
+
+/**
+ * A HumanInputManager over a flat-map vessel: the given human-input config, a
+ * bare dock behind 'io-pool', and whatever input.<engine> fakes the test binds.
+ *
+ * @return array{HumanInputManager, IOPoolDock, FakeBindingVessel}
+ */
+function inputManager(array $config = ['default' => 'sdl3'], array $bindings = []): array
+{
+    $dock = bareDock();
+    $vessel = new FakeBindingVessel([
+        'config' => new FakeConfigRepository(['human-input' => $config]),
+        'io-pool' => $dock,
+    ] + $bindings);
+
+    return [new HumanInputManager($vessel), $dock, $vessel];
 }
 
 /** The first piece of mail carrying this name, or null — the drained bag is a list, not an index. */

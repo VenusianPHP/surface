@@ -51,7 +51,11 @@ engine (`gpu.<engine>`) → `StagedWindow`, hidden. `show()` presents. Same
   window open; it latches only when the mail was actually pushed, so a
   request that arrives before `setPool()` is not spent.[^staged]
 - Loop: dock resource `stage.<host>` pumps (skipped for AppKit when `os`
-  is on the dock), then one frame per open stage. Pump never waits; the
+  is on the dock), then one frame per open stage.
+- A host that owns the native pump (`ownsNativePump()`: SDL on macOS)
+  drains the OS queue itself; the `os` resource skips its NSApp drain and
+  hands that host the tick's idle wait. SDL reads keys only inside its own
+  pump and forwards every event to AppKit, so native windows keep working. Pump never waits; the
   `os` resource owns the tick's idle wait. Linux: an SDL event can sit up
   to one tick budget behind GTK's poll.[^resource]
 - A host's engine `attach()` failure is a `StageException`
@@ -70,8 +74,8 @@ engine (`gpu.<engine>`) → `StagedWindow`, hidden. `show()` presents. Same
 
 # Not here
 
-Input (`Surface\HumanInput`), text (`Surface\Fonts`) — see
-[components-to-come](/components-to-come.md).
+Text (`Surface\Fonts`) — see [components-to-come](/components-to-come.md).
+Input is in — see [human-input](/human-input.md).
 
 [^manager]: StageManager
 [^staged]: StagedWindow abstract

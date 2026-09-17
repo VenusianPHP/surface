@@ -23,6 +23,11 @@ abstract class StageSession implements StageSessionContract
 
     abstract public function sharesNativePump(): bool;
 
+    public function ownsNativePump(): bool
+    {
+        return false;
+    }
+
     abstract protected function initializeEngine(): void;
 
     abstract protected function connectToEngine(): void;

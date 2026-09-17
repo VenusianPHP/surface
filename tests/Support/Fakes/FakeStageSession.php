@@ -34,6 +34,7 @@ final class FakeStageSession extends StageSession
     public function __construct(
         public StageHost $stage_host = StageHost::SDL3,
         public bool $shares_native_pump = false,
+        public bool $owns_native_pump = false,
         public float $scale = 1.0,
     ) {}
 
@@ -45,6 +46,11 @@ final class FakeStageSession extends StageSession
     public function sharesNativePump(): bool
     {
         return $this->shares_native_pump;
+    }
+
+    public function ownsNativePump(): bool
+    {
+        return $this->owns_native_pump;
     }
 
     protected function initializeEngine(): void
