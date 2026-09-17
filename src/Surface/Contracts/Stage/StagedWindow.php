@@ -2,14 +2,14 @@
 
 namespace Surface\Contracts\Stage;
 
-use Surface\Contracts\Drawing\DrawTarget;
+use Surface\Contracts\Drawing\GPUDrawTarget;
 use Voyager\Contracts\IOPools\PoolPump;
 
 /**
  * A whole window the engine owns and draws every pixel of. No native controls
  * live in it. Minted hidden; show() presents. close() is terminal.
  */
-interface StagedWindow extends DrawTarget
+interface StagedWindow extends GPUDrawTarget
 {
     public function name(): string;
 

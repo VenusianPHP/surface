@@ -4,19 +4,22 @@ namespace Surface\Contracts\Drawing;
 
 use Surface\Contracts\NativeWindows\Views\Color;
 
-/** Anything that can be drawn into and presented — GPUView now, Stage and EmbeddedDisplay later. */
+/**
+ * Anything that runs a draw hook and presents — engine-free. GPUDrawTarget adds
+ * the engine and executor; CPUDrawTarget adds flush, damage and rgba8.
+ */
 interface DrawTarget
 {
-    public function engine(): GPUEngine;
-
     public function drawing(): Drawing2D;
-
-    public function executor(): Executor;
 
     /** One hook, replace not stack: fn(Drawing2D $g, Frame $frame): void */
     public function onDraw(callable $hook): static;
 
-    /** Applied by the engine's load action before the hook runs. Default opaque black. */
+    /**
+     * Per-frame engines (GPU, nframes, paged) apply it before the hook runs;
+     * preserving engines (dirty, full, epaper) apply it once at attach and on
+     * clear(). Default opaque black.
+     */
     public function setClearColor(Color $color): static;
 
     /** Default true once a hook is set. */

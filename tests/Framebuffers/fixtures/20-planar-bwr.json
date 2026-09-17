@@ -1,0 +1,7 @@
+{"name":"planar BWR 8x1, black plane inverted","kind":"epaper","width":8,"height":1,
+ "format":{"pixel_format":"planar","bit_depth":1,"palette":[{"color":1,"inverted":true},{"color":2}]},
+ "steps":[{"ops":[["set",0,0,1],["set",7,0,2]],
+   "expect":{"bytes_hex":"7f01","get":[[0,0,1],[7,0,2],[3,0,0]],
+     "rgba8_hex":"000000ffffffffffffffffffffffffffffffffffffffffffffffffffff0000ff"}},
+  {"ops":[["fill",0]],"expect":{"bytes_hex":"ff00"}},
+  {"ops":[["rgba8","000000ffffffffffffffffffffffffffffffffffffffffffffffffffff0000ff"]],"expect":{"bytes_hex":"7f01"}}]}

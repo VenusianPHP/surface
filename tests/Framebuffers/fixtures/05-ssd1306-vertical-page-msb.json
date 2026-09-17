@@ -1,0 +1,3 @@
+{"name":"vertical page MSB 8x8","kind":"full","width":8,"height":8,
+ "format":{"pixel_format":"mono_vertical_page","bit_depth":1,"bit_order":"msb_first","page_axis":"vertical"},
+ "steps":[{"ops":[["set",0,0,1],["set",1,7,1]],"expect":{"bytes_hex":"8001000000000000"}}]}

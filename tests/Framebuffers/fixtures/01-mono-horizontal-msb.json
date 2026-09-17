@@ -1,0 +1,7 @@
+{"name":"mono horizontal MSB 8x2","kind":"full","width":8,"height":2,
+ "format":{"pixel_format":"mono_horizontal","bit_depth":1,"bit_order":"msb_first"},
+ "steps":[{"ops":[["set",0,0,1],["set",7,0,1],["segment",2,1,4,1,1]],
+   "expect":{"bytes_hex":"813c","get":[[0,0,1],[1,0,0],[3,1,1],[6,1,0]],"granularity":[1,1],"preserves":true,"pointer_zero":true}},
+  {"ops":[["set",0,0,0]],"expect":{"bytes_hex":"013c"}},
+  {"ops":[["fill",1]],"expect":{"bytes_hex":"ffff"}},
+  {"ops":[["clear"]],"expect":{"bytes_hex":"0000"}}]}

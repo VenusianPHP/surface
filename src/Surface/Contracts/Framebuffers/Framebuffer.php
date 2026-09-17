@@ -30,7 +30,7 @@ interface Framebuffer
 
     public function fill(int $color): static;
 
-    public function blitTo(\ScrapyardIO\Tubes\Contracts\Framebuffers\Framebuffer $target, int $offset_x = 0, int $offset_y = 0): Framebuffer;
+    public function blitTo(Framebuffer $target, int $offset_x = 0, int $offset_y = 0): Framebuffer;
 
     public function blitFrom(Framebuffer $source, int $offset_x = 0, int $offset_y = 0): Framebuffer;
 
@@ -45,6 +45,20 @@ interface Framebuffer
      * @return string|array<int, mixed>
      */
     public function flush(FormatSpec $spec, bool $as_array = false): string|array;
+
+    /**
+     * Bytes of one sub-rect in the requested FormatSpec. $region must already be
+     * snapped to damageGranularity(); a region that is not is a caller bug.
+     *
+     * @return string|list<int>
+     */
+    public function flushRegion(Region $region, FormatSpec $spec, bool $as_array = false): string|array;
+
+    /** RGBA8 bytes, top-left first, viewport size. */
+    public function toRgba8(): string;
+
+    /** Native address of the bytes; 0 when PHP owns them. */
+    public function pointer(): int;
 
     public function damageGranularity(): DamageGranularity;
 

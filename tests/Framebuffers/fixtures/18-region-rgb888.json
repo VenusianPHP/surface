@@ -1,0 +1,3 @@
+{"name":"region extraction on RGB888 4x2","kind":"full","width":4,"height":2,
+ "format":{"pixel_format":"row_major","bit_depth":24},
+ "steps":[{"ops":[["segment",0,1,4,1,255]],"expect":{"region":[[1,1,2,1],"0000ff0000ff"],"bytes_hex":"0000000000000000000000000000ff0000ff0000ff0000ff"}}]}

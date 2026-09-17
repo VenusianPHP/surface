@@ -7,7 +7,7 @@ description: >-
   GPUView that runs one frame per tick after layout.
 tags: [surface, drawing, gpu, contracts, views]
 status: draft
-generated: { by: cursor-grok-4.6/cursor, at: "2026-09-14T03:00:00Z" }
+generated: { by: cursor-grok-4.6/cursor, at: "2026-09-17T21:00:00Z" }
 sources:
   - id: contracts
     resource: src/Surface/Contracts/Drawing
@@ -36,6 +36,13 @@ Surface names the engine, resolves it through `GPUEngineManager`
 (`gpu-engines`, alias `gpu.<engine>` from `config/gpu.php`), and the window
 engine mints the host through `mintGPU()`. Everything Surface-side is
 fake-provable; the engine lives in `jovian/venusian-<engine>`.[^contracts]
+
+`DrawTarget` is engine-free (hook, clear, continuous, redraw, size,
+`renderFrame`). `GPUDrawTarget` adds `engine()` / `executor()` —
+`OSGPUView` and `StagedWindow` extend it. `CPUDrawTarget` /
+`PagedDrawTarget` / `CPUHost` / the five `CPUEngine` cases (`dirty` /
+`full` / `epaper` / `paged` / `nframes`) are on the contracts; the
+rasterizer, canvases and engines are the rest of this slice.
 
 # Vocabulary
 

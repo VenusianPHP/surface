@@ -1,5 +1,23 @@
 # Surface Update Log
 
+## 2026-09-17 (php driver — packings + FullFramebuffer)
+* **Update**: [testing](/testing.md) — `PackingsTest` + `PhpDriverFixturesTest`
+  (full-kind filter). Nine packings, `PackedGrid`, `FullFramebuffer`;
+  temporary driver refuses dirty/epaper/paged/ring until Task 4.
+
+## 2026-09-17 (PixelMapper + fixtures)
+* **Update**: [testing](/testing.md) — `FixtureRunner` + `Rgba8Source` under
+  `tests/Support/Framebuffers`; 27 hand-packed golden fixtures; PixelMapper
+  colour policy is driver-independent and fake-provable without a packing.
+
+## 2026-09-17 (CPU contracts)
+* **Update**: [drawing](/drawing.md) — `DrawTarget` is engine-free;
+  `GPUDrawTarget` keeps `engine()`/`executor()` for GPUView and Stage;
+  CPU target / host / five `CPUEngine` cases are on the contracts.
+* **Update**: [testing](/testing.md) — `FakeCPUEngineDriver` in the
+  shared fakes table.
+* **Update**: [index](/index.md) — suite count 520.
+
 ## 2026-09-17 (hardware)
 * **Update**: [HumanInput](/human-input.md) — `# Proven on`: Mac sdl3/appkit, Pi 5 gtk/sdl3, seesaw circuit.
 

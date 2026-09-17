@@ -1,0 +1,6 @@
+{"name":"flush to another spec transcodes through RGBA8","kind":"full","width":8,"height":1,
+ "format":{"pixel_format":"mono_horizontal","bit_depth":1},
+ "steps":[{"ops":[["set",0,0,1]],
+   "expect":{"rgba8_hex":"ffffffff000000ff000000ff000000ff000000ff000000ff000000ff000000ff",
+     "flush":[{"format":{"pixel_format":"mono_horizontal","bit_depth":1,"bit_order":"lsb_first"},"bytes_hex":"01"},
+              {"format":{"pixel_format":"row_major","bit_depth":16},"bytes_hex":"ffff0000000000000000000000000000"}]}}]}

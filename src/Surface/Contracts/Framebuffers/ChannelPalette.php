@@ -43,4 +43,41 @@ readonly class ChannelPalette
     {
         return array_map(fn (ChannelSpec $channel): int => $channel->color, $this->channels);
     }
+
+    /** Wire code per channel: the declared code, else the palette position. @return list<int> */
+    public function codes(): array
+    {
+        $codes = [];
+        foreach ($this->channels as $position => $channel) {
+            $codes[] = $channel->code ?? $position;
+        }
+
+        return $codes;
+    }
+
+    public function indexOf(int $color): ?int
+    {
+        foreach ($this->channels as $position => $channel) {
+            if ($channel->color === $color) {
+                return $position;
+            }
+        }
+
+        return null;
+    }
+
+    public function equals(ChannelPalette $other): bool
+    {
+        if ($this->count() !== $other->count()) {
+            return false;
+        }
+        foreach ($this->channels as $i => $channel) {
+            $o = $other->channels[$i];
+            if ($channel->color !== $o->color || $channel->inverted !== $o->inverted || ($channel->code ?? $i) !== ($o->code ?? $i)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

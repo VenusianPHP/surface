@@ -1,0 +1,3 @@
+{"name":"vertical page with horizontal axis packs like mono horizontal LSB","kind":"full","width":8,"height":2,
+ "format":{"pixel_format":"mono_vertical_page","bit_depth":1,"page_axis":"horizontal"},
+ "steps":[{"ops":[["set",0,0,1],["set",7,1,1]],"expect":{"bytes_hex":"0180","granularity":[1,1]}}]}

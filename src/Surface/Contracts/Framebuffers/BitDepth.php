@@ -5,6 +5,8 @@ namespace Surface\Contracts\Framebuffers;
 enum BitDepth: int
 {
     case B1 = 1;
+    case B2 = 2;
+    case B4 = 4;
     case B8 = 8;
     case B10 = 10;
     case B12 = 12;

@@ -1,0 +1,3 @@
+{"name":"B8 grey 2x2","kind":"full","width":2,"height":2,
+ "format":{"pixel_format":"row_major","bit_depth":8},
+ "steps":[{"ops":[["set",1,1,200]],"expect":{"bytes_hex":"000000c8","rgba8_hex":"000000ff000000ff000000ffc8c8c8ff"}}]}

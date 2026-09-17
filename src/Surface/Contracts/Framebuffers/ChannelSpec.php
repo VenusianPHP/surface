@@ -3,21 +3,18 @@
 namespace Surface\Contracts\Framebuffers;
 
 /**
- * Describes one colour plane of a channel-sorted surface.
+ * One colour plane (planar) or one palette entry (packed index).
  *
- * A channel binds a logical draw colour (an int, typically an
- * {@see \RealityInterface\Displays\Applied\ePaper\Enums\EInkColor} value) to a
- * single 1bpp bit-plane. {@see $inverted} captures the plane's bit polarity:
- * when true a pixel carrying this colour packs as 0 and the background as 1
- * (the SSD1680 black RAM convention); when false the colour packs as 1.
- *
- * This object intentionally holds only ints/bools so the lower NutsAndBolts
- * layer never depends on the higher display colour enums.
+ * $color is an EInkColor value. $inverted: on a planar host this channel packs
+ * its colour as 0 and the background as 1 (SSD1680 black-RAM convention).
+ * $code: the panel's wire code on a packed-index host; null means the
+ * channel's position in its palette. Ints and bools only — no enum imports.
  */
 readonly class ChannelSpec
 {
     public function __construct(
         public int $color,
         public bool $inverted = false,
+        public ?int $code = null,
     ) {}
 }

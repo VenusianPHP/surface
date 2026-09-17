@@ -1,0 +1,6 @@
+{"name":"dirty on SSD1306 snaps to 8-row pages and resets per epoch","kind":"dirty","width":8,"height":16,
+ "format":{"pixel_format":"mono_vertical_page","bit_depth":1},
+ "steps":[{"ops":[["epoch"],["set",3,9,1]],"expect":{"damage":[[0,8,8,8]],"granularity":[8,8]}},
+  {"ops":[["set",0,0,1]],"expect":{"damage":[[0,0,8,16]]}},
+  {"ops":[["epoch"]],"expect":{"damage":[]}},
+  {"ops":[["segment",0,0,8,1,1]],"expect":{"damage":[[0,0,8,8]]}}]}

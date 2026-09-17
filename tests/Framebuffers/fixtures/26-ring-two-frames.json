@@ -1,0 +1,6 @@
+{"name":"ring of two RGB565 frames","kind":"ring","width":2,"height":1,"frames":2,
+ "format":{"pixel_format":"row_major","bit_depth":16},
+ "steps":[{"ops":[["set",0,0,65535]],"expect":{"bytes_hex":"00000000","get":[[0,0,0]],"preserves":false}},
+  {"ops":[["present"]],"expect":{"bytes_hex":"ffff0000","get":[[0,0,65535]]}},
+  {"ops":[["set",1,0,4660]],"expect":{"bytes_hex":"ffff0000"}},
+  {"ops":[["present"]],"expect":{"bytes_hex":"00001234"}}]}

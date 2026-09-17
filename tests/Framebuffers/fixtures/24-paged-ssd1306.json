@@ -1,0 +1,6 @@
+{"name":"paged SSD1306 8x16, 8 rows per page","kind":"paged","width":8,"height":16,"page_rows":8,
+ "format":{"pixel_format":"mono_vertical_page","bit_depth":1},
+ "steps":[{"ops":[["page",0],["set",0,0,1],["set",0,9,1]],
+   "expect":{"bytes_hex":"0100000000000000","pages":2,"page":0,"page_region":[1,[0,8,8,8]],"preserves":false,"granularity":[8,8]}},
+  {"ops":[["page",1],["set",0,9,1]],"expect":{"bytes_hex":"0200000000000000","page":1,"get":[[0,9,1],[0,0,0]]}},
+  {"ops":[["page",0]],"expect":{"bytes_hex":"0000000000000000"}}]}

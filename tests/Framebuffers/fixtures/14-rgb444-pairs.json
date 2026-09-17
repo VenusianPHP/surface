@@ -1,0 +1,4 @@
+{"name":"RGB444 3x1, pixel pairs, odd tail padded","kind":"full","width":3,"height":1,
+ "format":{"pixel_format":"row_major","bit_depth":12},
+ "steps":[{"ops":[["set",0,0,2748],["set",1,0,3567],["set",2,0,291]],
+   "expect":{"bytes_hex":"abcdef123000","get":[[0,0,2748],[1,0,3567],[2,0,291]]}}]}

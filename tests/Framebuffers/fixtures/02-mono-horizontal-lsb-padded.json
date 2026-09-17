@@ -1,0 +1,3 @@
+{"name":"mono horizontal LSB 10x1, row padded to 2 bytes","kind":"full","width":10,"height":1,
+ "format":{"pixel_format":"mono_horizontal","bit_depth":1,"bit_order":"lsb_first"},
+ "steps":[{"ops":[["set",0,0,1],["set",9,0,1]],"expect":{"bytes_hex":"0102","get":[[9,0,1],[8,0,0]]}}]}
