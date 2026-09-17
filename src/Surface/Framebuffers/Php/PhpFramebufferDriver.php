@@ -7,7 +7,7 @@ use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\Framebuffer;
 use Surface\Contracts\Framebuffers\FramebufferDriver;
 use Surface\Contracts\Framebuffers\MultiFrameFramebuffer;
-use Surface\Contracts\Framebuffers\PagedFramebuffer;
+use Surface\Contracts\Framebuffers\PagedFramebuffer as PagedFramebufferContract;
 
 /** The in-house driver: bytes in PHP strings. Always available. */
 class PhpFramebufferDriver implements FramebufferDriver
@@ -24,21 +24,21 @@ class PhpFramebufferDriver implements FramebufferDriver
 
     public function dirty(FormatSpec $format, int $width, int $height): DamageTrackingFramebuffer
     {
-        throw new \LogicException('Task 4');
+        return new DirtyFramebuffer($format, $width, $height);
     }
 
     public function epaper(FormatSpec $format, int $width, int $height): Framebuffer
     {
-        throw new \LogicException('Task 4');
+        return new EPaperFramebuffer($format, $width, $height);
     }
 
-    public function paged(FormatSpec $format, int $width, int $height, int $page_rows): PagedFramebuffer
+    public function paged(FormatSpec $format, int $width, int $height, int $page_rows): PagedFramebufferContract
     {
-        throw new \LogicException('Task 4');
+        return new PagedFramebuffer($format, $width, $height, $page_rows);
     }
 
     public function ring(FormatSpec $format, int $width, int $height, int $frames): MultiFrameFramebuffer
     {
-        throw new \LogicException('Task 4');
+        return new RingFramebuffer($format, $width, $height, $frames);
     }
 }

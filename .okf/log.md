@@ -1,5 +1,9 @@
 # Surface Update Log
 
+## 2026-09-17 (php driver — dirty, epaper, paged, ring)
+* **Update**: [testing](/testing.md) — `BuffersTest` + `PhpDriverFixturesTest`
+  runs all 27 fixtures. Driver mints all five kinds; Task 4 throws gone.
+
 ## 2026-09-17 (php driver — packings + FullFramebuffer)
 * **Update**: [testing](/testing.md) — `PackingsTest` + `PhpDriverFixturesTest`
   (full-kind filter). Nine packings, `PackedGrid`, `FullFramebuffer`;

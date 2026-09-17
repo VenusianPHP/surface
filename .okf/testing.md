@@ -7,7 +7,7 @@ description: >-
 tags: [surface, testing]
 status: draft
 generated: { by: claude-opus-5/claude-code, at: "2026-08-30T02:30:00Z" }
-revised: { by: cursor-grok-4.6/cursor, at: "2026-09-17T22:50:00Z", note: "php driver Packings + FullFramebuffer; fixture filter kind=full" }
+revised: { by: cursor-grok-4.6/cursor, at: "2026-09-17T23:10:00Z", note: "php driver mints all five kinds; all 27 fixtures + BuffersTest" }
 sources:
   - id: phpunit
     resource: phpunit.xml
@@ -61,12 +61,12 @@ policy (mono luma 0.5, depth quantise, planar mask, packed-index codes)
 with no driver present. `FixtureSchemaTest` asserts every fixture parses
 and that `files()` counts 27.[^fb-fixtures]
 
-The `php` driver is in: `PackingsTest` plus `PhpDriverFixturesTest` (Task 3
-filters the dataset to `kind === 'full'` — fixtures 01–19 and 27). Dirty,
-epaper, paged and ring (20–26) wait on Task 4; the temporary
-`PhpFramebufferDriver` throws `\LogicException('Task 4')` for those four
-mints. Store is the host format: same-spec `flush` is a packing region copy;
-any other spec transcodes pixel-by-pixel through RGBA8.
+The `php` driver is in: `PackingsTest`, `BuffersTest` (five kinds, dirty
+merge, epaper accept/refuse + `channelDump`, paged page-window rules, ring
+front/back), and `PhpDriverFixturesTest` (all 27 fixtures, no kind filter).
+`PhpFramebufferDriver` mints `full` / `dirty` / `epaper` / `paged` / `ring`.
+Store is the host format: same-spec `flush` is a packing region copy; any
+other spec transcodes pixel-by-pixel through RGBA8.
 
 # Excluded directories
 
