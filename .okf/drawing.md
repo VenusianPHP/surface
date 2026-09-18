@@ -7,7 +7,7 @@ description: >-
   GPUView that runs one frame per tick after layout.
 tags: [surface, drawing, gpu, contracts, views]
 status: draft
-generated: { by: cursor-grok-4.6/cursor, at: "2026-09-17T21:00:00Z" }
+generated: { by: cursor-grok-4.6/cursor, at: "2026-09-18T00:30:00Z" }
 sources:
   - id: contracts
     resource: src/Surface/Contracts/Drawing
@@ -15,6 +15,15 @@ sources:
   - id: painter
     resource: src/Surface/Drawing/Painter.php
     title: Painter
+  - id: rasterizer
+    resource: src/Surface/Drawing/Rasterizer.php
+    title: Rasterizer
+  - id: affine
+    resource: src/Surface/Drawing/Affine.php
+    title: Affine
+  - id: geometry
+    resource: src/Surface/Drawing/Geometry.php
+    title: Geometry
   - id: gpuview
     resource: src/Surface/NativeWindows/Views/GPUView.php
     title: GPUView
@@ -41,8 +50,21 @@ fake-provable; the engine lives in `jovian/venusian-<engine>`.[^contracts]
 `renderFrame`). `GPUDrawTarget` adds `engine()` / `executor()` —
 `OSGPUView` and `StagedWindow` extend it. `CPUDrawTarget` /
 `PagedDrawTarget` / `CPUHost` / the five `CPUEngine` cases (`dirty` /
-`full` / `epaper` / `paged` / `nframes`) are on the contracts; the
-rasterizer, canvases and engines are the rest of this slice.
+`full` / `epaper` / `paged` / `nframes`) are on the contracts.
+
+`Rasterizer` is the one `Drawing2D` over any `Framebuffer`. It takes a
+`Framebuffer` and a `PixelMapper`, emits `setSegment` (one call per
+axis-aligned rect, one span per polygon row) and `setPixels` (one call
+per hairline / image), never one call per pixel. Identity and
+translate-only transforms take the fast path; rotate and scale go
+through a scanline polygon fill. Colour is opaque; texel alpha `< 128`
+is skipped. `begin(?Region $page)` resets the affine stack and user
+clip; a page clip survives `unclip()`. `RastersNatively` is an optional
+seam probed once at construction — no driver implements it this slice.
+
+`Affine` (immutable `a b c d tx ty`) and `Geometry` (segment counts,
+ellipse rings, stroke quads) are shared with `Painter`. Compose is
+**this × m** (right operand applies first). Singular invert is `null`.
 
 # Vocabulary
 
@@ -105,8 +127,9 @@ honestly (blending false → opaque).
 
 # Not in this slice
 
-Text, depth, embedded panels. (Slice 2 landed OpenGL on both boxes.
-Slice 3 landed Vulkan on the Mac through MoltenVK.)
+Canvases and CPU engines (rest of the CPU-rendering slice). Text, depth,
+embedded panels. (Slice 2 landed OpenGL on both boxes. Slice 3 landed
+Vulkan on the Mac through MoltenVK.)
 
 [^contracts]: Drawing contracts
 [^painter]: Painter

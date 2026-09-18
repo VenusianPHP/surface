@@ -95,7 +95,8 @@ final class PixelMapper
         return match ($this->mode) {
             self::MONO => $v ? new Color(1.0, 1.0, 1.0) : new Color(0.0, 0.0, 0.0),
             self::GREY => new Color($v / 255, $v / 255, $v / 255),
-            self::PLANAR, self::INDEX => $this->entry($v),
+            self::PLANAR => $this->planarUnmap($v),
+            self::INDEX => $this->entry($v),
             self::RGB => match ($this->spec->bit_depth) {
                 BitDepth::B12 => new Color((($v >> 8) & 0xF) / 15, (($v >> 4) & 0xF) / 15, ($v & 0xF) / 15),
                 BitDepth::B16 => new Color((($v >> 11) & 0x1F) / 31, (($v >> 5) & 0x3F) / 63, ($v & 0x1F) / 31),
@@ -130,5 +131,19 @@ final class PixelMapper
         }
 
         return EInkColor::WHITE->color();
+    }
+
+    /** Packings table: unmap a planar mask to the lowest set bit's colour; 0 is paper. */
+    private function planarUnmap(int $v): Color
+    {
+        if ($v === 0) {
+            return EInkColor::WHITE->color();
+        }
+        $k = 0;
+        while ((($v >> $k) & 1) === 0) {
+            $k++;
+        }
+
+        return $this->entry(1 << $k);
     }
 }

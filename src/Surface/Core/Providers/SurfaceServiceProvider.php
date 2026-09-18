@@ -8,6 +8,7 @@ use Voyager\Contracts\Vessel\Vessel;
 use Surface\Bridge\BridgeServiceProvider;
 use Surface\Core\IOPools\OSLevelResourceDriver;
 use Surface\Drawing\DrawingServiceProvider;
+use Surface\Framebuffers\FramebuffersServiceProvider;
 use Surface\HumanInput\HumanInputServiceProvider;
 use Surface\Stage\StageServiceProvider;
 use Voyager\NutsAndBolts\AggregateServiceProvider;
@@ -17,6 +18,7 @@ class SurfaceServiceProvider extends AggregateServiceProvider
 {
     protected array $providers = [
         BridgeServiceProvider::class,
+        FramebuffersServiceProvider::class,
         DrawingServiceProvider::class,
         StageServiceProvider::class,
         NativeWindowsServiceProvider::class,

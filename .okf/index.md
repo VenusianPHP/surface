@@ -47,7 +47,8 @@ concept here is `status: draft` until a human verifies it.
 * [views.md](/views.md) - conjured nodes: Surface owns the name registry and
   the top-left frame, engines translate through four hooks; nineteen kinds
 * [drawing.md](/drawing.md) - GPU regions: engine-free contracts, the
-  Painter, GPUView, the per-tick frame pass
+  Painter, GPUView, the per-tick frame pass; Rasterizer is Drawing2D
+  over any Framebuffer; Affine and Geometry shared with Painter
 * [stage.md](/stage.md) - engine-owned windows: hosts and engines by alias,
   one Drawing2D
 * [human-input.md](/human-input.md) - keyboards, mice, game pads, game

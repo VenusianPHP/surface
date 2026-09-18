@@ -7,7 +7,7 @@ description: >-
 tags: [surface, testing]
 status: draft
 generated: { by: claude-opus-5/claude-code, at: "2026-08-30T02:30:00Z" }
-revised: { by: cursor-grok-4.6/cursor, at: "2026-09-17T23:10:00Z", note: "php driver mints all five kinds; all 27 fixtures + BuffersTest" }
+revised: { by: cursor-grok-4.6/cursor, at: "2026-09-18T00:30:00Z", note: "RecordingFramebuffer for Rasterizer batching" }
 sources:
   - id: phpunit
     resource: phpunit.xml
@@ -47,6 +47,7 @@ Shared fakes live in `tests/Support/Fakes`.[^fakes]
 | `FakeGLSurface` | a `GLSurface` that counts `makeCurrent()`/`present()` and logs order with the `FakeExecutor` |
 | `FakeGPUEngineDriver` | attach records the host and mints a `FakeExecutor`; configurable `surfaceKind`; a `GL_CONTEXT` fake refuses a host with no `gl` |
 | `FakeCPUEngineDriver` | attach records every `CPUHost` and hands back an injected `CPUDrawTarget` |
+| `RecordingFramebuffer` | decorator over any `Framebuffer`; `$calls` records write verbs in order (`setSegment:…`, `setPixels:N`, `fill`) so Rasterizer batching is fake-provable |
 | `FakeGPUView` | GPUView twin; records frames, queues, rescale door; holds `$gl` |
 | `FakeInputEngine` | an `InputEngineDriver`; counts connect/disconnect/poll, serves whatever keyboard/mouse/pads a test hands it |
 | `FakeButtonPad` | a `Circuits\ButtonPad`; test sets `down` directly, edge queries answer false — `ICInput` derives edges from `isDown()` |

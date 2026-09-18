@@ -1,5 +1,20 @@
 # Surface Update Log
 
+## 2026-09-17 (Rasterizer)
+* **Update**: [drawing](/drawing.md) — `Rasterizer` is the one `Drawing2D`
+  over any `Framebuffer`. `Affine` and `Geometry` are shared with
+  `Painter`. `RastersNatively` is a construction-time seam; no driver
+  implements it this slice.
+* **Update**: [testing](/testing.md) — `RecordingFramebuffer` counts write
+  verbs so batching (`setSegment`, `setPixels`, `fill`) is fake-provable.
+  Pixel pictures in `RasterizerTest` are exact `#`/`.` rows, never
+  weakened to `toContain`.
+
+## 2026-09-17 (PixelMapper planar unmap)
+* **Update**: [testing](/testing.md) — planar `unmap` of a multi-bit mask is the
+  lowest set bit's colour (`0` is paper). Exact-word miss used to return white,
+  so php/native parity failed on PLANAR when a random op wrote word `3`.
+
 ## 2026-09-17 (php driver — dirty, epaper, paged, ring)
 * **Update**: [testing](/testing.md) — `BuffersTest` + `PhpDriverFixturesTest`
   runs all 27 fixtures. Driver mints all five kinds; Task 4 throws gone.

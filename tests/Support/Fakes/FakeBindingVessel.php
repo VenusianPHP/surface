@@ -49,13 +49,25 @@ final class FakeBindingVessel implements Vessel
         return $instance;
     }
 
-    public function alias(string $abstract, string $alias): void {}
+    public function alias(string $abstract, string $alias): void
+    {
+        if (array_key_exists($abstract, $this->bindings)) {
+            $this->bindings[$alias] = $this->bindings[$abstract];
+        }
+    }
     public function tag(array|string $abstracts, mixed ...$tags): void {}
     public function tagged(string $tag): iterable { return []; }
     public function bind(Closure|string $abstract, Closure|string|null $concrete = null, bool $shared = false): void {}
     public function bindMethod(array|string $method, Closure $callback): void {}
     public function bindIf(Closure|string $abstract, Closure|string|null $concrete = null, bool $shared = false): void {}
-    public function singleton(Closure|string $abstract, Closure|string|null $concrete = null): void {}
+    public function singleton(Closure|string $abstract, Closure|string|null $concrete = null): void
+    {
+        $this->bindings[$abstract] = match (true) {
+            $concrete instanceof Closure => $concrete($this),
+            is_string($concrete) => new $concrete(),
+            default => new $abstract(),
+        };
+    }
     public function singletonIf(Closure|string $abstract, Closure|string|null $concrete = null): void {}
     public function scoped(Closure|string $abstract, Closure|string|null $concrete = null): void {}
     public function scopedIf(Closure|string $abstract, Closure|string|null $concrete = null): void {}

@@ -27,8 +27,8 @@ class Painter implements Drawing2D
 
     protected Transform $projection;
 
-    /** @var list<array{float, float, float, float, float, float}> affine stack: [a, b, c, d, tx, ty] */
-    protected array $stack = [[1.0, 0.0, 0.0, 1.0, 0.0, 0.0]];
+    /** @var list<Affine> */
+    protected array $stack = [];
 
     protected ?Topology $batch_topology = null;
 
@@ -40,6 +40,7 @@ class Painter implements Drawing2D
 
     public function __construct(protected Executor $executor)
     {
+        $this->stack = [Affine::identity()];
         $this->projection = Transform::identity();
     }
 
@@ -49,7 +50,7 @@ class Painter implements Drawing2D
         $this->width = $width;
         $this->height = $height;
         $this->scale = $scale;
-        $this->stack = [[1.0, 0.0, 0.0, 1.0, 0.0, 0.0]];
+        $this->stack = [Affine::identity()];
         $this->reset();
         $this->executor->unscissor();
         [$pw, $ph] = $this->executor->drawableSize();
@@ -228,20 +229,17 @@ class Painter implements Drawing2D
 
     public function translate(float $dx, float $dy): static
     {
-        return $this->compose([1.0, 0.0, 0.0, 1.0, $dx, $dy]);
+        return $this->compose(Affine::translation($dx, $dy));
     }
 
     public function rotate(float $radians): static
     {
-        $c = cos($radians);
-        $s = sin($radians);
-
-        return $this->compose([$c, $s, -$s, $c, 0.0, 0.0]);
+        return $this->compose(Affine::rotation($radians));
     }
 
     public function scale(float $sx, float $sy): static
     {
-        return $this->compose([$sx, 0.0, 0.0, $sy, 0.0, 0.0]);
+        return $this->compose(Affine::scaling($sx, $sy));
     }
 
     public function clip(float $x, float $y, float $width, float $height): static
@@ -269,19 +267,9 @@ class Painter implements Drawing2D
     }
 
     /** Post-multiply the top of the stack: current × m, so m applies to a point first. */
-    protected function compose(array $m): static
+    protected function compose(Affine $m): static
     {
-        $top = count($this->stack) - 1;
-        [$a, $b, $c, $d, $tx, $ty] = $this->stack[$top];
-        [$a2, $b2, $c2, $d2, $tx2, $ty2] = $m;
-        $this->stack[$top] = [
-            $a * $a2 + $c * $b2,
-            $b * $a2 + $d * $b2,
-            $a * $c2 + $c * $d2,
-            $b * $c2 + $d * $d2,
-            $a * $tx2 + $c * $ty2 + $tx,
-            $b * $tx2 + $d * $ty2 + $ty,
-        ];
+        $this->stack[count($this->stack) - 1] = $this->stack[count($this->stack) - 1]->compose($m);
 
         return $this;
     }
@@ -297,9 +285,9 @@ class Painter implements Drawing2D
     /** One vertex through the stack and the backing scale: nine floats, pixels. */
     protected function vertex(float $x, float $y, array $c, float $u = 0.0, float $v = 0.0): array
     {
-        [$a, $b, $cc, $d, $tx, $ty] = $this->stack[count($this->stack) - 1];
-        $px = ($a * $x + $cc * $y + $tx) * $this->scale;
-        $py = ($b * $x + $d * $y + $ty) * $this->scale;
+        [$px, $py] = $this->stack[count($this->stack) - 1]->apply($x, $y);
+        $px *= $this->scale;
+        $py *= $this->scale;
 
         return [$px, $py, 0.0, $c[0], $c[1], $c[2], $c[3], $u, $v];
     }
@@ -307,36 +295,27 @@ class Painter implements Drawing2D
     /** A butt-ended quad of $stroke width along the segment, as two triangles. */
     protected function segmentQuad(float $x0, float $y0, float $x1, float $y1, float $stroke, array $c): array
     {
-        $dx = $x1 - $x0;
-        $dy = $y1 - $y0;
-        $length = sqrt($dx * $dx + $dy * $dy);
-        if ($length === 0.0) {
+        $corners = Geometry::segmentCorners($x0, $y0, $x1, $y1, $stroke);
+        if ($corners === []) {
             return [];
         }
-        $nx = $dy / $length * $stroke / 2.0;
-        $ny = -$dx / $length * $stroke / 2.0;
+        [$c0, $c1, $c2, $c3] = $corners;
 
         return [
-            $this->vertex($x0 + $nx, $y0 + $ny, $c), $this->vertex($x0 - $nx, $y0 - $ny, $c), $this->vertex($x1 - $nx, $y1 - $ny, $c),
-            $this->vertex($x0 + $nx, $y0 + $ny, $c), $this->vertex($x1 - $nx, $y1 - $ny, $c), $this->vertex($x1 + $nx, $y1 + $ny, $c),
+            $this->vertex($c0[0], $c0[1], $c), $this->vertex($c1[0], $c1[1], $c), $this->vertex($c2[0], $c2[1], $c),
+            $this->vertex($c0[0], $c0[1], $c), $this->vertex($c2[0], $c2[1], $c), $this->vertex($c3[0], $c3[1], $c),
         ];
     }
 
     protected function segments(float $radius): int
     {
-        return (int) min(256, max(12, ceil($radius / 2)));
+        return Geometry::segments($radius);
     }
 
     /** @return list<array{float, float}> */
     protected function ellipsePoints(float $cx, float $cy, float $rx, float $ry, int $segments): array
     {
-        $points = [];
-        for ($i = 0; $i < $segments; $i++) {
-            $angle = 2 * M_PI * $i / $segments;
-            $points[] = [$cx + $rx * cos($angle), $cy + $ry * sin($angle)];
-        }
-
-        return $points;
+        return Geometry::ellipsePoints($cx, $cy, $rx, $ry, $segments);
     }
 
     /** Append vertices to the batch; a topology or texture change flushes first. */

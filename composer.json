@@ -32,11 +32,13 @@
         "surface/drawing": "self.version",
         "surface/embedded-panels": "self.version",
         "surface/fonts": "self.version",
+        "surface/framebuffers": "self.version",
         "surface/human-input": "self.version",
         "surface/native-windows": "self.version",
         "surface/stage": "self.version"
     },
     "suggest": {
+        "jovian/fb": "^0.8.0 - The native framebuffer driver over ext-fb: the five buffer kinds in C.",
         "jovian/venusian-appkit": "^0.8.0 - To build apps that use MacOS Windows using AppKit",
         "jovian/venusian-gtk": "^0.8.0 - To build apps that use Linux Windows using GTK.",
         "jovian/venusian-sdl3": "^0.8.0 - The sdl3 stage host (engine-owned SDL windows) and the sdl3 GPU engine (SDL_GPU).",
@@ -77,6 +79,7 @@
                 "OSAppBridge": "Surface\\Bridge\\MagicAliases\\OSAppBridge",
                 "NativeWindow": "Surface\\NativeWindows\\MagicAliases\\NativeWindow",
                 "GPU": "Surface\\Drawing\\MagicAliases\\GPU",
+                "Framebuffers": "Surface\\Framebuffers\\MagicAliases\\Framebuffers",
                 "Stage": "Surface\\Stage\\MagicAliases\\Stage",
                 "HumanInput": "Surface\\HumanInput\\MagicAliases\\HumanInput"
             }

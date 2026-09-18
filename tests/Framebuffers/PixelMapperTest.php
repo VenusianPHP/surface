@@ -55,7 +55,9 @@ it('planar maps to a channel mask, white to paper', function () {
         ->and($m->map(Color::hex('#fff')))->toBe(0)
         ->and($m->map(Color::hex('#ffe0e0')))->toBe(0)
         ->and($m->unmap(2)->red)->toBe(1.0)
-        ->and($m->unmap(0)->green)->toBe(1.0);
+        ->and($m->unmap(0)->green)->toBe(1.0)
+        ->and($m->unmap(3)->red)->toBe(0.0)
+        ->and($m->unmap(3)->green)->toBe(0.0);   // mask 0b11 → lowest set bit → black
 });
 
 it('packed index maps to the wire code', function () {
