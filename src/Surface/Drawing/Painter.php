@@ -8,7 +8,10 @@ use Surface\Contracts\Drawing\Executor;
 use Surface\Contracts\Drawing\TextureHandle;
 use Surface\Contracts\Drawing\Topology;
 use Surface\Contracts\Drawing\Transform;
+use Surface\Contracts\Fonts\GFXFont;
 use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Drawing\Text\GlyphAtlas;
+use Surface\Drawing\Text\Typesetter;
 
 /**
  * The one 2D implementation, over any Executor. Shapes become 9-float
@@ -38,10 +41,16 @@ class Painter implements Drawing2D
 
     protected int $batch_count = 0;
 
+    protected Typesetter $typesetter;
+
+    /** @var array<class-string, array{TextureHandle, GlyphAtlas}> one atlas per face class, alive until released */
+    protected array $atlases = [];
+
     public function __construct(protected Executor $executor)
     {
         $this->stack = [Affine::identity()];
         $this->projection = Transform::identity();
+        $this->typesetter = new Typesetter();
     }
 
     /** Start a frame: target size in points, backing scale; the stack, batch and clip reset. */
@@ -274,6 +283,54 @@ class Painter implements Drawing2D
         return [$this->width, $this->height];
     }
 
+    public function text(string $text, float $x, float $y, Color $color, GFXFont $font): static
+    {
+        [$handle, $atlas] = $this->atlas($font);
+        $c = $this->rgba($color);
+        $aw = $atlas->width();
+        $ah = $atlas->height();
+        $vertices = [];
+        foreach ($this->typesetter->layout($font, $text) as $placed) {
+            $rect = $atlas->rect($placed->code);
+            if (is_null($rect)) {
+                continue;
+            }
+            [$rx, $ry, $rw, $rh] = $rect;
+            $u0 = $rx / $aw;
+            $v0 = $ry / $ah;
+            $u1 = ($rx + $rw) / $aw;
+            $v1 = ($ry + $rh) / $ah;
+            $gx = $x + $placed->x;
+            $gy = $y + $placed->y;
+            array_push($vertices,
+                $this->vertex($gx, $gy, $c, $u0, $v0), $this->vertex($gx + $rw, $gy, $c, $u1, $v0), $this->vertex($gx + $rw, $gy + $rh, $c, $u1, $v1),
+                $this->vertex($gx, $gy, $c, $u0, $v0), $this->vertex($gx + $rw, $gy + $rh, $c, $u1, $v1), $this->vertex($gx, $gy + $rh, $c, $u0, $v1),
+            );
+        }
+        $this->emit(Topology::TRIANGLES, $handle, $vertices);
+
+        return $this;
+    }
+
+    public function textBounds(string $text, GFXFont $font): array
+    {
+        [$bx, $by, $bw, $bh] = $this->typesetter->bounds($font, $text);
+
+        return [(float) $bx, (float) $by, (float) $bw, (float) $bh];
+    }
+
+    /** Drop every glyph atlas: flushes first, then releases each texture. The next text() bakes again. */
+    public function releaseAtlases(): static
+    {
+        $this->flush();
+        foreach ($this->atlases as [$handle]) {
+            $this->executor->releaseTexture($handle);
+        }
+        $this->atlases = [];
+
+        return $this;
+    }
+
     /** Post-multiply the top of the stack: current × m, so m applies to a point first. */
     protected function compose(Affine $m): static
     {
@@ -324,6 +381,17 @@ class Painter implements Drawing2D
     protected function ellipsePoints(float $cx, float $cy, float $rx, float $ry, int $segments): array
     {
         return Geometry::ellipsePoints($cx, $cy, $rx, $ry, $segments);
+    }
+
+    /** The face's atlas and texture, baked at the executor's texture limit on first use. @return array{TextureHandle, GlyphAtlas} */
+    protected function atlas(GFXFont $font): array
+    {
+        if (! isset($this->atlases[$font::class])) {
+            $atlas = GlyphAtlas::bake($this->typesetter, $font, $this->executor->capabilities()->max_texture_size);
+            $this->atlases[$font::class] = [$this->executor->texture($atlas->rgba8(), $atlas->width(), $atlas->height()), $atlas];
+        }
+
+        return $this->atlases[$font::class];
     }
 
     /** Append vertices to the batch; a topology or texture change flushes first. */

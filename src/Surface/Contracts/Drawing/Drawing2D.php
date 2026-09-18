@@ -2,11 +2,12 @@
 
 namespace Surface\Contracts\Drawing;
 
+use Surface\Contracts\Fonts\GFXFont;
 use Surface\Contracts\NativeWindows\Views\Color;
 
 /**
  * The common 2D drawing API. Floats, Color, top-left pixels in the target's
- * own point space, fluent. No text in slice 1.
+ * own point space, fluent. Bitmap text comes from a GFXFont the sketch holds.
  *
  * push/pop/translate/rotate/scale drive a 2D affine stack applied to every
  * vertex as it is emitted. clip() is an axis-aligned scissor in UNTRANSFORMED
@@ -65,4 +66,14 @@ interface Drawing2D
 
     /** @return array{int, int} target size in points */
     public function size(): array;
+
+    /**
+     * Bitmap text from the face's own glyphs. ($x, $y) is the top-left of the
+     * first line box; "\n" starts a new line, "\r" is ignored, codes outside
+     * the face are skipped. Scale and rotate through the stack.
+     */
+    public function text(string $text, float $x, float $y, Color $color, GFXFont $font): static;
+
+    /** @return array{float, float, float, float} ink box [x, y, w, h] relative to the text origin, untransformed; all zero when nothing inks */
+    public function textBounds(string $text, GFXFont $font): array;
 }

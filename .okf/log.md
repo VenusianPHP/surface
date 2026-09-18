@@ -1,5 +1,21 @@
 # Surface Update Log
 
+## 2026-09-18 (bitmap fonts Task 5 — Drawing2D::text)
+* **Update**: [drawing](/drawing.md) — `text()` / `textBounds()` on
+  Painter (atlas quads, `releaseAtlases`) and Rasterizer (one span
+  per glyph run). `surface/drawing` still does not import
+  `Surface\Fonts\`.
+* **Update**: [components-to-come](/components-to-come.md) — drawer
+  verbs landed; letterhead is next.
+
+## 2026-09-18 (bitmap fonts Task 4 — Typesetter)
+* **Update**: [drawing](/drawing.md) — `Surface\Drawing\Text`: Typesetter,
+  PlacedGlyph, GlyphAtlas. Layout is engine-free; `Drawing2D::text` is
+  still next. `surface/drawing` does not import `Surface\Fonts\`.
+* **Update**: [testing](/testing.md) — `TinyFace` / `TinyAAFace` fakes.
+* **Update**: [components-to-come](/components-to-come.md) — layout
+  landed; drawer verbs still to come.
+
 ## 2026-09-17 (CPU stages)
 * **Update**: [stage](/stage.md) — `# CPU stages`: two kinds over
   `AbstractStage`, `openCPU` / `emulate`, fit + nearest, fixed canvas,

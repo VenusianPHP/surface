@@ -7,7 +7,7 @@ description: >-
   any Framebuffer, GPUView, and the five CPU canvases.
 tags: [surface, drawing, gpu, contracts, views]
 status: draft
-generated: { by: cursor-grok-4.6/cursor, at: "2026-09-18T02:20:00Z" }
+generated: { by: cursor-grok-4.6/cursor, at: "2026-09-18T06:20:00Z" }
 sources:
   - id: contracts
     resource: src/Surface/Contracts/Drawing
@@ -75,6 +75,18 @@ through a scanline polygon fill. Colour is opaque; texel alpha `< 128`
 is skipped. `begin(?Region $page)` resets the affine stack and user
 clip; a page clip survives `unclip()`. `RastersNatively` is an optional
 seam probed once at construction — no driver implements it this slice.
+
+`Surface\Drawing\Text` is engine-free layout over any `GFXFont`:
+`Typesetter` places glyphs from the line-box top (`y` is the top, no
+baseline shim), decodes coverage / inclusive runs, and caches by face
+class. `GlyphAtlas` shelf-packs white RGB + coverage alpha with a
+one-texel gutter. `surface/drawing` still does not import
+`Surface\Fonts\`. `Drawing2D::text()` / `textBounds()` sit on both
+drawers: the Painter emits one `TRIANGLES` batch per string (six
+tinted vertices per placed glyph, UVs from a per-face-class atlas
+held until `releaseAtlases()`); the Rasterizer writes one span per
+glyph run (`fillRegion` on a translation, `scanlines()` otherwise).
+Atlas bake starts at `min(512, max_texture_size)`.
 
 `Affine` (immutable `a b c d tx ty`) and `Geometry` (segment counts,
 ellipse rings, stroke quads) are shared with `Painter`. Compose is
@@ -166,7 +178,8 @@ honestly (blending false → opaque).
 
 # Not in this slice
 
-Text, depth, embedded panels. (Slice 2 landed OpenGL on both boxes.
+Depth, embedded panels. Typesetter / GlyphAtlas / `text()` exist
+under Drawing. (Slice 2 landed OpenGL on both boxes.
 Slice 3 landed Vulkan on the Mac through MoltenVK. CPU engines landed
 in Task 11.)
 

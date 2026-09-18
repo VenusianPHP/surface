@@ -1,0 +1,20 @@
+<?php
+
+namespace {{ namespace }};
+
+use Surface\Contracts\Fonts\GFXFont;
+
+class {{ class }} extends GFXFont
+{
+    protected int $first = 0x20;
+
+    protected int $last = 0x7E;
+
+    protected int $y_advance = 8;
+
+    /** Glyph bytes. An empty scaffold reports hasBitmapData() === false and draws nothing. */
+    protected array $bitmaps = [];
+
+    /** [bitmap_offset, width, height, x_advance, x_offset, y_offset], one per code from $first. */
+    protected array $glyphs = [];
+}

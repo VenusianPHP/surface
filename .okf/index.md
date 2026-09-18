@@ -91,4 +91,4 @@ concept here is `status: draft` until a human verifies it.
 | Split packages | `surface/bridge`, `surface/contracts`, `surface/drawing`, `surface/embedded-panels`, `surface/fonts`, `surface/framebuffers`, `surface/human-input`, `surface/native-windows`, `surface/stage` — each with own `composer.json`; Core is not split |
 | Hard dependencies | `venusian-voyager/nuts-and-bolts` + `venusian-voyager/io-pools` |
 | Engines | suggested, never required |
-| Tests | `vendor/bin/pest` green at 659; orphaned view tests excluded in `phpunit.xml` |
+| Tests | `vendor/bin/pest` green at 698; orphaned view tests excluded in `phpunit.xml` |

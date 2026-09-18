@@ -6,7 +6,7 @@ description: >-
   are held out of the default run.
 tags: [surface, testing]
 status: draft
-generated: { by: cursor-grok-4.6/cursor, at: "2026-09-18T03:00:00Z" }
+generated: { by: cursor-grok-4.6/cursor, at: "2026-09-18T05:20:00Z" }
 revised: { by: cursor-grok-4.6/cursor, at: "2026-09-18T04:00:00Z", note: "stageManager() binds real CPU engines; StageManagerCPUTest" }
 sources:
   - id: phpunit
@@ -55,6 +55,8 @@ Shared fakes live in `tests/Support/Fakes`.[^fakes]
 | `FakeButtonPad` | a `Circuits\ButtonPad`; test sets `down` directly, edge queries answer false — `ICInput` derives edges from `isDown()` |
 | `FakeControllerPad` | a `Circuits\GameController`; adds axis values to `FakeButtonPad`'s shape |
 | `FakeBindingVessel` + `FakeConfigRepository` | enough vessel for a `Manager` |
+| `TinyFace` | three Adafruit 1bpp glyphs A/B/C (ascent 3) for Typesetter / GlyphAtlas / `text()` |
+| `TinyAAFace` | one LVGL 4bpp `A` (LINE mode) for nibble coverage |
 | `Rgba8Source` (`tests/Support/Framebuffers`) | read-only B32 `Framebuffer` over RGBA8 bytes; writes throw; the `rgba8` fixture op blits through it |
 
 Framebuffer golden fixtures live in `tests/Framebuffers/fixtures/` (27 files,

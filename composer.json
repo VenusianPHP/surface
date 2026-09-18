@@ -23,6 +23,9 @@
     ],
     "require": {
         "php": "^8.4|^8.5|^8.6",
+        "symfony/polyfill-php85": "^1.31",
+        "venusian-voyager/console": "^0.8.0",
+        "venusian-voyager/filesystem": "^0.8.0",
         "venusian-voyager/io-pools": "^0.8.0",
         "venusian-voyager/nuts-and-bolts": "^0.8.0"
     },
@@ -81,6 +84,7 @@
                 "GPU": "Surface\\Drawing\\MagicAliases\\GPU",
                 "CPU": "Surface\\Drawing\\MagicAliases\\CPU",
                 "Framebuffers": "Surface\\Framebuffers\\MagicAliases\\Framebuffers",
+                "Fonts": "Surface\\Fonts\\MagicAliases\\Fonts",
                 "Stage": "Surface\\Stage\\MagicAliases\\Stage",
                 "HumanInput": "Surface\\HumanInput\\MagicAliases\\HumanInput"
             }
@@ -93,27 +97,5 @@
         }
     },
     "minimum-stability": "dev",
-    "prefer-stable": true,
-    "repositories": [
-        {
-            "type": "path",
-            "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/venusian/framework/src/Voyager/IOPools",
-            "options": {
-                "symlink": true,
-                "versions": {
-                    "venusian-voyager/io-pools": "0.8.4"
-                }
-            }
-        },
-        {
-            "type": "path",
-            "url": "/Volumes/ProjectSaturnStudios/Development/PHP/ProjectSaturnStudios/dev/venusian/framework/src/Voyager/Contracts",
-            "options": {
-                "symlink": true,
-                "versions": {
-                    "venusian-voyager/contracts": "0.8.4"
-                }
-            }
-        }
-    ]
+    "prefer-stable": true
 }

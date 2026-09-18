@@ -1,6 +1,6 @@
 {
     "name": "surface/fonts",
-    "description": "Reserved: Surface fonts, GPU-native and CPU bitmap.",
+    "description": "Surface bitmap faces: the GFXFont registry, the classic 5x7, make:font, and the Fonts alias.",
     "license": "MIT",
     "authors": [
         {
@@ -9,7 +9,15 @@
         }
     ],
     "require": {
-        "php": "^8.4|^8.5|^8.6"
+        "php": "^8.4|^8.5|^8.6",
+        "surface/contracts": "^0.8.0",
+        "venusian-voyager/console": "^0.8.0",
+        "venusian-voyager/filesystem": "^0.8.0",
+        "venusian-voyager/magic-aliases": "^0.8.0",
+        "venusian-voyager/nuts-and-bolts": "^0.8.0"
+    },
+    "suggest": {
+        "venusian/letterhead": "^0.8.0 - 57 faces: FreeSans, FreeSerif, FreeMono, Montserrat, U8g2, HelvB, Unscii, Logisoso, one-offs."
     },
     "minimum-stability": "dev",
     "autoload": {
@@ -23,6 +31,14 @@
     "extra": {
         "branch-alias": {
             "dev-main": "0.8.x-dev"
+        },
+        "venusian": {
+            "providers": [
+                "Surface\\Fonts\\FontsServiceProvider"
+            ],
+            "aliases": {
+                "Fonts": "Surface\\Fonts\\MagicAliases\\Fonts"
+            }
         }
     }
 }

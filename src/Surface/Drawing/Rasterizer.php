@@ -5,19 +5,22 @@ namespace Surface\Drawing;
 use Surface\Contracts\Drawing\Drawing2D;
 use Surface\Contracts\Drawing\DrawingException;
 use Surface\Contracts\Drawing\TextureHandle;
+use Surface\Contracts\Fonts\GFXFont;
 use Surface\Contracts\Framebuffers\Framebuffer;
 use Surface\Contracts\Framebuffers\RastersNatively;
 use Surface\Contracts\Framebuffers\Region;
 use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Drawing\Text\Typesetter;
 use Surface\Framebuffers\PixelMapper;
 
 /**
- * The one Drawing2D over any Framebuffer. Integer primitives, emitted as
- * rects and spans (setSegment: one call per axis-aligned rect, one per row
- * for polygons) and point lists (setPixels, one per shape) — never one call
- * per pixel. Identity and translate-only transforms take
- * the fast path; rotate and scale go through a scanline polygon fill.
- * Colour is opaque; a texel under half alpha is skipped.
+ * The one Drawing2D over any Framebuffer. Integer primitives, and text as
+ * one span per glyph run, emitted as rects and spans (setSegment: one call
+ * per axis-aligned rect, one per row for polygons) and point lists
+ * (setPixels, one per shape) — never one call per pixel. Identity and
+ * translate-only transforms take the fast path; rotate and scale go through
+ * a scanline polygon fill. Colour is opaque; a texel under half alpha is
+ * skipped.
  */
 final class Rasterizer implements Drawing2D
 {
@@ -39,11 +42,14 @@ final class Rasterizer implements Drawing2D
 
     private int $next_texture = 1;
 
+    private Typesetter $typesetter;
+
     public function __construct(private Framebuffer $buffer, private PixelMapper $mapper)
     {
         $this->width = $buffer->viewportWidth();
         $this->height = $buffer->viewportHeight();
         $this->native = $buffer instanceof RastersNatively ? $buffer : null;
+        $this->typesetter = new Typesetter();
         $this->begin();
     }
 
@@ -327,6 +333,35 @@ final class Rasterizer implements Drawing2D
     public function size(): array
     {
         return [$this->width, $this->height];
+    }
+
+    public function text(string $text, float $x, float $y, Color $color, GFXFont $font): static
+    {
+        $word = $this->mapper->map($color);
+        $top = $this->top();
+        foreach ($this->typesetter->layout($font, $text) as $placed) {
+            $gx = $x + $placed->x;
+            $gy = $y + $placed->y;
+            foreach ($this->typesetter->runs($font, $placed->glyph) as [$row, $x0, $x1]) {
+                $rx = $gx + $x0;
+                $ry = $gy + $row;
+                $rw = (float) ($x1 - $x0 + 1);
+                if ($top->isTranslation()) {
+                    $this->fillRegion(self::rect($rx + $top->tx, $ry + $top->ty, $rw, 1.0), $word);
+                } else {
+                    $this->scanlines([$top->apply($rx, $ry), $top->apply($rx + $rw, $ry), $top->apply($rx + $rw, $ry + 1.0), $top->apply($rx, $ry + 1.0)], $word);
+                }
+            }
+        }
+
+        return $this;
+    }
+
+    public function textBounds(string $text, GFXFont $font): array
+    {
+        [$bx, $by, $bw, $bh] = $this->typesetter->bounds($font, $text);
+
+        return [(float) $bx, (float) $by, (float) $bw, (float) $bh];
     }
 
     // ---- internals
