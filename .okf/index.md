@@ -15,7 +15,8 @@ engine-owned windows (Stage) — GPU via `Stage::open()`, CPU via
 (`dirty` / `full` / `epaper` / `paged` / `nframes`) over a `php` or
 `native` framebuffer store. Engines: `metal`, `opengl`
 (`jovian/venusian-ogx`), `vulkan`, `sdl3`. Embedded display sinks are
-later slices.
+later slices. Bitmap text (`Drawing2D::text()`) is in on both engines;
+faces come from `surface/fonts` and `venusian/letterhead`.
 
 The package is mid-rebuild. The 0.8 native-window view tree was written
 against an older, opinionated `ext-appkit` / `ext-gtk` whose convenience
@@ -65,8 +66,8 @@ concept here is `status: draft` until a human verifies it.
 * [human-input.md](/human-input.md) - keyboards, mice, game pads, game
   controllers: the `input.<engine>` seam, IC circuits, the `input` dock
   resource
-* [components-to-come.md](/components-to-come.md) - Fonts: reserved, facts
-  recorded
+* [fonts.md](/fonts.md) - GFXFont faces and the registry; text on the
+  Painter (atlas) and the Rasterizer (spans); make:font
 * [components.md](/components.md) - opinionated shapes over the primitives:
   one root Group, named parts, pure PHP — twenty-five built, including
   Datepicker and DataTable wrapping datePicker / table
@@ -89,6 +90,6 @@ concept here is `status: draft` until a human verifies it.
 | Version | 0.8.0, PHP `^8.4\|^8.5\|^8.6` |
 | Namespace | `Surface\` at `src/Surface` |
 | Split packages | `surface/bridge`, `surface/contracts`, `surface/drawing`, `surface/embedded-panels`, `surface/fonts`, `surface/framebuffers`, `surface/human-input`, `surface/native-windows`, `surface/stage` — each with own `composer.json`; Core is not split |
-| Hard dependencies | `venusian-voyager/nuts-and-bolts` + `venusian-voyager/io-pools` |
+| Hard dependencies | `venusian-voyager/nuts-and-bolts` + `venusian-voyager/io-pools` + `venusian-voyager/console` + `venusian-voyager/filesystem` |
 | Engines | suggested, never required |
 | Tests | `vendor/bin/pest` green at 698; orphaned view tests excluded in `phpunit.xml` |

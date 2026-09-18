@@ -25,7 +25,8 @@ sources:
 The suite runs with no application container, no extension loaded, and no
 engine package installed. Everything it asserts is PHP-side policy: the
 session state machine, the drain order, name-keyed lookup, the presentation
-guard, the driver type guards.
+guard, the driver type guards. `tests/Fonts` covers the font contracts,
+registry, header parser, provider and `make:font` pure parts.
 
 Engine behaviour is proven on hardware instead — macOS for AppKit, the Pi
 over `fnk` for GTK.

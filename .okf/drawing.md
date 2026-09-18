@@ -86,7 +86,7 @@ drawers: the Painter emits one `TRIANGLES` batch per string (six
 tinted vertices per placed glyph, UVs from a per-face-class atlas
 held until `releaseAtlases()`); the Rasterizer writes one span per
 glyph run (`fillRegion` on a translation, `scanlines()` otherwise).
-Atlas bake starts at `min(512, max_texture_size)`.
+Atlas bake starts at `min(512, max_texture_size)`. See [fonts](/fonts.md).
 
 `Affine` (immutable `a b c d tx ty`) and `Geometry` (segment counts,
 ellipse rings, stroke quads) are shared with `Painter`. Compose is

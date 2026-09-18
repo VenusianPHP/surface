@@ -75,3 +75,19 @@ $stage = Stage::emulate('oled', new CPUHost(128, 64, $ssd1306->formatSpec()), zo
 $stage->onDraw(fn (Drawing2D $g, Frame $f) => $g->fillCircle(64, 32, 20 + 8 * sin($f->time), Color::hex('#fff')));
 $stage->show();
 ```
+
+## Bitmap text
+
+Same hook, any engine. A face is a value from the registry; the Painter
+draws it from a glyph atlas, the Rasterizer as spans.
+
+```php
+$hud = Fonts::face('helvb-12');                      // venusian/letterhead
+$canvas->onDraw(fn (Drawing2D $g, Frame $f) => $g
+    ->clear(Color::hex('#000'))
+    ->text("T {$c}C", 0.0, 0.0, Color::hex('#fff'), $hud)
+    ->text('OK', 100.0, 56.0, Color::hex('#0f0'), Fonts::face()));   // classic 5x7
+```
+
+`php computer make:font Name --from=FreeSans9pt7b.h` imports an Adafruit
+header. Scale through the stack; `textBounds()` answers the ink box.

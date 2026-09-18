@@ -524,3 +524,6 @@
 
 ## 2026-09-17
 * **Update**: [stage](/stage.md) — a host may own the native pump (`ownsNativePump()`; SDL on macOS): the `os` resource then skips its NSApp drain and hands that host the idle wait, since SDL reads keys only inside its own pump.
+
+## 2026-09-17
+* **Creation**: [fonts](/fonts.md) — faces, registry, text on both engines, make:font. **Removal**: components-to-come.md (Fonts landed).

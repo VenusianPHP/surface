@@ -158,7 +158,7 @@ attach.
   slice, except `paged`'s `onPage`.
 - Native rasterisation (`RastersNatively`): seam declared, no driver
   implements it.
-- Blending on CPU, text, dithering.
+- Blending on CPU, dithering. Text landed — see [fonts](/fonts.md).
 - Canvas over GPU + CPU targets.
 
 [^spec]: CPU rendering design
