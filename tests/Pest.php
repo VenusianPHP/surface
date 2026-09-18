@@ -4,7 +4,11 @@ use Surface\Contracts\Core\Events\SurfaceEvent;
 use Surface\Core\IOPools\OSLevelResourceDriver;
 use Surface\Core\LiveApplication;
 use Surface\Contracts\Drawing\GPUEngine;
+use Surface\Drawing\CPUEngineManager;
+use Surface\Drawing\Engines\DirtyEngine;
+use Surface\Drawing\Engines\FullEngine;
 use Surface\Drawing\GPUEngineManager;
+use Surface\Framebuffers\FramebufferManager;
 use Surface\HumanInput\HumanInputManager;
 use Surface\Stage\StageManager;
 use Venusian\Surface\Tests\Support\Fakes\FakeBindingVessel;
@@ -76,12 +80,19 @@ function stageManager(array $stage_config = ['default' => 'sdl3'], array $bindin
         'config' => new FakeConfigRepository([
             'stage' => $stage_config,
             'gpu' => ['default' => 'metal', 'engines' => ['metal' => ['alias' => 'gpu.metal'], 'opengl' => ['alias' => 'gpu.opengl']]],
+            'cpu' => ['default' => 'dirty', 'engines' => ['dirty' => ['alias' => 'cpu.dirty'], 'full' => ['alias' => 'cpu.full']]],
+            'framebuffers' => [],
         ]),
         'gpu.metal' => new FakeGPUEngineDriver(GPUEngine::METAL),
         'gpu.opengl' => new FakeGPUEngineDriver(GPUEngine::OPENGL),
         'io-pool' => $dock,
     ] + $bindings);
     $vessel->instance('gpu-engines', new GPUEngineManager($vessel));
+    $framebuffers = new FramebufferManager($vessel);
+    $vessel->instance(FramebufferManager::class, $framebuffers);
+    $vessel->instance('cpu.dirty', new DirtyEngine($framebuffers));
+    $vessel->instance('cpu.full', new FullEngine($framebuffers));
+    $vessel->instance('cpu-engines', new CPUEngineManager($vessel));
 
     return [new StageManager($vessel), $dock, $vessel];
 }

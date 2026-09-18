@@ -6,8 +6,8 @@ description: >-
   are held out of the default run.
 tags: [surface, testing]
 status: draft
-generated: { by: claude-opus-5/claude-code, at: "2026-08-30T02:30:00Z" }
-revised: { by: cursor-grok-4.6/cursor, at: "2026-09-18T00:30:00Z", note: "RecordingFramebuffer for Rasterizer batching" }
+generated: { by: cursor-grok-4.6/cursor, at: "2026-09-18T03:00:00Z" }
+revised: { by: cursor-grok-4.6/cursor, at: "2026-09-18T04:00:00Z", note: "stageManager() binds real CPU engines; StageManagerCPUTest" }
 sources:
   - id: phpunit
     resource: phpunit.xml
@@ -47,6 +47,8 @@ Shared fakes live in `tests/Support/Fakes`.[^fakes]
 | `FakeGLSurface` | a `GLSurface` that counts `makeCurrent()`/`present()` and logs order with the `FakeExecutor` |
 | `FakeGPUEngineDriver` | attach records the host and mints a `FakeExecutor`; configurable `surfaceKind`; a `GL_CONTEXT` fake refuses a host with no `gl` |
 | `FakeCPUEngineDriver` | attach records every `CPUHost` and hands back an injected `CPUDrawTarget` |
+| `FakeCPUStagedWindow` | a CPU stage with no native; records `$presents` (RGBA8) and the close-order `$log`; `$release_failure` throws after logging |
+| `FakeStageSession` | the abstract stage session; GPU `mintStage()` → `FakeStagedWindow`; `mintCPUStage()` → `FakeCPUStagedWindow` unless `$refuses_cpu` |
 | `RecordingFramebuffer` | decorator over any `Framebuffer`; `$calls` records write verbs in order (`setSegment:…`, `setPixels:N`, `fill`) so Rasterizer batching is fake-provable |
 | `FakeGPUView` | GPUView twin; records frames, queues, rescale door; holds `$gl` |
 | `FakeInputEngine` | an `InputEngineDriver`; counts connect/disconnect/poll, serves whatever keyboard/mouse/pads a test hands it |
@@ -68,6 +70,37 @@ front/back), and `PhpDriverFixturesTest` (all 27 fixtures, no kind filter).
 `PhpFramebufferDriver` mints `full` / `dirty` / `epaper` / `paged` / `ring`.
 Store is the host format: same-spec `flush` is a packing region copy; any
 other spec transcodes pixel-by-pixel through RGBA8.
+
+`CPUCanvasTest` drives `FullCanvas` / `DirtyCanvas` over an SSD1306-shaped
+host (`8×16`, `MONO_VERTICAL_PAGE` B1). First-row fill, attach-black,
+preserving last pixel, dirty snap (`fillRect(2, 9, 1, 1)` →
+`Region(0, 8, 8, 8)`), transcode to `MONO_HORIZONTAL`, and `rgba8()`
+length are exact hex / sizes — not weakened. `CPUCanvasKindsTest`
+covers the other three: epaper attach flush `ff00` then one red pixel
+`ff80`; paged hook-once-per-page with sink `[[0, ffffffffffffffff],
+[8, 0101010101010101]]` and `flush()`/`rgba8()` re-run (foreign spec
+throws); nframes B8 2×1 flush `0000` / `00ff` / `ffff`. `RunsFramesTest`,
+Stage, and GPUView stay the GPU proof; they were not rewritten for the
+split. `CPUStagedWindowTest` is the CPU twin: a 128×64 SSD1306-shaped
+dirty canvas in a 512×256 window; hidden frames do nothing, `show()`
+presents once without the hook, resize re-presents and leaves the
+canvas at 128×64.
+`stageManager()` now binds a real `FramebufferManager` plus
+`DirtyEngine` / `FullEngine` on `cpu.dirty` / `cpu.full` and
+`'cpu-engines'`. `StageManagerCPUTest` is the manager door: `openCPU`
+resolves through that stack, `emulate` is 128×64 at zoom 4 → 512×256
+`INTEGER_SCALE`, a null fit reads `stage.cpu_fit`, a refusing host
+throws `cpuUnsupported`, and both kinds share one resource driver.
+
+`CPUEngineManagerTest` resolves `cpu.<engine>` through fakes only (no
+attach). `CPUEnginesTest` mints real canvases through
+`FramebufferManager` + the php driver; the spec goal snippet is a
+128×64 SSD1306-shaped dirty canvas whose `fillCircle(64, 32, 20)`
+snaps one damage region `[0, 8, 128*6, 128, 48]`, and `rgba8()` feeds
+`FakeExecutor::texture`. `DrawingServiceProviderTest` pre-binds
+`FramebufferManager` and asserts the five `cpu.*` singletons plus
+`'cpu-engines'`. `FakeBindingVessel::singleton()` / `alias()` record
+bindings.
 
 # Excluded directories
 

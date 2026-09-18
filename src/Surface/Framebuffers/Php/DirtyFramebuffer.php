@@ -7,14 +7,12 @@ use Surface\Contracts\Framebuffers\Region;
 
 /**
  * Records every write as a Region. Touching regions merge on the way in;
- * more than MAX collapses the record to one bounding box. damage() snaps to
- * the packing's granularity and merges again, since snapping makes
+ * more than 16 rects collapses the record to one bounding box. damage() snaps
+ * to the packing's granularity and merges again, since snapping makes
  * neighbours touch.
  */
 class DirtyFramebuffer extends PackedGrid implements DamageTrackingFramebuffer
 {
-    public const MAX = 16;
-
     /** @var list<Region> */
     protected array $written = [];
 
@@ -45,7 +43,7 @@ class DirtyFramebuffer extends PackedGrid implements DamageTrackingFramebuffer
             return;
         }
         $this->written = self::mergeInto($this->written, $region);
-        if (count($this->written) > self::MAX) {
+        if (count($this->written) > 16) {
             $box = array_shift($this->written);
             foreach ($this->written as $r) {
                 $box = $box->union($r);

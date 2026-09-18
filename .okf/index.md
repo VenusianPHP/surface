@@ -5,11 +5,16 @@ okf_version: "0.2"
 # venusian/surface — knowledge bundle
 
 Surface is the engine-agnostic layer for native OS windows, GPU drawing to
-window views, and drawing to embedded IC displays. Native windows and the
-engine-free GPU drawing contracts / Painter / GPUView are in, including
-the four seam shapes (`LAYER` / `GL_CONTEXT` / `VULKAN_SURFACE` /
-`HOST_WINDOW`), plus whole engine-owned windows (Stage). Engines: `metal`,
-`opengl` (`jovian/venusian-ogx`), `vulkan`, `sdl3`. Embedded displays are
+window views, CPU rendering into host-format framebuffers, CPU stages
+that present those canvases in an engine-owned window, and drawing to
+embedded IC displays. Native windows and the engine-free GPU drawing
+contracts / Painter / GPUView are in, including the four seam shapes
+(`LAYER` / `GL_CONTEXT` / `VULKAN_SURFACE` / `HOST_WINDOW`), plus whole
+engine-owned windows (Stage) — GPU via `Stage::open()`, CPU via
+`Stage::openCPU()` / `Stage::emulate()`. CPU path: five in-house engines
+(`dirty` / `full` / `epaper` / `paged` / `nframes`) over a `php` or
+`native` framebuffer store. Engines: `metal`, `opengl`
+(`jovian/venusian-ogx`), `vulkan`, `sdl3`. Embedded display sinks are
 later slices.
 
 The package is mid-rebuild. The 0.8 native-window view tree was written
@@ -48,9 +53,15 @@ concept here is `status: draft` until a human verifies it.
   the top-left frame, engines translate through four hooks; nineteen kinds
 * [drawing.md](/drawing.md) - GPU regions: engine-free contracts, the
   Painter, GPUView, the per-tick frame pass; Rasterizer is Drawing2D
-  over any Framebuffer; Affine and Geometry shared with Painter
+  over any Framebuffer; Affine and Geometry shared with Painter;
+  SchedulesFrames plus the five CPU canvases (full, dirty, epaper,
+  paged, nframes)
+* [cpu-drawing.md](/cpu-drawing.md) - five CPU engines, canvases,
+  Drawing2D-not-Executor, clear / damage / paged rules
+* [framebuffers.md](/framebuffers.md) - host-format store, php and
+  native drivers, packings, PixelMapper, golden fixtures
 * [stage.md](/stage.md) - engine-owned windows: hosts and engines by alias,
-  one Drawing2D
+  one Drawing2D; GPU and CPU kinds, `openCPU` / `emulate`
 * [human-input.md](/human-input.md) - keyboards, mice, game pads, game
   controllers: the `input.<engine>` seam, IC circuits, the `input` dock
   resource
@@ -77,7 +88,7 @@ concept here is `status: draft` until a human verifies it.
 |---|---|
 | Version | 0.8.0, PHP `^8.4\|^8.5\|^8.6` |
 | Namespace | `Surface\` at `src/Surface` |
-| Split packages | `surface/bridge`, `surface/contracts`, `surface/drawing`, `surface/embedded-panels`, `surface/fonts`, `surface/human-input`, `surface/native-windows`, `surface/stage` — each with own `composer.json`; Core is not split |
+| Split packages | `surface/bridge`, `surface/contracts`, `surface/drawing`, `surface/embedded-panels`, `surface/fonts`, `surface/framebuffers`, `surface/human-input`, `surface/native-windows`, `surface/stage` — each with own `composer.json`; Core is not split |
 | Hard dependencies | `venusian-voyager/nuts-and-bolts` + `venusian-voyager/io-pools` |
 | Engines | suggested, never required |
-| Tests | `vendor/bin/pest` green at 520; orphaned view tests excluded in `phpunit.xml` |
+| Tests | `vendor/bin/pest` green at 659; orphaned view tests excluded in `phpunit.xml` |

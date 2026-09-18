@@ -2,6 +2,8 @@
 
 namespace Surface\Contracts\Stage;
 
+use Surface\Contracts\Drawing\CPUEngineDriver;
+use Surface\Contracts\Drawing\CPUHost;
 use Surface\Contracts\Drawing\GPUEngineDriver;
 
 /**
@@ -37,5 +39,14 @@ interface StageSession
      * @throws StageException When disconnected, when this host cannot give the engine its surface kind, or when the
      *                         engine's attach() fails (StageException::attachFailed, the engine's exception as previous).
      */
-    public function open(string $name, GPUEngineDriver $engine, int $width, int $height): StagedWindow;
+    public function open(string $name, GPUEngineDriver $engine, int $width, int $height): GPUStagedWindow;
+
+    /**
+     * Mint a CPU stage, hidden: a window that presents $canvas, scaled by $fit.
+     * The canvas keeps the size it was minted at.
+     *
+     * @throws StageException When disconnected, or when this host cannot present a CPU canvas
+     *                        (StageException::cpuUnsupported).
+     */
+    public function openCPU(string $name, CPUEngineDriver $engine, CPUHost $canvas, int $width, int $height, StageFit $fit): CPUStagedWindow;
 }

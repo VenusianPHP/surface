@@ -210,3 +210,12 @@ it('size answers points and reset drops a partial batch', function () {
     expect($g->size())->toBe([200, 100])
         ->and($x->draws)->toHaveCount(0);
 });
+
+it('releaseTexture hands the handle back to the executor', function () {
+    [$g, $x] = painter();
+    $tex = $g->texture(str_repeat("\xff", 16), 2, 2);
+    $g->releaseTexture($tex);
+
+    expect($x->released_textures)->toBe([$tex->id])
+        ->and($x->textures)->toBe([]);
+});

@@ -79,6 +79,7 @@
                 "OSAppBridge": "Surface\\Bridge\\MagicAliases\\OSAppBridge",
                 "NativeWindow": "Surface\\NativeWindows\\MagicAliases\\NativeWindow",
                 "GPU": "Surface\\Drawing\\MagicAliases\\GPU",
+                "CPU": "Surface\\Drawing\\MagicAliases\\CPU",
                 "Framebuffers": "Surface\\Framebuffers\\MagicAliases\\Framebuffers",
                 "Stage": "Surface\\Stage\\MagicAliases\\Stage",
                 "HumanInput": "Surface\\HumanInput\\MagicAliases\\HumanInput"

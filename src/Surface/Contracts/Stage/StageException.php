@@ -40,4 +40,9 @@ class StageException extends SurfaceLevelException
     {
         return new static("Stage '{$name}' is closed.");
     }
+
+    public static function cpuUnsupported(StageHost $host): static
+    {
+        return new static("The '{$host->value}' stage host cannot present a CPU canvas.");
+    }
 }

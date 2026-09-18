@@ -42,6 +42,13 @@ interface Drawing2D
 
     public function texture(string $rgba8, int $width, int $height): TextureHandle;
 
+    /**
+     * The handle dies now. A sketch that mints a texture per frame must call
+     * this or it leaks: on a GPU engine the executor's texture stays alive
+     * until the frame it was released in submits.
+     */
+    public function releaseTexture(TextureHandle $texture): static;
+
     public function push(): static;
 
     public function pop(): static;

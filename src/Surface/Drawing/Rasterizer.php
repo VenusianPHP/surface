@@ -271,6 +271,13 @@ final class Rasterizer implements Drawing2D
         return new TextureHandle($id, max(1, $width), max(1, $height));
     }
 
+    public function releaseTexture(TextureHandle $texture): static
+    {
+        unset($this->textures[$texture->id]);
+
+        return $this;
+    }
+
     public function push(): static
     {
         $this->stack[] = $this->top();

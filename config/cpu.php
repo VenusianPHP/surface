@@ -6,7 +6,8 @@ return [
     | Default CPU Engine
     |--------------------------------------------------------------------------
     |
-    | Available options: 'dirty', 'spectra-full', 'byte-packed'
+    | Used when a sketch names no engine.
+    | Available options: 'dirty', 'full', 'epaper', 'paged', 'nframes'
     |
     */
     'default' => env('CPU_ENGINE', 'dirty'),
@@ -16,12 +17,16 @@ return [
     | Engine aliases
     |--------------------------------------------------------------------------
     |
-    | The container alias each engine package binds its CPUEngineDriver under.
-    | Rebind one here to point an engine name at a different package without
-    | code. Missing package: the container's own not-found exception.
+    | The container alias each engine binds its CPUEngineDriver under. The five
+    | in-house engines are bound by Surface's DrawingServiceProvider; rebind
+    | one here to point an engine name at another package without code.
     |
     */
     'engines' => [
-
+        'dirty' => ['alias' => 'cpu.dirty'],
+        'full' => ['alias' => 'cpu.full'],
+        'epaper' => ['alias' => 'cpu.epaper'],
+        'paged' => ['alias' => 'cpu.paged'],
+        'nframes' => ['alias' => 'cpu.nframes'],
     ],
 ];

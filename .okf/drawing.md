@@ -1,13 +1,13 @@
 ---
 type: Architecture
-title: GPU drawing — contracts, Painter, GPUView
+title: GPU drawing — contracts, Painter, GPUView, CPU canvases
 description: >-
-  How a sketch draws into a native window with a GPU: engine-free contracts,
-  one Painter that batches shapes into vertices over any Executor, and the
-  GPUView that runs one frame per tick after layout.
+  How a sketch draws into a native window with a GPU or a CPU framebuffer:
+  engine-free contracts, one Painter over any Executor, one Rasterizer over
+  any Framebuffer, GPUView, and the five CPU canvases.
 tags: [surface, drawing, gpu, contracts, views]
 status: draft
-generated: { by: cursor-grok-4.6/cursor, at: "2026-09-18T00:30:00Z" }
+generated: { by: cursor-grok-4.6/cursor, at: "2026-09-18T02:20:00Z" }
 sources:
   - id: contracts
     resource: src/Surface/Contracts/Drawing
@@ -18,6 +18,12 @@ sources:
   - id: rasterizer
     resource: src/Surface/Drawing/Rasterizer.php
     title: Rasterizer
+  - id: schedules
+    resource: src/Surface/Drawing/Concerns/SchedulesFrames.php
+    title: SchedulesFrames
+  - id: canvases
+    resource: src/Surface/Drawing/Canvases
+    title: CPU canvases
   - id: affine
     resource: src/Surface/Drawing/Affine.php
     title: Affine
@@ -36,6 +42,9 @@ sources:
   - id: slice3
     resource: docs/superpowers/specs/2026-09-13-gpu-drawing-slice3-vulkan-design.md
     title: Slice 3 design
+  - id: cpu-drawing
+    resource: .okf/cpu-drawing.md
+    title: CPU drawing
 ---
 
 # Overview
@@ -48,9 +57,14 @@ fake-provable; the engine lives in `jovian/venusian-<engine>`.[^contracts]
 
 `DrawTarget` is engine-free (hook, clear, continuous, redraw, size,
 `renderFrame`). `GPUDrawTarget` adds `engine()` / `executor()` —
-`OSGPUView` and `StagedWindow` extend it. `CPUDrawTarget` /
-`PagedDrawTarget` / `CPUHost` / the five `CPUEngine` cases (`dirty` /
-`full` / `epaper` / `paged` / `nframes`) are on the contracts.
+`OSGPUView` and `GPUStagedWindow` extend it. The `StagedWindow`
+contract itself is engine-free so a CPU stage can share the window
+verbs. `CPUDrawTarget` / `PagedDrawTarget` / `CPUHost` / the five
+`CPUEngine` cases (`dirty` / `full` / `epaper` / `paged` / `nframes`)
+are on the contracts. `Drawing2D::releaseTexture()` is the pair to
+`texture()`: the Painter flushes then hands the handle to the
+executor; the Rasterizer forgets it and `image()` throws
+`DrawingException` once it is gone.
 
 `Rasterizer` is the one `Drawing2D` over any `Framebuffer`. It takes a
 `Framebuffer` and a `PixelMapper`, emits `setSegment` (one call per
@@ -65,6 +79,23 @@ seam probed once at construction — no driver implements it this slice.
 `Affine` (immutable `a b c d tx ty`) and `Geometry` (segment counts,
 ellipse rings, stroke quads) are shared with `Painter`. Compose is
 **this × m** (right operand applies first). Singular invert is `null`.
+
+`SchedulesFrames` is the engine-neutral half of a frame loop: hook,
+clear colour, continuous vs on-demand, `Frame` clock. `bootSchedule()`
+sets opaque black only when the class has not already set `$clear_color`
+(the door `EPaperCanvas` uses). `RunsFrames` uses it and adds the
+Painter / Executor frame. `CPUCanvas` uses it and adds a Rasterizer
+over one framebuffer; `FullCanvas` and `DirtyCanvas` fill the
+begin/present/damage pair. `EPaperCanvas` sets paper before
+`bootSchedule()` so attach does not ink the panel; damage is the
+whole surface. `PagedCanvas` is true U8G2: one page of RAM, the
+same hook per page, `onPage` streams each page, `flush()` /
+`rgba8()` re-run and concatenate, a foreign spec throws
+`pagedHostOnly()`. `NFramesCanvas` clears the back, flips on
+present, reads the front. Scale on a CPU canvas is always `1.0`.
+Preserving buffers fill once at attach. A hook exception still
+`present()`s. `flush()` / `flushRegion()` / `rgba8()` read the
+framebuffer; a foreign spec transcodes except on a paged canvas.[^canvases]
 
 # Vocabulary
 
@@ -108,7 +139,10 @@ honestly (blending false → opaque).
   `VULKAN_SURFACE` on Linux.[^slice2][^slice3]
 - **A host may lend a layer it owns** (`GPUHost->layer`); a LAYER engine
   adopts it and answers `layer_pointer 0`.
-- **The frame loop is `RunsFrames`**, shared by GPUView and StagedWindow.
+- **The schedule is `SchedulesFrames`.** GPUView and StagedWindow keep
+  `RunsFrames` (same public methods). CPU canvases use the trait
+  directly. `requestFrame()` / `queueNativeFrame()` stay the
+  self-driving door.
 - **`GLSurface` is three verbs.** `makeCurrent()` before a frame,
   `present()` after, `drawableSize()` in pixels. The host owns the
   context; the engine owns GL state. Mint order is native → surface →
@@ -124,16 +158,23 @@ honestly (blending false → opaque).
   `jovian/venusian-vulkan` mints (or adopts a lent) `CAMetalLayer` and
   answers the same pointer bits Metal does; elsewhere the host lends a
   `VkSurfaceKHR`. Engines today: `metal`, `opengl`, `vulkan`, `sdl3`.
+- **CPU drawing is a sibling path.** [cpu-drawing](/cpu-drawing.md)
+  holds the Drawing2D-not-Executor split, the five engines, and the
+  canvas rules. `Affine` and `Geometry` stay shared with the Painter;
+  this file keeps GPU decisions. Do not duplicate the engine table
+  here.[^cpu-drawing]
 
 # Not in this slice
 
-Canvases and CPU engines (rest of the CPU-rendering slice). Text, depth,
-embedded panels. (Slice 2 landed OpenGL on both boxes. Slice 3 landed
-Vulkan on the Mac through MoltenVK.)
+Text, depth, embedded panels. (Slice 2 landed OpenGL on both boxes.
+Slice 3 landed Vulkan on the Mac through MoltenVK. CPU engines landed
+in Task 11.)
 
 [^contracts]: Drawing contracts
 [^painter]: Painter
 [^gpuview]: GPUView
+[^canvases]: CPU canvases
 [^spec]: Slice 1 design
 [^slice2]: Slice 2 design
 [^slice3]: Slice 3 design
+[^cpu-drawing]: CPU drawing

@@ -210,6 +210,14 @@ class Painter implements Drawing2D
         return $this->executor->texture($rgba8, $width, $height);
     }
 
+    public function releaseTexture(TextureHandle $texture): static
+    {
+        $this->flush();
+        $this->executor->releaseTexture($texture);
+
+        return $this;
+    }
+
     public function push(): static
     {
         $this->stack[] = $this->stack[count($this->stack) - 1];

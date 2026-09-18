@@ -2,11 +2,17 @@
 
 namespace Surface\Stage;
 
+use Surface\Contracts\Drawing\CPUEngine;
+use Surface\Contracts\Drawing\CPUHost;
 use Surface\Contracts\Drawing\GPUEngine;
+use Surface\Contracts\Stage\CPUStagedWindow;
+use Surface\Contracts\Stage\GPUStagedWindow;
 use Surface\Contracts\Stage\StagedWindow as StagedWindowContract;
 use Surface\Contracts\Stage\StageException;
+use Surface\Contracts\Stage\StageFit;
 use Surface\Contracts\Stage\StageHost;
 use Surface\Contracts\Stage\StageSession as StageSessionContract;
+use Surface\Drawing\CPUEngineManager;
 use Surface\Drawing\GPUEngineManager;
 use Voyager\IOPools\IOPoolDock;
 use Voyager\NutsAndBolts\Manager;
@@ -19,7 +25,7 @@ use Voyager\NutsAndBolts\Manager;
  */
 class StageManager extends Manager
 {
-    /** @var array<string, StagedWindowContract> */
+    /** @var array<string, StagedWindowContract> GPU and CPU stages alike. */
     protected array $stages = [];
 
     public function getDefaultDriver(): string
@@ -31,7 +37,7 @@ class StageManager extends Manager
      * Open a stage — hidden; show() presents it.
      * @throws StageException When the name is taken or the host cannot give the engine its surface.
      */
-    public function open(string $name, GPUEngine|string|null $engine, int $width, int $height, StageHost|string|null $host = null): StagedWindowContract
+    public function open(string $name, GPUEngine|string|null $engine, int $width, int $height, StageHost|string|null $host = null): GPUStagedWindow
     {
         if ($this->has($name)) {
             throw StageException::nameTaken($name);
@@ -47,6 +53,48 @@ class StageManager extends Manager
         $this->resourceFor($session)->track($stage);
 
         return $this->stages[$name] = $stage;
+    }
+
+    /**
+     * Open a CPU stage — a window that presents $canvas, hidden until show().
+     * The canvas keeps the size it was minted at; $width/$height are the
+     * window and $fit says how the canvas is scaled into it (null reads
+     * config('stage.cpu_fit')).
+     *
+     * @throws StageException When the name is taken or the host cannot present a canvas.
+     */
+    public function openCPU(string $name, CPUEngine|string|null $engine, CPUHost $canvas, int $width, int $height, StageHost|string|null $host = null, StageFit|string|null $fit = null): CPUStagedWindow
+    {
+        if ($this->has($name)) {
+            throw StageException::nameTaken($name);
+        }
+
+        /** @var StageSessionContract $session */
+        $session = $this->driver($host instanceof StageHost ? $host->value : $host);
+        $session->connect();
+
+        $driver = $this->cpuEngines()->driver($engine instanceof CPUEngine ? $engine->value : $engine);
+        $stage = $session->openCPU($name, $driver, $canvas, $width, $height, $this->fit($fit));
+        $stage->setPool($this->dock());
+        $this->resourceFor($session)->track($stage);
+
+        return $this->stages[$name] = $stage;
+    }
+
+    /**
+     * A panel on screen: the canvas at whole-number zoom, nearest-neighbour,
+     * so a 128x64 OLED sketch is eyeballable on a desktop before it meets the
+     * hardware.
+     *
+     * @throws StageException When the name is taken, the zoom is below one, or the host cannot present a canvas.
+     */
+    public function emulate(string $name, CPUHost $panel, int $zoom = 4, CPUEngine|string|null $engine = null, StageHost|string|null $host = null): CPUStagedWindow
+    {
+        if ($zoom < 1) {
+            throw new StageException("A stage zoom is a whole number of pixels, at least 1; got {$zoom}.");
+        }
+
+        return $this->openCPU($name, $engine, $panel, $panel->width * $zoom, $panel->height * $zoom, $host, StageFit::INTEGER_SCALE);
     }
 
     public function get(string $name): StagedWindowContract
@@ -151,5 +199,19 @@ class StageManager extends Manager
     protected function engines(): GPUEngineManager
     {
         return $this->vessel->get('gpu-engines');
+    }
+
+    protected function fit(StageFit|string|null $fit): StageFit
+    {
+        if ($fit instanceof StageFit) {
+            return $fit;
+        }
+
+        return StageFit::from($fit ?? $this->config->get('stage.cpu_fit', StageFit::INTEGER_SCALE->value));
+    }
+
+    protected function cpuEngines(): CPUEngineManager
+    {
+        return $this->vessel->get('cpu-engines');
     }
 }

@@ -166,3 +166,11 @@ it('size answers the target', function () {
 
     expect($g->size())->toBe([5, 3]);
 });
+
+it('releaseTexture forgets the handle, and drawing it afterwards throws', function () {
+    [$g] = raster();
+    $tex = $g->texture(str_repeat("\xff", 16), 2, 2);
+    $g->releaseTexture($tex);
+
+    expect(fn () => $g->image($tex, 0.0, 0.0, 2.0, 2.0))->toThrow(DrawingException::class);
+});

@@ -1,5 +1,94 @@
 # Surface Update Log
 
+## 2026-09-17 (CPU stages)
+* **Update**: [stage](/stage.md) — `# CPU stages`: two kinds over
+  `AbstractStage`, `openCPU` / `emulate`, fit + nearest, fixed canvas,
+  refusing default (appkit says no today), `cpu_renderer`. Rules gain
+  the present points (after a ran frame, on show, on resize). sdl3
+  host row names the CPU mint.
+* **Update**: [cpu-drawing](/cpu-drawing.md) — one canvas can drive a
+  stage and a panel at once; `Drawing2D::releaseTexture()` exists.
+* **Update**: [index](/index.md) — opening names CPU stages;
+  suite at 659.
+
+## 2026-09-18 (CPU stages Task 4 — StageManager door)
+* **Update**: [stage](/stage.md) — `StageManager::openCPU` and
+  `emulate` mint a CPU stage on the same host session and resource
+  driver as GPU stages. `emulate` is whole-pixel zoom with
+  `INTEGER_SCALE`. `config('stage.cpu_fit')` / `cpu_renderer`.
+* **Update**: [testing](/testing.md) — `stageManager()` binds the
+  shipped CPU stack; `StageManagerCPUTest` covers the door. Suite
+  at 658.
+
+## 2026-09-18 (CPU stages Task 3 — CPUStagedWindow)
+* **Update**: [stage](/stage.md) — the CPU class presents a fixed
+  canvas through `applyPresent(string $rgba8)`. Window size and
+  canvas size stay apart; `show()` and resize re-present without
+  running the hook. `StageSession::openCPU` / `mintCPUStage` stay
+  the refusing default (Task 1); `FakeStageSession` now mints
+  `FakeCPUStagedWindow`.
+* **Update**: [testing](/testing.md) — `FakeCPUStagedWindow` records
+  presents and close order; `CPUStagedWindowTest` is the 128×64-in-
+  512×256 twin of the GPU stage tests.
+
+## 2026-09-18 (CPU stages Task 2 — AbstractStage)
+* **Update**: [stage](/stage.md) — `AbstractStage` holds the shared
+  window policy (size/scale, change-only resize mail, one close
+  announcement, release-before-destroy, `visible()`). GPU
+  `StagedWindow` is that plus `RunsFrames`; `applyResize` resizes the
+  executor in pixels. Host packages still fill the three native hooks.
+
+## 2026-09-18 (CPU stages Task 1 — contracts)
+* **Update**: [stage](/stage.md) — `StagedWindow` contract is engine-free.
+  `GPUStagedWindow` / `CPUStagedWindow` add the engine. `StageFit`
+  names four scalers. `StageSession::open()` returns the GPU kind;
+  `openCPU()` refuses by default (`cpuUnsupported`).
+* **Update**: [drawing](/drawing.md) — `GPUDrawTarget` is
+  `OSGPUView` + `GPUStagedWindow`. `Drawing2D::releaseTexture()`:
+  Painter flushes then the executor; Rasterizer unsets and
+  `image()` throws.
+* **Update**: [index](/index.md) — suite at 641.
+
+## 2026-09-17 (CPU drawing + framebuffers concepts)
+* **Creation**: [cpu-drawing](/cpu-drawing.md) — five in-house engines
+  over host-format canvases. Drawing2D-not-Executor; batches never
+  per-pixel; two affine paths; colour-key; clear policy per engine;
+  damage epoch; true U8G2 + `onPage`; paged `flush()` host-only;
+  `SchedulesFrames` split. Goal snippet is the door.
+* **Creation**: [framebuffers](/framebuffers.md) — store is the host
+  format. `php` / `native` drivers, packings table, PixelMapper rules,
+  pixel-word conventions, no-bleedover, fixtures are the contract,
+  refusals.
+* **Update**: [drawing](/drawing.md) — Decisions pointer to
+  cpu-drawing for the CPU/GPU split; `Affine` / `Geometry` stay
+  shared. Engine table not duplicated here.
+* **Update**: [testing](/testing.md) — fixtures directory,
+  `RecordingFramebuffer`, `FakeCPUEngineDriver`, `FixtureRunner`;
+  engine / manager / provider tests.
+* **Update**: [index](/index.md) — opening names CPU rendering and
+  framebuffers; both concepts linked; split packages gain
+  `surface/framebuffers`; suite at 635.
+
+## 2026-09-17 (CPU canvases — epaper / paged / nframes)
+* **Update**: [drawing](/drawing.md) — `EPaperCanvas` defaults to paper
+  before `bootSchedule()`. `PagedCanvas` is true U8G2 (one page of RAM,
+  same hook per page, `onPage` sink); `flush()`/`rgba8()` re-run and
+  concatenate; a foreign spec is `pagedHostOnly()`. `NFramesCanvas`
+  clears the back, flips on present, reads the front.
+* **Update**: [testing](/testing.md) — `CPUCanvasKindsTest` hex stays
+  exact (`ff00`/`ff80`, page sink bytes, nframes `0000`/`00ff`/`ffff`).
+* **Update**: [index](/index.md) — suite count 629.
+
+## 2026-09-17 (CPU canvases — full / dirty)
+* **Update**: [drawing](/drawing.md) — `SchedulesFrames` is the shared
+  hook/clock; `RunsFrames` keeps the GPU Painter/Executor frame.
+  `CPUCanvas` + `FullCanvas` / `DirtyCanvas` rasterise into a php
+  framebuffer. Scale is `1.0`. Preserving buffers fill once at attach.
+  `bootSchedule()` leaves a pre-set clear colour alone (epaper door).
+* **Update**: [testing](/testing.md) — `CPUCanvasTest` on an SSD1306-shaped
+  host; hex and `rgba8` length stay exact.
+* **Update**: [index](/index.md) — suite count 625.
+
 ## 2026-09-17 (Rasterizer)
 * **Update**: [drawing](/drawing.md) — `Rasterizer` is the one `Drawing2D`
   over any `Framebuffer`. `Affine` and `Geometry` are shared with

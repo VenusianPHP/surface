@@ -1,6 +1,6 @@
 {
     "name": "surface/drawing",
-    "description": "Surface GPU drawing: engine-free drawing contracts, the Painter, GPU regions and the gpu.<engine> engine manager.",
+    "description": "Surface drawing: engine-free drawing contracts, the Painter and GPU regions over gpu.<engine>, the Rasterizer and five CPU engines over cpu.<engine>.",
     "license": "MIT",
     "authors": [
         {
@@ -40,7 +40,8 @@
                 "Surface\\Drawing\\DrawingServiceProvider"
             ],
             "aliases": {
-                "GPU": "Surface\\Drawing\\MagicAliases\\GPU"
+                "GPU": "Surface\\Drawing\\MagicAliases\\GPU",
+                "CPU": "Surface\\Drawing\\MagicAliases\\CPU"
             }
         }
     }

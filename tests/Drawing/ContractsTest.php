@@ -10,7 +10,7 @@ use Surface\Contracts\Framebuffers\BitDepth;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\PixelFormat;
 use Surface\Contracts\NativeWindows\Views\OSGPUView;
-use Surface\Contracts\Stage\StagedWindow;
+use Surface\Contracts\Stage\GPUStagedWindow;
 use Venusian\Surface\Tests\Support\Fakes\FakeVulkanLender;
 
 it('SurfaceKind carries the four seam shapes in order', function () {
@@ -50,7 +50,7 @@ it('CPUEngine names the five in-house engines', function () {
 
 it('GPU targets are GPUDrawTargets; CPU targets are not', function () {
     expect(is_subclass_of(OSGPUView::class, GPUDrawTarget::class))->toBeTrue()
-        ->and(is_subclass_of(StagedWindow::class, GPUDrawTarget::class))->toBeTrue()
+        ->and(is_subclass_of(GPUStagedWindow::class, GPUDrawTarget::class))->toBeTrue()
         ->and(is_subclass_of(CPUDrawTarget::class, GPUDrawTarget::class))->toBeFalse()
         ->and(method_exists(GPUDrawTarget::class, 'executor'))->toBeTrue()
         ->and(method_exists(CPUDrawTarget::class, 'flushRegion'))->toBeTrue();

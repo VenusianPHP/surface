@@ -15,16 +15,10 @@ use Surface\Contracts\NativeWindows\Views\Color;
  */
 final class PixelMapper
 {
-    private const MONO = 'mono';
-    private const GREY = 'grey';
-    private const PLANAR = 'planar';
-    private const INDEX = 'index';
-    private const RGB = 'rgb';
-
     /** @var list<array{int, Color}> [word, colour] for palette modes */
     private array $entries = [];
 
-    private function __construct(private string $mode, private FormatSpec $spec) {}
+    private function __construct(private PixelMapperMode $mode, private FormatSpec $spec) {}
 
     public static function for(FormatSpec $spec): self
     {
@@ -36,7 +30,7 @@ final class PixelMapper
             if (is_null($palette)) {
                 throw FramebufferException::unsupportedFormat($spec, 'PLANAR needs a palette.');
             }
-            $m = new self(self::PLANAR, $spec);
+            $m = new self(PixelMapperMode::PLANAR, $spec);
             $m->entries[] = [0, EInkColor::WHITE->color()];
             foreach ($palette->channels as $k => $channel) {
                 $m->entries[] = [1 << $k, EInkColor::from($channel->color)->color()];
@@ -45,10 +39,10 @@ final class PixelMapper
             return $m;
         }
         if ($format === PixelFormat::MONO_HORIZONTAL || $format === PixelFormat::MONO_VERTICAL_PAGE || $depth === BitDepth::B1) {
-            return new self(self::MONO, $spec);
+            return new self(PixelMapperMode::MONO, $spec);
         }
         if (in_array($depth, [BitDepth::B2, BitDepth::B4, BitDepth::B8], true) && ! is_null($palette)) {
-            $m = new self(self::INDEX, $spec);
+            $m = new self(PixelMapperMode::INDEX, $spec);
             foreach ($palette->channels as $k => $channel) {
                 $m->entries[] = [$channel->code ?? $k, EInkColor::from($channel->color)->color()];
             }
@@ -56,10 +50,10 @@ final class PixelMapper
             return $m;
         }
         if ($depth === BitDepth::B8) {
-            return new self(self::GREY, $spec);
+            return new self(PixelMapperMode::GREY, $spec);
         }
         if (in_array($depth, [BitDepth::B12, BitDepth::B16, BitDepth::B18, BitDepth::B24, BitDepth::B32], true)) {
-            return new self(self::RGB, $spec);
+            return new self(PixelMapperMode::RGB, $spec);
         }
 
         throw FramebufferException::unsupportedFormat($spec);
@@ -77,10 +71,10 @@ final class PixelMapper
         $b = (int) round($c->blue * 255);
 
         return match ($this->mode) {
-            self::MONO => self::luma($c) >= 0.5 ? 1 : 0,
-            self::GREY => (int) round(self::luma($c) * 255),
-            self::PLANAR, self::INDEX => $this->nearest($c),
-            self::RGB => match ($this->spec->bit_depth) {
+            PixelMapperMode::MONO => self::luma($c) >= 0.5 ? 1 : 0,
+            PixelMapperMode::GREY => (int) round(self::luma($c) * 255),
+            PixelMapperMode::PLANAR, PixelMapperMode::INDEX => $this->nearest($c),
+            PixelMapperMode::RGB => match ($this->spec->bit_depth) {
                 BitDepth::B12 => (($r >> 4) << 8) | (($g >> 4) << 4) | ($b >> 4),
                 BitDepth::B16 => (($r >> 3) << 11) | (($g >> 2) << 5) | ($b >> 3),
                 BitDepth::B18 => (($r & 0xFC) << 16) | (($g & 0xFC) << 8) | ($b & 0xFC),
@@ -93,11 +87,11 @@ final class PixelMapper
     public function unmap(int $v): Color
     {
         return match ($this->mode) {
-            self::MONO => $v ? new Color(1.0, 1.0, 1.0) : new Color(0.0, 0.0, 0.0),
-            self::GREY => new Color($v / 255, $v / 255, $v / 255),
-            self::PLANAR => $this->planarUnmap($v),
-            self::INDEX => $this->entry($v),
-            self::RGB => match ($this->spec->bit_depth) {
+            PixelMapperMode::MONO => $v ? new Color(1.0, 1.0, 1.0) : new Color(0.0, 0.0, 0.0),
+            PixelMapperMode::GREY => new Color($v / 255, $v / 255, $v / 255),
+            PixelMapperMode::PLANAR => $this->planarUnmap($v),
+            PixelMapperMode::INDEX => $this->entry($v),
+            PixelMapperMode::RGB => match ($this->spec->bit_depth) {
                 BitDepth::B12 => new Color((($v >> 8) & 0xF) / 15, (($v >> 4) & 0xF) / 15, ($v & 0xF) / 15),
                 BitDepth::B16 => new Color((($v >> 11) & 0x1F) / 31, (($v >> 5) & 0x3F) / 63, ($v & 0x1F) / 31),
                 BitDepth::B18 => new Color((($v >> 16) & 0xFC) / 252, (($v >> 8) & 0xFC) / 252, ($v & 0xFC) / 252),

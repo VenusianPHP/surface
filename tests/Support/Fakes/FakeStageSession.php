@@ -2,9 +2,13 @@
 
 namespace Venusian\Surface\Tests\Support\Fakes;
 
+use Surface\Contracts\Drawing\CPUEngineDriver;
+use Surface\Contracts\Drawing\CPUHost;
 use Surface\Contracts\Drawing\GPUEngineDriver;
 use Surface\Contracts\Drawing\GPUHost;
+use Surface\Contracts\Stage\StageFit;
 use Surface\Contracts\Stage\StageHost;
+use Surface\Stage\CPUStagedWindow;
 use Surface\Stage\StagedWindow;
 use Surface\Stage\StageSession;
 
@@ -88,5 +92,19 @@ final class FakeStageSession extends StageSession
         $attachment = $engine->attach(new GPUHost(0, $width, $height, $this->scale));
 
         return $this->minted[] = new FakeStagedWindow($name, $engine->engine(), $attachment->executor, $width, $height, $this->scale);
+    }
+
+    /** @var list<FakeCPUStagedWindow> */
+    public array $cpu_minted = [];
+
+    public bool $refuses_cpu = false;
+
+    protected function mintCPUStage(string $name, CPUEngineDriver $engine, CPUHost $canvas, int $width, int $height, StageFit $fit): CPUStagedWindow
+    {
+        if ($this->refuses_cpu) {
+            return parent::mintCPUStage($name, $engine, $canvas, $width, $height, $fit);
+        }
+
+        return $this->cpu_minted[] = new FakeCPUStagedWindow($name, $engine->attach($canvas), $width, $height, $this->scale, $fit);
     }
 }

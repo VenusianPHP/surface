@@ -2,7 +2,7 @@
 
 namespace Surface\Contracts\Drawing;
 
-/** A DrawTarget an engine package draws through an Executor — GPUView and StagedWindow. */
+/** A DrawTarget an engine package draws through an Executor — GPUView and GPUStagedWindow. */
 interface GPUDrawTarget extends DrawTarget
 {
     public function engine(): GPUEngine;

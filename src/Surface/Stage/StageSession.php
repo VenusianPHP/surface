@@ -2,8 +2,12 @@
 
 namespace Surface\Stage;
 
+use Surface\Contracts\Drawing\CPUEngineDriver;
+use Surface\Contracts\Drawing\CPUHost;
 use Surface\Contracts\Drawing\GPUEngineDriver;
+use Surface\Contracts\Stage\CPUStagedWindow;
 use Surface\Contracts\Stage\StageException;
+use Surface\Contracts\Stage\StageFit;
 use Surface\Contracts\Stage\StageHost;
 use Surface\Contracts\Stage\StageSession as StageSessionContract;
 
@@ -88,5 +92,24 @@ abstract class StageSession implements StageSessionContract
         }
 
         return $this->mintStage($name, $engine, $width, $height);
+    }
+
+    public function openCPU(string $name, CPUEngineDriver $engine, CPUHost $canvas, int $width, int $height, StageFit $fit): CPUStagedWindow
+    {
+        if (! $this->connected) {
+            throw StageException::notConnected($this->host());
+        }
+
+        return $this->mintCPUStage($name, $engine, $canvas, $width, $height, $fit);
+    }
+
+    /**
+     * Mint a hidden CPU stage. A host that cannot present raw pixels leaves
+     * this alone — refusing by contract is the honest answer, and no host
+     * package has to change to say it.
+     */
+    protected function mintCPUStage(string $name, CPUEngineDriver $engine, CPUHost $canvas, int $width, int $height, StageFit $fit): CPUStagedWindow
+    {
+        throw StageException::cpuUnsupported($this->host());
     }
 }
