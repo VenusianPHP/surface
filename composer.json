@@ -30,15 +30,15 @@
         "venusian-voyager/nuts-and-bolts": "^0.8.0"
     },
     "replace": {
-        "surface/bridge": "self.version",
-        "surface/contracts": "self.version",
-        "surface/drawing": "self.version",
-        "surface/embedded-panels": "self.version",
-        "surface/fonts": "self.version",
-        "surface/framebuffers": "self.version",
-        "surface/human-input": "self.version",
-        "surface/native-windows": "self.version",
-        "surface/stage": "self.version"
+        "venusian-surface/bridge": "self.version",
+        "venusian-surface/contracts": "self.version",
+        "venusian-surface/drawing": "self.version",
+        "venusian-surface/embedded-panels": "self.version",
+        "venusian-surface/fonts": "self.version",
+        "venusian-surface/framebuffers": "self.version",
+        "venusian-surface/human-input": "self.version",
+        "venusian-surface/native-windows": "self.version",
+        "venusian-surface/stage": "self.version"
     },
     "suggest": {
         "jovian/fb": "^0.8.0 - The native framebuffer driver over ext-fb: the five buffer kinds in C.",

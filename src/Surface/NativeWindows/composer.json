@@ -1,5 +1,5 @@
 {
-    "name": "surface/native-windows",
+    "name": "venusian-surface/native-windows",
     "description": "Surface native OS windows: windows, menu profiles, conjured views and components over the OS bridge.",
     "license": "MIT",
     "authors": [
@@ -11,9 +11,9 @@
     "require": {
         "php": "^8.4|^8.5|^8.6",
         "psr/container": "^1.1.1 || ^2.0.1",
-        "surface/bridge": "^0.8.0",
-        "surface/contracts": "^0.8.0",
-        "surface/drawing": "^0.8.0",
+        "venusian-surface/bridge": "^0.8.0",
+        "venusian-surface/contracts": "^0.8.0",
+        "venusian-surface/drawing": "^0.8.0",
         "venusian-voyager/contracts": "^0.8.0",
         "venusian-voyager/magic-aliases": "^0.8.0",
         "venusian-voyager/nuts-and-bolts": "^0.8.0"

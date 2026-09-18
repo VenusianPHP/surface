@@ -1,5 +1,5 @@
 {
-    "name": "surface/bridge",
+    "name": "venusian-surface/bridge",
     "description": "The Surface OS bridge: connect, disconnect and pump the engine session behind the mac.bridge / linux.bridge alias.",
     "license": "MIT",
     "authors": [
@@ -11,7 +11,7 @@
     "require": {
         "php": "^8.4|^8.5|^8.6",
         "psr/container": "^1.1.1 || ^2.0.1",
-        "surface/contracts": "^0.8.0",
+        "venusian-surface/contracts": "^0.8.0",
         "venusian-voyager/contracts": "^0.8.0",
         "venusian-voyager/magic-aliases": "^0.8.0",
         "venusian-voyager/nuts-and-bolts": "^0.8.0"

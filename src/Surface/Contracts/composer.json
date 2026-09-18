@@ -1,5 +1,5 @@
 {
-    "name": "surface/contracts",
+    "name": "venusian-surface/contracts",
     "description": "The Surface contracts: interfaces and exceptions shared by every Surface component and engine package.",
     "license": "MIT",
     "authors": [

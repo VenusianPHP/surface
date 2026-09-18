@@ -1,5 +1,5 @@
 {
-    "name": "surface/fonts",
+    "name": "venusian-surface/fonts",
     "description": "Surface bitmap faces: the GFXFont registry, the classic 5x7, make:font, and the Fonts alias.",
     "license": "MIT",
     "authors": [
@@ -10,7 +10,7 @@
     ],
     "require": {
         "php": "^8.4|^8.5|^8.6",
-        "surface/contracts": "^0.8.0",
+        "venusian-surface/contracts": "^0.8.0",
         "venusian-voyager/console": "^0.8.0",
         "venusian-voyager/filesystem": "^0.8.0",
         "venusian-voyager/magic-aliases": "^0.8.0",
