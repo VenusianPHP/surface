@@ -2,13 +2,13 @@
 
 namespace Surface\Framebuffers\Php;
 
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Framebuffers\DamageGranularity;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\Framebuffer;
 use Surface\Contracts\Framebuffers\FramebufferException;
 use Surface\Contracts\Framebuffers\Region;
 use Surface\Contracts\Framebuffers\ScanDirection;
-use Surface\Contracts\NativeWindows\Views\Color;
 use Surface\Framebuffers\Packings\Packing;
 use Surface\Framebuffers\PixelMapper;
 

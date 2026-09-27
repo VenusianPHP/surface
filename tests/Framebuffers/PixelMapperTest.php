@@ -1,5 +1,6 @@
 <?php
 
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Framebuffers\BitDepth;
 use Surface\Contracts\Framebuffers\ChannelPalette;
 use Surface\Contracts\Framebuffers\ChannelSpec;
@@ -7,7 +8,6 @@ use Surface\Contracts\Framebuffers\EInkColor;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\FramebufferException;
 use Surface\Contracts\Framebuffers\PixelFormat;
-use Surface\Contracts\NativeWindows\Views\Color;
 use Surface\Framebuffers\PixelMapper;
 
 function spec(PixelFormat $f, BitDepth $d, ?ChannelPalette $p = null): FormatSpec

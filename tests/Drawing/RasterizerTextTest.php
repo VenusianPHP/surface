@@ -1,10 +1,10 @@
 <?php
 
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Framebuffers\BitDepth;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\Framebuffer;
 use Surface\Contracts\Framebuffers\PixelFormat;
-use Surface\Contracts\NativeWindows\Views\Color;
 use Surface\Drawing\Rasterizer;
 use Surface\Fonts\ClassicFont;
 use Surface\Framebuffers\Php\FullFramebuffer;

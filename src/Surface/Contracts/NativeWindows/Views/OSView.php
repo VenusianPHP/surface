@@ -2,6 +2,8 @@
 
 namespace Surface\Contracts\NativeWindows\Views;
 
+use Surface\Contracts\Drawing\Color;
+
 /**
  * One node conjured into a window's content.
  *

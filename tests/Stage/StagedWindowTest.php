@@ -1,5 +1,6 @@
 <?php
 
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Drawing\Drawing2D;
 use Surface\Contracts\Drawing\Executor;
 use Surface\Contracts\Drawing\ExecutorCapabilities;
@@ -8,7 +9,6 @@ use Surface\Contracts\Drawing\GPUEngine;
 use Surface\Contracts\Drawing\TextureHandle;
 use Surface\Contracts\Drawing\Topology;
 use Surface\Contracts\Drawing\Transform;
-use Surface\Contracts\NativeWindows\Views\Color;
 use Surface\Contracts\Stage\Events\StageClosed;
 use Surface\Contracts\Stage\Events\StageResized;
 use Surface\Contracts\Stage\StageException;

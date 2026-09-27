@@ -1,6 +1,6 @@
 <?php
 
-use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Contracts\Drawing\Color;
 use Surface\NativeWindows\Components\Badge;
 use Surface\NativeWindows\Components\MessageSeverity;
 use Venusian\Surface\Tests\Support\Fakes\FakeGroup;

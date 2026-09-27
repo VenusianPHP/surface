@@ -1,4 +1,4 @@
-# surface/framebuffers
+# venusian-surface/framebuffers
 
 Where CPU pixel bytes live. Five buffer kinds (full, dirty, epaper, paged, ring),
 nine packings, `PixelMapper`. Sketch talks `Framebuffer` contract. Driver owns

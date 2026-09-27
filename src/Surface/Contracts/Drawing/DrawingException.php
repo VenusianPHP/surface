@@ -20,4 +20,9 @@ class DrawingException extends SurfaceLevelException
     {
         return new self('A paged canvas flushes its host format only; transcode from a full canvas.');
     }
+
+    public static function notAHexColour(string $hex): self
+    {
+        return new self("'{$hex}' is not a hex colour.");
+    }
 }

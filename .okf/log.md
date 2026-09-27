@@ -1,5 +1,19 @@
 # Surface Update Log
 
+## 2026-09-18 (a display from a circuit profile)
+* **Addition**: [embedded-displays](/embedded-displays.md) — `EmbeddedDisplayManager::attachProfile($profile, $name)` builds the panel through the GPIO catalog, and `embedded-displays.displays` names profiles a sketch can just ask for by display name. A configured display attaches on first ask, never at boot: declaring a panel in config should not touch the bus before a sketch wants pixels. The catalog is resolved by container key `circuit`, like `io-pool` and `cpu-engines`, rather than by `gpio/contracts`' registry contract — that package is on its own release cadence, and what Surface needs guaranteed is the panel's type, which is checked. `EmbeddedDisplayException::{noCatalog, notADisplayPanel, configuredDisplayNeedsProfile}`.
+* **Correction**: `attach()` now takes `DisplayPanel&FormatSpecification`. `gpio/contracts` dropped the `FormatSpecification` parent from `DisplayPanel` so a fan board would not need a graphics package, so Surface is the side that asks. `FakePanel` had been leaning on the inherited interface and now declares it. Suite 752, run against both the published `gpio/contracts` v0.8.0 and the working tree.
+
+## 2026-09-18 (Color moves; Canvas becomes a lifecycle)
+* **Correction**: `Surface\Contracts\NativeWindows\Views\Color` → `Surface\Contracts\Drawing\Color`, with `Color::hex()` now throwing `DrawingException::notAHexColour()` instead of `WindowableException`. Color is what every surface in the package takes — Drawing2D, DrawTarget, Executor, Rasterizer, Painter, CPUCanvas, PixelMapper, the framebuffer packings, CPUStagedWindow, Canvas, EmbeddedDisplay — and lived under NativeWindows only because the view tree was the first caller. 99 files across surface and the six jovian engine packages; the seven `Contracts\NativeWindows\Views` interfaces that resolved it implicitly gained a real import.
+* **Revision**: [canvas](/canvas.md) — `Canvasable` no longer extends `Drawing2D`, and `DisplayList` / `StateVerb` are gone. A Canvas is a lifecycle: `draw()` registers one hook and the hook is handed the output's own `Drawing2D` inside the frame. The retained record made `erase()` the only way to clear it, which forced a whole-surface clear every frame on a `dirty` panel and destroyed the damage tracking the engine exists for — the same sketch could not run on a GPU view and a panel. Persistence is now the output's, stated rather than hidden. `size()` and `drawing()` joined the contract; `erase()` left it. Suite 745.
+
+## 2026-09-18 (embedded displays and Canvas)
+* **Creation**: [embedded-displays](/embedded-displays.md), [canvas](/canvas.md).
+* **Update**: [index](/index.md) — both in; splits named `venusian-surface/*` (the `surface` vendor on Packagist is not ours), `venusian-surface/canvas` added, `embedded-panels` became `embedded-displays`; `gpio/contracts` is a hard dependency; suite 751.
+* **Update**: [cpu-drawing](/cpu-drawing.md), [drawing](/drawing.md) — the panel sink and the canvas over every target left "not in this slice".
+* **Update**: [stage](/stage.md) — `StagedWindow::isShown()`. [testing](/testing.md) — panel fakes; global test helper names must be unique suite-wide.
+
 ## 2026-09-18 (bitmap fonts Task 5 — Drawing2D::text)
 * **Update**: [drawing](/drawing.md) — `text()` / `textBounds()` on
   Painter (atlas quads, `releaseAtlases`) and Rasterizer (one span
@@ -527,3 +541,16 @@
 
 ## 2026-09-17
 * **Creation**: [fonts](/fonts.md) — faces, registry, text on both engines, make:font. **Removal**: components-to-come.md (Fonts landed).
+
+## 2026-09-18
+* **Update**: [canvas](/canvas.md) — `engine()` covers all four outputs, not just a
+  panel. `DrawsWith` targets (panel, CPU stage) take the renderer outright; a GPU
+  stage or view keeps its own surface and the renderer draws offscreen at `size()`,
+  arriving as one texture per frame. Asking a GPU target for the engine it already
+  runs draws straight through. `GPUCanvas::headless()` is what lets a GPU engine
+  rasterise with no window; `rasteriser()` answers who is drawing, which
+  `output()->engine()` cannot.
+* **Update**: [embedded displays](/embedded-displays.md) — `EmbeddedDisplay::panel()`
+  conjures a wired panel from the IC catalog; the alias is singular; a panel program
+  starts no `LiveApplication`; `drawWith()` swaps the rasteriser.
+

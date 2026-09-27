@@ -2,7 +2,7 @@
 
 namespace Surface\NativeWindows\Views;
 
-use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\NativeWindows\Views\OSGroup;
 use Surface\Contracts\NativeWindows\Views\OSView;
 use Surface\NativeWindows\Enums\PlacementRule;

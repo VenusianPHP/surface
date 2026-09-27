@@ -75,8 +75,8 @@ there and is the default. `config/fonts.php`: `default`, `faces`.
   stays opaque. Never a call per pixel.[^rasterizer]
 - **Scale through the stack.** No size parameter. Engines sample `LINEAR`,
   so GPU-scaled text is smooth; CPU-scaled is blocky.
-- **`surface/drawing` and `surface/fonts` are peers** over
-  `surface/contracts`. Drawing owns `Text\`; Fonts owns the registry,
+- **`venusian-surface/drawing` and `venusian-surface/fonts` are peers** over
+  `venusian-surface/contracts`. Drawing owns `Text\`; Fonts owns the registry,
   `ClassicFont`, `make:font`, the alias. Fonts requires
   `venusian-voyager/console` + `filesystem` for the command.
 - **Faces are data.** Properties only; method API free to change. Two

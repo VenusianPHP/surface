@@ -2,6 +2,8 @@
 
 namespace Surface\Contracts\NativeWindows\Views;
 
+use Surface\Contracts\Drawing\Color;
+
 /**
  * A single-line text field. A secret field masks its glyphs; engines with
  * no honest placeholder path for a secret field ignore the placeholder,

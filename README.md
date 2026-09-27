@@ -91,3 +91,80 @@ $canvas->onDraw(fn (Drawing2D $g, Frame $f) => $g
 
 `php computer make:font Name --from=FreeSans9pt7b.h` imports an Adafruit
 header. Scale through the stack; `textBounds()` answers the ink box.
+
+## Embedded displays
+
+A display panel chip is a CPU draw target. Attach it and draw with the same
+hook; one frame per tick goes out on the IOPool dock. A panel that addresses
+a window (OLED, TFT) receives only what changed, any other panel the whole
+frame, ePaper a refresh after the write.
+
+```php
+$display = EmbeddedDisplay::panel('st7789');                    // wired from the IC catalog, booted, ready
+$display->onDraw(fn (Drawing2D $g, Frame $f) => $g
+    ->clear(Color::hex('#000'))
+    ->text(date('H:i:s'), 0.0, 0.0, Color::hex('#fff'), Fonts::face()));
+```
+
+`panel()` conjures the chip from the IC catalog — `config/circuits/st7789.php`
+holds the bus, the pins and the geometry, so no SPI and no pin numbers
+appear in sketch code. It is idempotent, and it starts no window: a panel
+program is the IOPool dock and nothing else.
+
+Hand it a panel yourself when you have one: `EmbeddedDisplay::attach($panel,
+'oled')`, or `attach($panel, 'oled', 'paged')` to stream page by page from
+one page of RAM. `display('oled')` looks up what is already attached;
+`config/embedded-displays.php` says which engine each panel kind gets.
+
+A panel write that throws latches a fault and mails `display.faulted.<name>`
+once. Panels come from `dept-of-scrapyard-robotics/*`; the contract they
+implement lives in `gpio/contracts`, and the panel must also speak Surface's
+`FormatSpecification` so the canvas knows how to pack its bytes.
+
+## Canvas
+
+One lifecycle over whatever a sketch draws into: a GPU view, a GPU or CPU
+stage, an embedded display. A `Canvas` does not draw — `draw()` registers
+one hook and hands it the output's own `Drawing2D` inside the frame, so a
+verb reaches the rasteriser unchanged and damage is exactly what was inked.
+
+```php
+$canvas = Canvas::of($display);                                  // or $window->gpu(...), Stage::open(...), Stage::emulate(...)
+
+$canvas->draw(function (Drawing2D $g, Frame $f) use ($white, $font) {
+    $g->fillCircle(64.0, 32.0, 20.0, $white)->text('READY', 0.0, 0.0, $white, $font);
+})->present();                                                   // one frame; ->animate() for a stream
+
+$canvas->hide();  $canvas->show();  $canvas->close();
+```
+
+Whether last frame's pixels survive is the output's business: a GPU target
+clears to `background()` and wants the whole scene again, a `dirty` or
+`epaper` canvas keeps what it has, so a panel sketch inks only what changed
+and the damage band stays small.
+
+### Pick the engine, not just the output
+
+Where the pixels go and what makes them are two choices. `engine()` is the
+second one, and it works on all four outputs:
+
+```php
+Canvas::of(EmbeddedDisplay::panel('st7789'))->engine('metal');   // Metal rasterises an SPI panel
+Canvas::of(Stage::open('scene', null, 320, 240))->engine('dirty'); // a CPU engine rasterises a GPU window
+```
+
+A GPU engine needs no window — it attaches to nothing, draws into a surface
+it made itself, and the frame is read back: into the panel's own bytes for a
+display, into one texture for a window. A panel or a CPU stage takes the
+renderer outright and keeps its size, format and lifecycle; a GPU stage or
+view owns its surface, so the renderer draws offscreen and arrives as a
+texture. Asking a GPU target for the engine it already runs draws straight
+through, with no offscreen at all.
+
+`rasteriser()` answers which engine is drawing. `output()->engine()` does
+not: a panel drawn by Metal still holds finished pixels, so it still says
+`CPUEngine`.
+
+Type-hint `Surface\Contracts\Canvas\Canvasable`. `output()` answers the
+wrapped object for what only its kind has; `drawing()` reaches the
+rasteriser's drawer outside a frame for a texture or a measurement.

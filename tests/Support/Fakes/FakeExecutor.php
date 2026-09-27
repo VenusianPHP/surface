@@ -2,13 +2,13 @@
 
 namespace Venusian\Surface\Tests\Support\Fakes;
 
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Drawing\DrawingException;
 use Surface\Contracts\Drawing\Executor;
 use Surface\Contracts\Drawing\ExecutorCapabilities;
 use Surface\Contracts\Drawing\TextureHandle;
 use Surface\Contracts\Drawing\Topology;
 use Surface\Contracts\Drawing\Transform;
-use Surface\Contracts\NativeWindows\Views\Color;
 
 /** An Executor that records every call and answers what a test tells it to. */
 final class FakeExecutor implements Executor

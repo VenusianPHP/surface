@@ -39,6 +39,7 @@ Shared fakes live in `tests/Support/Fakes`.[^fakes]
 |---|---|
 | `FakeSession` | the abstract session; counts every engine hook and window request |
 | `FakeWindow` | a `Windowable` delegate; counts presentations and destructions; mints every view kind including `FakeDatePicker` / `FakeTable` / `FakeGPUView` |
+| `FakePanel` + `FakeDisplayPanel` / `FakeStripPanel` / `FakeEPaperPanel` | a display panel with no bus: window-addressable and switchable, base only, refresh-on-command; records every write in order, `$fail` makes the next write throw |
 | `FakeDatePicker` | datePicker policy; door `pickDate(y,m,d)` |
 | `FakeTable` | table policy; door `pickRow(int)` |
 | `FakeMacWindow` / `FakeLinuxWindow` | the same, carrying one OS marker interface; Linux `mintGPU()` refuses `LAYER` and hosts `GL_CONTEXT` |

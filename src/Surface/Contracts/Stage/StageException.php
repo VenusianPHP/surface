@@ -45,4 +45,10 @@ class StageException extends SurfaceLevelException
     {
         return new static("The '{$host->value}' stage host cannot present a CPU canvas.");
     }
+
+    /** drawWith() keeps the window's picture the size it has always been. */
+    public static function rendererMismatch(string $name, int $width, int $height): static
+    {
+        return new static("Stage '{$name}' presents a {$width}x{$height} canvas; a renderer for it must be that size.");
+    }
 }

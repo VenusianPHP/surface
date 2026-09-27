@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="WEB_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src/Surface" isTestSource="false" packagePrefix="Surface\" />
+      <sourceFolder url="file://$MODULE_DIR$/src/Surface/Bridge/" isTestSource="false" packagePrefix="Surface\Bridge\" />
+      <sourceFolder url="file://$MODULE_DIR$/src/Surface/Canvas/" isTestSource="false" packagePrefix="Surface\Canvas\" />
+      <sourceFolder url="file://$MODULE_DIR$/src/Surface/Contracts/" isTestSource="false" packagePrefix="Surface\Contracts\" />
+      <sourceFolder url="file://$MODULE_DIR$/src/Surface/Drawing/" isTestSource="false" packagePrefix="Surface\Drawing\" />
+      <sourceFolder url="file://$MODULE_DIR$/src/Surface/EmbeddedDisplays/" isTestSource="false" packagePrefix="Surface\EmbeddedDisplays\" />
+      <sourceFolder url="file://$MODULE_DIR$/src/Surface/Fonts/" isTestSource="false" packagePrefix="Surface\Fonts\" />
+      <sourceFolder url="file://$MODULE_DIR$/src/Surface/Framebuffers/" isTestSource="false" packagePrefix="Surface\Framebuffers\" />
+      <sourceFolder url="file://$MODULE_DIR$/src/Surface/HumanInput/" isTestSource="false" packagePrefix="Surface\HumanInput\" />
+      <sourceFolder url="file://$MODULE_DIR$/src/Surface/NativeWindows/" isTestSource="false" packagePrefix="Surface\NativeWindows\" />
+      <sourceFolder url="file://$MODULE_DIR$/src/Surface/Stage/" isTestSource="false" packagePrefix="Surface\Stage\" />
+      <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" packagePrefix="Venusian\Surface\Tests\" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>

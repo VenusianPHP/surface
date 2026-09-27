@@ -2,6 +2,7 @@
 
 namespace Surface\Framebuffers\Packings;
 
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Framebuffers\BitDepth;
 use Surface\Contracts\Framebuffers\BitOrder;
 use Surface\Contracts\Framebuffers\DamageGranularity;
@@ -12,7 +13,6 @@ use Surface\Contracts\Framebuffers\PageAxis;
 use Surface\Contracts\Framebuffers\PixelFormat;
 use Surface\Contracts\Framebuffers\Region;
 use Surface\Contracts\Framebuffers\ScanDirection;
-use Surface\Contracts\NativeWindows\Views\Color;
 use Surface\Framebuffers\PixelMapper;
 
 /**

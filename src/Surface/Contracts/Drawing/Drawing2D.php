@@ -2,8 +2,8 @@
 
 namespace Surface\Contracts\Drawing;
 
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Fonts\GFXFont;
-use Surface\Contracts\NativeWindows\Views\Color;
 
 /**
  * The common 2D drawing API. Floats, Color, top-left pixels in the target's

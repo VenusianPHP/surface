@@ -1,8 +1,8 @@
 <?php
 
-use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Contracts\Drawing\Color;
+use Surface\Contracts\Drawing\DrawingException;
 use Surface\Contracts\NativeWindows\Views\FontWeight;
-use Surface\Contracts\NativeWindows\WindowableException;
 use Venusian\Surface\Tests\Support\Fakes\FakeWindow;
 
 it('parses hex colours in all three widths', function () {
@@ -13,7 +13,7 @@ it('parses hex colours in all three widths', function () {
 });
 
 it('rejects a malformed hex colour', function () {
-    expect(fn () => Color::hex('#zzz'))->toThrow(WindowableException::class);
+    expect(fn () => Color::hex('#zzz'))->toThrow(DrawingException::class);
 });
 
 it('routes typed setters through the engine hooks and remembers', function () {

@@ -74,6 +74,11 @@ abstract class AbstractStage implements StagedWindowContract
         return $this;
     }
 
+    public function isShown(): bool
+    {
+        return $this->shown;
+    }
+
     public function isOpen(): bool
     {
         return $this->open;

@@ -2,6 +2,8 @@
 
 namespace Surface\Contracts\NativeWindows\Views;
 
+use Surface\Contracts\Drawing\Color;
+
 /**
  * A multi-line, scrolling text editor. value() answers the text the
  * engine holds — every edit reads the native buffer back.

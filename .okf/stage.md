@@ -45,7 +45,7 @@ verbs). `AbstractStage` implements that base: size and scale Surface
 believes in, change-only resize mail, one close announcement,
 release-before-destroy. The GPU class is `AbstractStage` plus
 `RunsFrames`; host packages still fill `applyTitle` / `applyShow` /
-`destroyNative`. `GPUStagedWindow` adds the executor;
+`isShown()` answers whether `show()` ran. `destroyNative`. `GPUStagedWindow` adds the executor;
 `CPUStagedWindow` adds the canvas plus `fit()` / `canvasSize()`.
 The CPU *class* (`Surface\Stage\CPUStagedWindow`) is `AbstractStage`
 plus a fixed canvas: every `DrawTarget` / `CPUDrawTarget` verb

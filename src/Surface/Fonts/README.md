@@ -1,8 +1,8 @@
-# surface/fonts
+# venusian-surface/fonts
 
 Bitmap faces for Surface. `Fonts::face('helvb-12')` answers a `GFXFont`; the
 sketch hands it to `Drawing2D::text()`. Registry only — drawing lives in
-`surface/drawing`, face data in `venusian/letterhead`.
+`venusian-surface/drawing`, face data in `venusian/letterhead`.
 
 ```php
 $hud = Fonts::face('helvb-12');      // registry, once

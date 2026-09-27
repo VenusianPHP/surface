@@ -1,8 +1,8 @@
 <?php
 
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Drawing\ExecutorCapabilities;
 use Surface\Contracts\Drawing\Topology;
-use Surface\Contracts\NativeWindows\Views\Color;
 use Surface\Drawing\Painter;
 use Venusian\Surface\Tests\Support\Fakes\FakeExecutor;
 use Venusian\Surface\Tests\Support\Fakes\TinyFace;

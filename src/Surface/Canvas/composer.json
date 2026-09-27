@@ -1,0 +1,16 @@
+{
+    "name": "venusian-surface/canvas",
+    "description": "Surface canvas: one drawing and management API over a GPU view, a GPU or CPU stage, or an embedded display.",
+    "license": "MIT",
+    "authors": [{ "name": "Angel Gonzalez", "email": "angel@projectsaturnstudios.com" }],
+    "require": {
+        "php": "^8.4|^8.5|^8.6",
+        "venusian-surface/contracts": "^0.8.0"
+    },
+    "minimum-stability": "dev",
+    "autoload": { "psr-4": { "Surface\\Canvas\\": "" } },
+    "config": { "sort-packages": true },
+    "extra": {
+        "branch-alias": { "dev-main": "0.8.x-dev" }
+    }
+}

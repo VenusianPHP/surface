@@ -3,8 +3,8 @@
 namespace Surface\Drawing\Concerns;
 
 use Closure;
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Drawing\Frame;
-use Surface\Contracts\NativeWindows\Views\Color;
 
 /**
  * The engine-neutral half of a frame loop: one hook, the clear colour,

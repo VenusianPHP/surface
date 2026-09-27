@@ -8,6 +8,7 @@ use Voyager\Contracts\Vessel\Vessel;
 use Surface\Bridge\BridgeServiceProvider;
 use Surface\Core\IOPools\OSLevelResourceDriver;
 use Surface\Drawing\DrawingServiceProvider;
+use Surface\EmbeddedDisplays\EmbeddedDisplaysServiceProvider;
 use Surface\Fonts\FontsServiceProvider;
 use Surface\Framebuffers\FramebuffersServiceProvider;
 use Surface\HumanInput\HumanInputServiceProvider;
@@ -25,6 +26,7 @@ class SurfaceServiceProvider extends AggregateServiceProvider
         StageServiceProvider::class,
         NativeWindowsServiceProvider::class,
         HumanInputServiceProvider::class,
+        EmbeddedDisplaysServiceProvider::class,
     ];
 
     public function register(): void
@@ -38,22 +40,35 @@ class SurfaceServiceProvider extends AggregateServiceProvider
             $session = $app->get('os-bridge')->connect();
             $window_service = app('native-window')->driver();
             $driver = new OSLevelResourceDriver($dock, $session, $window_service);
+
+            // 'os' pumps the native events the later resources read, so it
+            // ticks first even though it now joins the dock after them.
+            $later = $dock->resources()->all();
+            foreach (array_keys($later) as $name) {
+                $dock->resources()->forget($name);
+            }
             $dock->resource('os', $driver);
+            foreach ($later as $name => $resource) {
+                $dock->resource($name, $resource);
+            }
 
             return $driver;
         });
 
-        $this->app->singleton(LiveApplication::class, fn (Vessel $app) => new LiveApplication(
-            $app->make('io-pool'),
-            $app->get('os-bridge')->connect(),
-            app('native-window')->driver(),
-            $app->bound('stages') ? $app->make('stages') : null,
-            $app->bound('human-input') ? $app->make('human-input') : null,
-        ));
-    }
+        // The OS bridge connects here, not at boot: a program that never asks
+        // for a LiveApplication — an IC panel, a headless service — never
+        // starts NSApplication or GTK.
+        $this->app->singleton(LiveApplication::class, function (Vessel $app) {
+            $app->make(OSLevelResourceDriver::class);
 
-    public function boot(): void
-    {
-        $this->app->make(OSLevelResourceDriver::class);
+            return new LiveApplication(
+                $app->make('io-pool'),
+                $app->get('os-bridge')->connect(),
+                app('native-window')->driver(),
+                $app->bound('stages') ? $app->make('stages') : null,
+                $app->bound('human-input') ? $app->make('human-input') : null,
+                $app->bound('embedded-displays') ? $app->make('embedded-displays') : null,
+            );
+        });
     }
 }

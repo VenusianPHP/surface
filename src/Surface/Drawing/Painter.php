@@ -2,6 +2,7 @@
 
 namespace Surface\Drawing;
 
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Drawing\Drawing2D;
 use Surface\Contracts\Drawing\DrawingException;
 use Surface\Contracts\Drawing\Executor;
@@ -9,7 +10,6 @@ use Surface\Contracts\Drawing\TextureHandle;
 use Surface\Contracts\Drawing\Topology;
 use Surface\Contracts\Drawing\Transform;
 use Surface\Contracts\Fonts\GFXFont;
-use Surface\Contracts\NativeWindows\Views\Color;
 use Surface\Drawing\Text\GlyphAtlas;
 use Surface\Drawing\Text\Typesetter;
 

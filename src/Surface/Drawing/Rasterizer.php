@@ -2,6 +2,7 @@
 
 namespace Surface\Drawing;
 
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Drawing\Drawing2D;
 use Surface\Contracts\Drawing\DrawingException;
 use Surface\Contracts\Drawing\TextureHandle;
@@ -9,7 +10,6 @@ use Surface\Contracts\Fonts\GFXFont;
 use Surface\Contracts\Framebuffers\Framebuffer;
 use Surface\Contracts\Framebuffers\RastersNatively;
 use Surface\Contracts\Framebuffers\Region;
-use Surface\Contracts\NativeWindows\Views\Color;
 use Surface\Drawing\Text\Typesetter;
 use Surface\Framebuffers\PixelMapper;
 

@@ -1,6 +1,6 @@
 <?php
 
-use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Contracts\Drawing\Color;
 use Surface\NativeWindows\Components\Skeleton;
 use Surface\NativeWindows\Components\SkeletonShape;
 use Venusian\Surface\Tests\Support\Fakes\FakeGroup;

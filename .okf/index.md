@@ -14,9 +14,10 @@ engine-owned windows (Stage) — GPU via `Stage::open()`, CPU via
 `Stage::openCPU()` / `Stage::emulate()`. CPU path: five in-house engines
 (`dirty` / `full` / `epaper` / `paged` / `nframes`) over a `php` or
 `native` framebuffer store. Engines: `metal`, `opengl`
-(`jovian/venusian-ogx`), `vulkan`, `sdl3`. Embedded display sinks are
-later slices. Bitmap text (`Drawing2D::text()`) is in on both engines;
-faces come from `surface/fonts` and `venusian/letterhead`.
+(`jovian/venusian-ogx`), `vulkan`, `sdl3`. Embedded displays (`EmbeddedDisplays::attach()`) and the
+Canvas over every output (`Canvas::of()`), with the renderer a Canvas choice
+rather than an output one (`Canvas::engine()`), are in. Bitmap text (`Drawing2D::text()`) is in on both engines;
+faces come from `venusian-surface/fonts` and `venusian/letterhead`.
 
 The package is mid-rebuild. The 0.8 native-window view tree was written
 against an older, opinionated `ext-appkit` / `ext-gtk` whose convenience
@@ -63,6 +64,12 @@ concept here is `status: draft` until a human verifies it.
   native drivers, packings, PixelMapper, golden fixtures
 * [stage.md](/stage.md) - engine-owned windows: hosts and engines by alias,
   one Drawing2D; GPU and CPU kinds, `openCPU` / `emulate`
+* [embedded-displays.md](/embedded-displays.md) - a CPU canvas on an IC panel:
+  what is sent per panel kind, the manager, the `displays` dock resource,
+  faults, the one GPIO import site
+* [canvas.md](/canvas.md) - Canvasable: one lifecycle over a GPU view, a
+  stage or an embedded display; one draw hook, on-demand frames, and
+  engine() - any CPU or GPU engine on any of them
 * [human-input.md](/human-input.md) - keyboards, mice, game pads, game
   controllers: the `input.<engine>` seam, IC circuits, the `input` dock
   resource
@@ -89,7 +96,7 @@ concept here is `status: draft` until a human verifies it.
 |---|---|
 | Version | 0.8.0, PHP `^8.4\|^8.5\|^8.6` |
 | Namespace | `Surface\` at `src/Surface` |
-| Split packages | `surface/bridge`, `surface/contracts`, `surface/drawing`, `surface/embedded-panels`, `surface/fonts`, `surface/framebuffers`, `surface/human-input`, `surface/native-windows`, `surface/stage` — each with own `composer.json`; Core is not split |
-| Hard dependencies | `venusian-voyager/nuts-and-bolts` + `venusian-voyager/io-pools` + `venusian-voyager/console` + `venusian-voyager/filesystem` |
+| Split packages | `venusian-surface/bridge`, `venusian-surface/contracts`, `venusian-surface/canvas`, `venusian-surface/drawing`, `venusian-surface/embedded-displays`, `venusian-surface/fonts`, `venusian-surface/framebuffers`, `venusian-surface/human-input`, `venusian-surface/native-windows`, `venusian-surface/stage` — each with own `composer.json`; Core is not split |
+| Hard dependencies | `venusian-voyager/nuts-and-bolts` + `venusian-voyager/io-pools` + `venusian-voyager/console` + `venusian-voyager/filesystem` + `gpio/contracts` (embedded displays) |
 | Engines | suggested, never required |
-| Tests | `vendor/bin/pest` green at 698; orphaned view tests excluded in `phpunit.xml` |
+| Tests | `vendor/bin/pest` green at 751; orphaned view tests excluded in `phpunit.xml` |

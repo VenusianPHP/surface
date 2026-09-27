@@ -2,13 +2,14 @@
 
 namespace Surface\Stage;
 
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Drawing\CPUDrawTarget;
 use Surface\Contracts\Drawing\CPUEngine;
 use Surface\Contracts\Drawing\Drawing2D;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\Region;
-use Surface\Contracts\NativeWindows\Views\Color;
 use Surface\Contracts\Stage\CPUStagedWindow as CPUStagedWindowContract;
+use Surface\Contracts\Stage\StageException;
 use Surface\Contracts\Stage\StageFit;
 
 /**
@@ -33,6 +34,27 @@ abstract class CPUStagedWindow extends AbstractStage implements CPUStagedWindowC
     public function canvas(): CPUDrawTarget
     {
         return $this->canvas;
+    }
+
+    /**
+     * Present a different rasteriser's pixels from here on. The window only
+     * ever sees rgba8(), so any canvas of the same size will do — a CPU engine
+     * or a GPU engine running headless. The hook is the caller's to set again,
+     * and the window shows the new canvas as soon as it has a frame.
+     */
+    public function drawWith(CPUDrawTarget $canvas): static
+    {
+        $this->guardOpen();
+
+        [$width, $height] = $this->canvas->drawableSize();
+
+        if ($canvas->drawableSize() !== [$width, $height]) {
+            throw StageException::rendererMismatch($this->name, $width, $height);
+        }
+
+        $this->canvas = $canvas;
+
+        return $this;
     }
 
     public function fit(): StageFit

@@ -154,12 +154,9 @@ attach.
 
 - `Windowable::cpu()` — needs bytes-in twins on AppKit and GTK. Seam
   is `CPUDrawTarget` + `rgba8()`.
-- EmbeddedPanels sink (push present into an IC). Pull model this
-  slice, except `paged`'s `onPage`.
 - Native rasterisation (`RastersNatively`): seam declared, no driver
   implements it.
 - Blending on CPU, dithering. Text landed — see [fonts](/fonts.md).
-- Canvas over GPU + CPU targets.
 
 [^spec]: CPU rendering design
 [^cpu-draw-target]: CPUDrawTarget

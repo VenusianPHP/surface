@@ -1,5 +1,6 @@
 <?php
 
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Drawing\CPUEngine;
 use Surface\Contracts\Drawing\CPUHost;
 use Surface\Contracts\Drawing\Drawing2D;
@@ -8,7 +9,6 @@ use Surface\Contracts\Framebuffers\BitDepth;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\PixelFormat;
 use Surface\Contracts\Framebuffers\Region;
-use Surface\Contracts\NativeWindows\Views\Color;
 use Surface\Drawing\Canvases\DirtyCanvas;
 use Surface\Drawing\Canvases\FullCanvas;
 use Surface\Drawing\Rasterizer;

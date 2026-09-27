@@ -18,13 +18,13 @@ final class FakeButton extends Button
 
     public bool $destroyed = false;
 
-    /** @var list<\Surface\Contracts\NativeWindows\Views\Color> */
+    /** @var list<\Surface\Contracts\Drawing\Color> */
     public array $applied_text_colors = [];
 
     /** @var list<\Surface\Contracts\NativeWindows\Views\FontSpec> */
     public array $applied_fonts = [];
 
-    /** @var list<\Surface\Contracts\NativeWindows\Views\Color> */
+    /** @var list<\Surface\Contracts\Drawing\Color> */
     public array $applied_backgrounds = [];
 
     protected function applyFrame(int $x, int $y, int $width, int $height): void
@@ -55,7 +55,7 @@ final class FakeButton extends Button
         $this->destroyed = true;
     }
 
-    protected function applyTextColor(\Surface\Contracts\NativeWindows\Views\Color $color): void
+    protected function applyTextColor(\Surface\Contracts\Drawing\Color $color): void
     {
         $this->applied_text_colors[] = $color;
     }
@@ -65,7 +65,7 @@ final class FakeButton extends Button
         $this->applied_fonts[] = $font;
     }
 
-    protected function applyBackground(\Surface\Contracts\NativeWindows\Views\Color $color): void
+    protected function applyBackground(\Surface\Contracts\Drawing\Color $color): void
     {
         $this->applied_backgrounds[] = $color;
     }

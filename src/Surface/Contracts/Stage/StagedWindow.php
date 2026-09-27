@@ -25,6 +25,9 @@ interface StagedWindow extends DrawTarget
 
     public function show(): static;
 
+    /** True once show() ran. A closed stage still answers what it was. */
+    public function isShown(): bool;
+
     /** Release the engine, destroy the native window, announce once. Idempotent. */
     public function close(): void;
 

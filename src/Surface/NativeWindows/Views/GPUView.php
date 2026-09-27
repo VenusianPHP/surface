@@ -2,9 +2,9 @@
 
 namespace Surface\NativeWindows\Views;
 
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Drawing\Executor;
 use Surface\Contracts\Drawing\GPUEngine;
-use Surface\Contracts\NativeWindows\Views\Color;
 use Surface\Contracts\NativeWindows\Views\OSGPUView;
 use Surface\Drawing\Concerns\RunsFrames;
 use Surface\NativeWindows\Windowable;

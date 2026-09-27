@@ -2,7 +2,7 @@
 
 namespace Venusian\Surface\Tests\Support\Fakes;
 
-use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Contracts\Drawing\Color;
 use Surface\NativeWindows\Views\Image;
 
 /** An Image whose engine hooks record instead of touching a toolkit. */

@@ -1,12 +1,14 @@
 <?php
 
-namespace Surface\Contracts\NativeWindows\Views;
-
-use Surface\Contracts\NativeWindows\WindowableException;
+namespace Surface\Contracts\Drawing;
 
 /**
  * An sRGB colour, engine-neutral. Components are 0.0–1.0 floats — AppKit's
  * native unit; GTK CSS gets them re-expanded to rgba().
+ *
+ * Every surface that takes a colour takes this one: a GPU view, a CPU
+ * canvas, a stage, a display panel, a native widget's tint. It lived under
+ * NativeWindows until 0.8 because that is where the first caller was.
  */
 final class Color
 {
@@ -19,7 +21,8 @@ final class Color
 
     /**
      * From '#rgb', '#rrggbb' or '#rrggbbaa', hash optional.
-     * @throws WindowableException On anything else.
+     *
+     * @throws DrawingException On anything else.
      */
     public static function hex(string $hex): self
     {
@@ -30,7 +33,7 @@ final class Color
         }
 
         if (! preg_match('/^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/', $hex)) {
-            throw new WindowableException("'{$hex}' is not a hex colour.");
+            throw DrawingException::notAHexColour($hex);
         }
 
         return new self(

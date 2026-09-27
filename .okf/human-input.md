@@ -138,7 +138,7 @@ enums (button/axis naming stays chip-native); `ICInput` is what maps a
 circuit's reports onto the shared `GamepadButton`/`GamepadAxis` vocabulary
 and derives edges.[^ic]
 
-Surface imports no GPIO code — IC packages depend on `surface/contracts`
+Surface imports no GPIO code — IC packages depend on `venusian-surface/contracts`
 only, the `ssd1306` precedent. Circuit polling rides the `input` dock
 resource (`HumanInputResourceDriver::tick()` polls every attached
 `ICInput`), not a GPIO dock; a circuit keeps its own `every($gpio)` helper

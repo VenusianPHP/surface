@@ -2,7 +2,7 @@
 
 namespace Surface\NativeWindows\Components;
 
-use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\NativeWindows\Views\FontWeight;
 use Surface\Contracts\NativeWindows\Views\OSGroup;
 use Surface\Contracts\NativeWindows\Views\OSLabel;

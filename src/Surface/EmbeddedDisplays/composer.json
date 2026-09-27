@@ -1,0 +1,31 @@
+{
+    "name": "venusian-surface/embedded-displays",
+    "description": "Surface embedded displays: a CPU canvas presented on an IC display panel, one frame per tick on the IOPool dock.",
+    "license": "MIT",
+    "authors": [{ "name": "Angel Gonzalez", "email": "angel@projectsaturnstudios.com" }],
+    "require": {
+        "php": "^8.4|^8.5|^8.6",
+        "gpio/contracts": "^0.8.0",
+        "venusian-surface/contracts": "^0.8.0",
+        "venusian-surface/drawing": "^0.8.0",
+        "venusian-voyager/contracts": "^0.8.0",
+        "venusian-voyager/io-pools": "^0.8.0",
+        "venusian-voyager/magic-aliases": "^0.8.0",
+        "venusian-voyager/nuts-and-bolts": "^0.8.0"
+    },
+    "suggest": {
+        "scrapyard-io/framework": "^0.8.0 - GPIO buses for display panels.",
+        "dept-of-scrapyard-robotics/ssd1306": "^0.8.0 - SSD1306 monochrome OLED panels over I2C or SPI.",
+        "dept-of-scrapyard-robotics/st77xx": "^0.8.0 - ST7735, ST7789 and ST7796 colour TFT panels over SPI."
+    },
+    "minimum-stability": "dev",
+    "autoload": { "psr-4": { "Surface\\EmbeddedDisplays\\": "" } },
+    "config": { "sort-packages": true },
+    "extra": {
+        "branch-alias": { "dev-main": "0.8.x-dev" },
+        "venusian": {
+            "providers": ["Surface\\EmbeddedDisplays\\EmbeddedDisplaysServiceProvider"],
+            "aliases": { "EmbeddedDisplay": "Surface\\EmbeddedDisplays\\MagicAliases\\EmbeddedDisplay" }
+        }
+    }
+}

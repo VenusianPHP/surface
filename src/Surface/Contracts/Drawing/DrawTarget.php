@@ -2,7 +2,7 @@
 
 namespace Surface\Contracts\Drawing;
 
-use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Contracts\Drawing\Color;
 
 /**
  * Anything that runs a draw hook and presents — engine-free. GPUDrawTarget adds

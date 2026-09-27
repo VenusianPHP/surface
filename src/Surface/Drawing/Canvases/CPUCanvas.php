@@ -2,6 +2,7 @@
 
 namespace Surface\Drawing\Canvases;
 
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Drawing\CPUDrawTarget;
 use Surface\Contracts\Drawing\CPUEngine;
 use Surface\Contracts\Drawing\CPUHost;
@@ -9,7 +10,6 @@ use Surface\Contracts\Drawing\Drawing2D;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\Framebuffer;
 use Surface\Contracts\Framebuffers\Region;
-use Surface\Contracts\NativeWindows\Views\Color;
 use Surface\Drawing\Concerns\SchedulesFrames;
 use Surface\Drawing\Rasterizer;
 use Surface\Framebuffers\PixelMapper;

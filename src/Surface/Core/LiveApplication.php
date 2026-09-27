@@ -6,6 +6,7 @@ use Surface\Contracts\Bridge\BridgedOSSession;
 use Surface\Contracts\Core\AboutInfo;
 use Surface\Contracts\NativeWindows\OSWindowDriver;
 use Surface\Contracts\NativeWindows\WindowableException;
+use Surface\EmbeddedDisplays\EmbeddedDisplayManager;
 use Surface\HumanInput\HumanInputManager;
 use Surface\NativeWindows\Menus\MenuItemSpec;
 use Surface\Stage\StageManager;
@@ -32,6 +33,7 @@ class LiveApplication
         public readonly OSWindowDriver   $window_service,
         protected readonly ?StageManager $stages = null,
         protected readonly ?HumanInputManager $inputs = null,
+        protected readonly ?EmbeddedDisplayManager $displays = null,
     ) {
         $this->menu_bar_profiles = new Collection();
         $this->mail = new IOEventBag();
@@ -65,7 +67,8 @@ class LiveApplication
     }
 
     /**
-     * Input engines first, then stages, then the windows, then the bridge.
+     * Input engines first, then embedded displays, then stages, then the
+     * windows, then the bridge.
      * Stages close and disconnect their host sessions. A failure at any
      * step still tears the rest down; it propagates after.
      */
@@ -73,7 +76,11 @@ class LiveApplication
     {
         try {
             try {
-                $this->inputs?->destroy();
+                try {
+                    $this->inputs?->destroy();
+                } finally {
+                    $this->displays?->destroy();
+                }
             } finally {
                 $this->stages?->destroy();
             }

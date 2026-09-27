@@ -2,7 +2,7 @@
 
 namespace Venusian\Surface\Tests\Support\Fakes;
 
-use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Contracts\Drawing\Color;
 
 /**
  * The engine hooks every fake view shares: frames, measure, background and

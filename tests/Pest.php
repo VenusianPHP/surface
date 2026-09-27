@@ -3,11 +3,24 @@
 use Surface\Contracts\Core\Events\SurfaceEvent;
 use Surface\Core\IOPools\OSLevelResourceDriver;
 use Surface\Core\LiveApplication;
+use Surface\Contracts\Drawing\CPUEngine;
+use Surface\Contracts\Drawing\CPUHost;
 use Surface\Contracts\Drawing\GPUEngine;
+use Surface\Contracts\Framebuffers\BitDepth;
+use Surface\Contracts\Framebuffers\BitOrder;
+use Surface\Contracts\Framebuffers\FormatSpec;
+use Surface\Contracts\Framebuffers\PageAxis;
+use Surface\Contracts\Framebuffers\PixelFormat;
+use Surface\Contracts\Framebuffers\ScanDirection;
+use Surface\Drawing\Canvases\DirtyCanvas;
 use Surface\Drawing\CPUEngineManager;
 use Surface\Drawing\Engines\DirtyEngine;
+use Surface\Drawing\Engines\EPaperEngine;
 use Surface\Drawing\Engines\FullEngine;
+use Surface\Drawing\Engines\PagedEngine;
 use Surface\Drawing\GPUEngineManager;
+use Surface\EmbeddedDisplays\EmbeddedDisplayManager;
+use Surface\Framebuffers\Php\PhpFramebufferDriver;
 use Surface\Framebuffers\FramebufferManager;
 use Surface\HumanInput\HumanInputManager;
 use Surface\Stage\StageManager;
@@ -118,4 +131,46 @@ function inputManager(array $config = ['default' => 'sdl3'], array $bindings = [
 function mailNamed(Collection $bag, string $name): ?SurfaceEvent
 {
     return $bag->first(fn (object $mail) => $mail instanceof SurfaceEvent && $mail->name === $name);
+}
+
+/** The SSD1306's own format: one byte per column per 8-row page, bit 0 the top row. */
+function oledSpec(): FormatSpec
+{
+    return new FormatSpec(PixelFormat::MONO_VERTICAL_PAGE, BitDepth::B1, ScanDirection::TOP_TO_BOTTOM, BitOrder::LSB_FIRST, page_axis: PageAxis::VERTICAL);
+}
+
+/** A real dirty canvas over the php framebuffer driver — no container, no fake. */
+function panelCanvas(int $width, int $height, FormatSpec $spec): DirtyCanvas
+{
+    return new DirtyCanvas(CPUEngine::DIRTY, (new PhpFramebufferDriver())->dirty($spec, $width, $height), new CPUHost($width, $height, $spec));
+}
+
+/**
+ * An EmbeddedDisplayManager over a flat-map vessel: the given embedded-displays
+ * config, the four CPU engines a panel can default to behind their aliases
+ * (real engines over the php framebuffer driver), and a bare dock.
+ *
+ * @return array{EmbeddedDisplayManager, IOPoolDock, FakeBindingVessel}
+ */
+function displayManager(array $config = [], array $bindings = []): array
+{
+    $dock = bareDock();
+    $buffers = new PhpFramebufferDriver();
+    $vessel = new FakeBindingVessel([
+        'config' => new FakeConfigRepository([
+            'embedded-displays' => $config,
+            'cpu' => ['default' => 'dirty', 'engines' => [
+                'dirty' => ['alias' => 'cpu.dirty'], 'full' => ['alias' => 'cpu.full'],
+                'epaper' => ['alias' => 'cpu.epaper'], 'paged' => ['alias' => 'cpu.paged'],
+            ]],
+        ]),
+        'cpu.dirty' => new DirtyEngine($buffers),
+        'cpu.full' => new FullEngine($buffers),
+        'cpu.epaper' => new EPaperEngine($buffers),
+        'cpu.paged' => new PagedEngine($buffers),
+        'io-pool' => $dock,
+    ] + $bindings);
+    $vessel->instance('cpu-engines', new CPUEngineManager($vessel));
+
+    return [new EmbeddedDisplayManager($vessel), $dock, $vessel];
 }

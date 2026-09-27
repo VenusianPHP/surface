@@ -2,12 +2,12 @@
 
 namespace Surface\Framebuffers;
 
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Framebuffers\BitDepth;
 use Surface\Contracts\Framebuffers\EInkColor;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\FramebufferException;
 use Surface\Contracts\Framebuffers\PixelFormat;
-use Surface\Contracts\NativeWindows\Views\Color;
 
 /**
  * Colour policy for one FormatSpec: a Color becomes the host word and back.

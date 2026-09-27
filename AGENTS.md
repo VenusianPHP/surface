@@ -53,15 +53,15 @@ the root `replace` map. Left as-is deliberately; do not "fix" it in passing.
 
 - Composer: `venusian/surface` **0.8.0**. PHP `^8.4|^8.5|^8.6`.
 - Namespace root is `Surface\` at `src/Surface`.
-- **Split packages.** `surface/bridge`, `surface/contracts`,
- `surface/drawing`, `surface/embedded-panels`, `surface/fonts`,
- `surface/human-input`, `surface/native-windows`, and `surface/stage` are
+- **Split packages.** `venusian-surface/bridge`, `venusian-surface/canvas`, `venusian-surface/contracts`,
+ `venusian-surface/drawing`, `venusian-surface/embedded-displays`, `venusian-surface/fonts`,
+ `venusian-surface/human-input`, `venusian-surface/native-windows`, and `venusian-surface/stage` are
  subtree splits, each with its own `composer.json`, `.gitattributes` and
  `LICENSE` under `src/Surface/*`, and each declared in the root `replace`
  map. A new component directory needs all four. Manifests require what the
  code imports and declare own provider + alias under `extra.venusian` —
  Core's aggregate provider ships only with `venusian/surface`. Known gap:
- `device_os_family()` ships only in `surface/native-windows`
+ `device_os_family()` ships only in `venusian-surface/native-windows`
  (`Helpers/os.php`), yet Bridge, Drawing and Stage managers call it.
 - **GPU regions draw through `Surface\Contracts\Drawing`.** The Painter is
  the only 2D implementation; engines implement `Executor` in their own
@@ -69,13 +69,19 @@ the root `replace` map. Left as-is deliberately; do not "fix" it in passing.
 - **Stages.** Hosts are reached by `stage.<host>` alias and engines by
   `gpu.<engine>`; Surface never names SDL, GLFW or AppKit in code. See
   [`.okf/stage.md`](.okf/stage.md).
+- **`GeneralPurposeIO\` is imported under `src/Surface/EmbeddedDisplays` only.** Its
+  contract in `Surface\Contracts\EmbeddedDisplays` is GPIO-free, so Canvas and
+  window-only code never load it. `Surface\Canvas` imports `Surface\Contracts\*`
+  only. See [`.okf/embedded-displays.md`](.okf/embedded-displays.md) and
+  [`.okf/canvas.md`](.okf/canvas.md).
 - **Never import a `Jovian\` symbol.** Surface resolves the container alias
  `mac.bridge` or `linux.bridge` and knows nothing else about an engine. No
  `class_exists`, no `method_exists`, no engine package name in code — a
  string literal is not code awareness, a class name is. See
  [`.okf/engine-seam.md`](.okf/engine-seam.md).
 - **Engines are `suggest`, never `require`.** Hard dependencies are
-  `venusian-voyager/nuts-and-bolts` and `venusian-voyager/io-pools` — the
+  `venusian-voyager/nuts-and-bolts`, `venusian-voyager/io-pools` and
+  `gpio/contracts` (the panel contract embedded displays draw for) — the
   loop/event/async primitives live in the framework so headless sketches
   get them without Surface.
 - **Contracts live under `Surface\Contracts\*`,** mirroring the component

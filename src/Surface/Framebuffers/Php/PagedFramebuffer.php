@@ -11,7 +11,7 @@ use Surface\Contracts\Framebuffers\PagedFramebuffer as PagedFramebufferContract;
 use Surface\Contracts\Framebuffers\PageAxis;
 use Surface\Contracts\Framebuffers\PixelFormat;
 use Surface\Contracts\Framebuffers\Region;
-use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Contracts\Drawing\Color;
 use Surface\Framebuffers\PixelMapper;
 
 /**

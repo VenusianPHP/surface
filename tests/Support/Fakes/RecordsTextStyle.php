@@ -2,7 +2,7 @@
 
 namespace Venusian\Surface\Tests\Support\Fakes;
 
-use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\NativeWindows\Views\FontSpec;
 
 /** The StylesText engine hooks, recorded. */

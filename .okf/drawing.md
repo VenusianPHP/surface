@@ -80,7 +80,7 @@ seam probed once at construction — no driver implements it this slice.
 `Typesetter` places glyphs from the line-box top (`y` is the top, no
 baseline shim), decodes coverage / inclusive runs, and caches by face
 class. `GlyphAtlas` shelf-packs white RGB + coverage alpha with a
-one-texel gutter. `surface/drawing` still does not import
+one-texel gutter. `venusian-surface/drawing` still does not import
 `Surface\Fonts\`. `Drawing2D::text()` / `textBounds()` sit on both
 drawers: the Painter emits one `TRIANGLES` batch per string (six
 tinted vertices per placed glyph, UVs from a per-face-class atlas
@@ -178,7 +178,7 @@ honestly (blending false → opaque).
 
 # Not in this slice
 
-Depth, embedded panels. Typesetter / GlyphAtlas / `text()` exist
+Depth. Embedded panels landed — see [embedded-displays](/embedded-displays.md); the common API over every target is [canvas](/canvas.md). Typesetter / GlyphAtlas / `text()` exist
 under Drawing. (Slice 2 landed OpenGL on both boxes.
 Slice 3 landed Vulkan on the Mac through MoltenVK. CPU engines landed
 in Task 11.)

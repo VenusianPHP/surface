@@ -2,7 +2,7 @@
 
 namespace Surface\NativeWindows\Components;
 
-use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Contracts\Drawing\Color;
 
 /**
  * How loudly a Message speaks. Each severity carries its own fill and ink.

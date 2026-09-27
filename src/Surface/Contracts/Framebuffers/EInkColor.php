@@ -2,7 +2,7 @@
 
 namespace Surface\Contracts\Framebuffers;
 
-use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Contracts\Drawing\Color;
 
 /** The logical ink colours a ChannelSpec names. WHITE is paper. */
 enum EInkColor: int

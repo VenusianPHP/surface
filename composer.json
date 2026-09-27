@@ -23,6 +23,7 @@
     ],
     "require": {
         "php": "^8.4|^8.5|^8.6",
+        "gpio/contracts": "^0.8.0",
         "symfony/polyfill-php85": "^1.31",
         "venusian-voyager/console": "^0.8.0",
         "venusian-voyager/filesystem": "^0.8.0",
@@ -31,9 +32,10 @@
     },
     "replace": {
         "venusian-surface/bridge": "self.version",
+        "venusian-surface/canvas": "self.version",
         "venusian-surface/contracts": "self.version",
         "venusian-surface/drawing": "self.version",
-        "venusian-surface/embedded-panels": "self.version",
+        "venusian-surface/embedded-displays": "self.version",
         "venusian-surface/fonts": "self.version",
         "venusian-surface/framebuffers": "self.version",
         "venusian-surface/human-input": "self.version",
@@ -48,10 +50,12 @@
         "jovian/venusian-metal": "^0.8.0 - The metal GPU engine (macOS).",
         "jovian/venusian-ogx": "^0.8.0 - The opengl GPU engine.",
         "jovian/venusian-vulkan": "^0.8.0 - The vulkan GPU engine (MoltenVK on macOS, a lent VkSurfaceKHR elsewhere).",
-        "scrapyard-io/framework": "^0.8.0 - GPIO buses for input circuits.",
+        "scrapyard-io/framework": "^0.8.0 - GPIO buses for input circuits and display panels.",
         "dept-of-scrapyard-robotics/wii-connector": "^0.8.0 - Nunchuck, Wii Classic, NES and SNES Classic Mini controllers as input circuits.",
         "dept-of-scrapyard-robotics/seesaw-mini-gamepad": "^0.8.0 - The Adafruit Mini I2C Gamepad as an input circuit.",
-        "microscrap/scrapyard-evdev": "^0.8.0 - Linux evdev gamepads as input circuits."
+        "microscrap/scrapyard-evdev": "^0.8.0 - Linux evdev gamepads as input circuits.",
+        "dept-of-scrapyard-robotics/ssd1306": "^0.8.0 - SSD1306 monochrome OLED panels as embedded displays.",
+        "dept-of-scrapyard-robotics/st77xx": "^0.8.0 - ST7735, ST7789 and ST7796 colour TFT panels as embedded displays."
     },
     "require-dev": {
         "pestphp/pest": "^4"
@@ -86,7 +90,8 @@
                 "Framebuffers": "Surface\\Framebuffers\\MagicAliases\\Framebuffers",
                 "Fonts": "Surface\\Fonts\\MagicAliases\\Fonts",
                 "Stage": "Surface\\Stage\\MagicAliases\\Stage",
-                "HumanInput": "Surface\\HumanInput\\MagicAliases\\HumanInput"
+                "HumanInput": "Surface\\HumanInput\\MagicAliases\\HumanInput",
+                "EmbeddedDisplay": "Surface\\EmbeddedDisplays\\MagicAliases\\EmbeddedDisplay"
             }
         }
     },

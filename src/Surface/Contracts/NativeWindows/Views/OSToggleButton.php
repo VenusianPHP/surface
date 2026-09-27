@@ -2,6 +2,8 @@
 
 namespace Surface\Contracts\NativeWindows\Views;
 
+use Surface\Contracts\Drawing\Color;
+
 /**
  * A button that stays pressed until pressed again.
  */

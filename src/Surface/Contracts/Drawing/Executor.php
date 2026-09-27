@@ -2,7 +2,7 @@
 
 namespace Surface\Contracts\Drawing;
 
-use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Contracts\Drawing\Color;
 
 /**
  * The intersection every engine executes today. An engine package implements

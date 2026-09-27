@@ -1,10 +1,10 @@
 <?php
 
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\Drawing\Drawing2D;
 use Surface\Contracts\Drawing\Frame;
 use Surface\Contracts\Drawing\GPUEngine;
 use Surface\Contracts\NativeWindows\GPUViewException;
-use Surface\Contracts\NativeWindows\Views\Color;
 use Surface\Contracts\NativeWindows\WindowableException;
 use Venusian\Surface\Tests\Support\Fakes\FakeGPUView;
 use Venusian\Surface\Tests\Support\Fakes\FakeLinuxWindow;

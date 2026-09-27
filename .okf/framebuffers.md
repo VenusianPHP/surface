@@ -139,7 +139,7 @@ puts them.[^mapper]
 
 | Driver | Package | Bytes |
 |---|---|---|
-| `php` (default) | `surface/framebuffers`, in-house | PHP packed strings; fake-provable; always available |
+| `php` (default) | `venusian-surface/framebuffers`, in-house | PHP packed strings; fake-provable; always available |
 | `native` | `php-io-extensions/fb` (`ext-fb`) + `jovian/fb` | C buffers behind handles |
 
 `FRAMEBUFFER_DRIVER` (`config/framebuffers.php`, default `php`) picks

@@ -2,7 +2,7 @@
 
 namespace Surface\NativeWindows\Views;
 
-use Surface\Contracts\NativeWindows\Views\Color;
+use Surface\Contracts\Drawing\Color;
 use Surface\Contracts\NativeWindows\Views\FontSpec;
 use Surface\Contracts\NativeWindows\Views\FontWeight;
 use Surface\Contracts\NativeWindows\WindowableException;
