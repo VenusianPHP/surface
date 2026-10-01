@@ -1,0 +1,41 @@
+{
+    "name": "venusian-surface/contracts",
+    "description": "The Surface contracts: interfaces, mail and exceptions shared by every Surface component and toolkit driver.",
+    "keywords": [
+        "venusian",
+        "surface",
+        "contracts",
+        "interfaces"
+    ],
+    "license": "MIT",
+    "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.10.x/contracts",
+    "support": {
+        "issues": "https://github.com/VenusianPHP/surface/issues",
+        "source": "https://github.com/venusian-surface/contracts"
+    },
+    "authors": [
+        {
+            "name": "Angel Gonzalez",
+            "email": "angel@projectsaturnstudios.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4|^8.5|^8.6",
+        "venusian-voyager/contracts": "^0.10.1"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Surface\\Contracts\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "0.10.x-dev"
+        }
+    }
+}

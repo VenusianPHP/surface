@@ -1,0 +1,55 @@
+{
+    "name": "venusian-surface/windows",
+    "description": "Surface windows: toolkit windows with configurable menu bars over the toolkit bridge; their activity arrives as loop mail.",
+    "keywords": [
+        "venusian",
+        "surface",
+        "windows",
+        "menus",
+        "gui"
+    ],
+    "license": "MIT",
+    "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.10.x/windows",
+    "support": {
+        "issues": "https://github.com/VenusianPHP/surface/issues",
+        "source": "https://github.com/venusian-surface/windows"
+    },
+    "authors": [
+        {
+            "name": "Angel Gonzalez",
+            "email": "angel@projectsaturnstudios.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4|^8.5|^8.6",
+        "venusian-surface/bridge": "^0.10.0",
+        "venusian-surface/contracts": "^0.10.0",
+        "venusian-voyager/contracts": "^0.10.1",
+        "venusian-voyager/nuts-and-bolts": "^0.10.1"
+    },
+    "suggest": {
+        "jovian/venusian-appkit": "^0.10.0 - To bridge to AppKit and open AppKit windows on macOS.",
+        "jovian/venusian-gtk": "^0.10.0 - To bridge to GTK 4 and open GTK windows on Linux or macOS.",
+        "jovian/venusian-qt": "^0.10.0 - To bridge to Qt 6 and open Qt windows on Linux or macOS."
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Surface\\Windows\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "0.10.x-dev"
+        },
+        "venusian": {
+            "providers": [
+                "Surface\\Windows\\WindowsServiceProvider"
+            ]
+        }
+    }
+}
