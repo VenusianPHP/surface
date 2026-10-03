@@ -37,6 +37,7 @@
         "venusian-surface/fonts": "self.version",
         "venusian-surface/framebuffers": "self.version",
         "venusian-surface/human-input": "self.version",
+        "venusian-surface/nuts-and-bolts": "self.version",
         "venusian-surface/stage": "self.version",
         "venusian-surface/windows": "self.version"
     },

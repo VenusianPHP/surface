@@ -5,7 +5,10 @@ declare(strict_types=1);
 use Surface\Bridge\BridgedToolkitSession;
 use Surface\Bridge\ToolkitPump;
 use Surface\Contracts\Bridge\BridgeException;
+use Surface\Contracts\Windows\Mail\View\ViewResized;
 use Surface\Contracts\Windows\Mail\WindowClosed;
+use Surface\Contracts\Windows\Mail\WindowFocused;
+use Surface\Contracts\Windows\Mail\WindowResized;
 use Venusian\Surface\Tests\Fixtures\FakeSession;
 use Voyager\IOPools\EventLoop;
 use Voyager\IOPools\LoopWaiter;
@@ -102,3 +105,59 @@ it('pumps with the sleep budget, and without blocking on a tick', function (): v
     expect($session->pumped)->toBe([16_000_000, 0])
         ->and(BridgedToolkitSession::PUMP)->toBe('bridge.toolkit');
 });
+
+it('keeps only the latest mail per key until the pump flushes it, in first-seen order', function (): void {
+    $session = (new FakeSession())->connect();
+    $session->postLatest('window.resized.main', new WindowResized('main', 10, 10));
+    $session->postLatest('view.resized.main.a', new ViewResized('main', 'a', 'u', 1, 1));
+    $session->postLatest('window.resized.main', new WindowResized('main', 20, 20));
+    $session->post(new WindowFocused('main'));
+
+    expect($session->outbox())->toEqual([new WindowFocused('main')]);
+
+    (new ToolkitPump($session))->tick();
+
+    expect($session->outbox())->toEqual([new WindowFocused('main'), new WindowResized('main', 20, 20), new ViewResized('main', 'a', 'u', 1, 1)]);
+
+    (new ToolkitPump($session))->sleep(0);
+
+    expect($session->outbox())->toHaveCount(3);
+});
+
+it('forgets a pending latest mail by key, and ignores a key with nothing pending', function (): void {
+    $session = (new FakeSession())->connect();
+    $session->postLatest('view.resized.main.a', new ViewResized('main', 'a', 'u', 1, 1));
+    $session->postLatest('window.resized.main', $kept = new WindowResized('main', 2, 2));
+    $session->forgetLatest('view.resized.main.a');
+    $session->forgetLatest('view.resized.main.never');
+
+    (new ToolkitPump($session))->tick();
+
+    expect($session->outbox())->toBe([$kept]);
+});
+
+it('flushes the latest mail on sleep as well as tick', function (): void {
+    $session = (new FakeSession())->connect();
+    $session->postLatest('window.resized.main', new WindowResized('main', 5, 5));
+
+    (new ToolkitPump($session))->sleep(1_000);
+
+    expect($session->outbox())->toEqual([new WindowResized('main', 5, 5)]);
+});
+
+it('hands pending latest mail to the loop on join, after the held mail, and coalesces per pump once joined', function (): void {
+    [$loop, $registry] = loopOver(nestableBackend());
+    $session = (new FakeSession())->connect();
+    $session->post($early = new WindowClosed('early'));
+    $session->postLatest('window.resized.main', $first = new WindowResized('main', 1, 1));
+    $session->joinLoop($loop);
+
+    $session->postLatest('window.resized.main', new WindowResized('main', 2, 2));
+    $session->postLatest('window.resized.main', $last = new WindowResized('main', 3, 3));
+
+    expect($registry->mail())->toBe([$early, $first]);
+
+    (new ToolkitPump($session))->tick();
+
+    expect($registry->mail())->toBe([$last]);
+})->skip(fn () => nestableBackend() === null, 'needs ext-kqueue or ext-epoll');

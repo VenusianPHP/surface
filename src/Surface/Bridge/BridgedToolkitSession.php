@@ -30,6 +30,11 @@ abstract class BridgedToolkitSession implements SessionBridge
      */
     protected array $outbox = [];
 
+    /**
+     * @var array<string, object> pending mail by key; the last post under a key wins
+     */
+    protected array $latest = [];
+
     public const string PUMP = 'bridge.toolkit';
 
     public function __construct() {
@@ -130,6 +135,44 @@ abstract class BridgedToolkitSession implements SessionBridge
     }
 
     /**
+     * Hold mail under $key until the pump flushes it, replacing whatever is pending there.
+     *
+     * @param string $key
+     * @param object $mail
+     * @return void
+     */
+    public function postLatest(string $key, object $mail): void
+    {
+        $this->latest[$key] = $mail;
+    }
+
+    /**
+     * Deliver the pending latest mail: into the outbox before a loop, to the loop after.
+     * ToolkitPump calls this after every pump, so a burst within one wait becomes one mail per key.
+     *
+     * @return void
+     */
+    public function flushLatest(): void
+    {
+        $latest = $this->latest;
+        $this->latest = [];
+        foreach ($latest as $mail) {
+            $this->post($mail);
+        }
+    }
+
+    /**
+     * Drop the mail pending under $key, if any: its target is gone.
+     *
+     * @param string $key
+     * @return void
+     */
+    public function forgetLatest(string $key): void
+    {
+        unset($this->latest[$key]);
+    }
+
+    /**
      * Put this toolkit's native wait in charge of the loop's sleep and fold the loop's
      * waiter into it, so every wake of the loop ends the toolkit's sleep too.
      *
@@ -157,6 +200,7 @@ abstract class BridgedToolkitSession implements SessionBridge
             $loop->post($mail);
         }
         $this->outbox = [];
+        $this->flushLatest();
     }
 
 

@@ -5,7 +5,7 @@ description: Splits, providers, container bindings, published configs.
 resource: composer.json
 tags: [surface, composer, providers]
 status: draft
-generated: { by: claude-opus/5.5, at: 2026-10-01T20:04:54Z }
+generated: { by: claude-opus/5.5, at: 2026-10-02T19:45:27Z }
 sources:
   - id: root
     resource: composer.json
@@ -27,9 +27,10 @@ sources:
 
 | Split | Namespace | Holds | Requires |
 |---|---|---|---|
-| `venusian-surface/contracts` | `Surface\Contracts\` | Interfaces, mail, `MenuRole`, exceptions | voyager contracts |
+| `venusian-surface/nuts-and-bolts` | `Surface\NutsAndBolts\` | `Color` | php only |
+| `venusian-surface/contracts` | `Surface\Contracts\` | Interfaces, mail, `MenuRole`, exceptions, primitive contracts, `Placement`, `PrimitiveRegistry`, typography values | voyager contracts, nuts-and-bolts |
 | `venusian-surface/bridge` | `Surface\Bridge\` | `ToolkitManager`, `ToolkitBridgeDriver`, `BridgedToolkitSession`, `ToolkitPump` | contracts, `venusian-voyager/io-pools` |
-| `venusian-surface/windows` | `Surface\Windows\` | `ToolkitWindowManager`, `MenuProfile`, `MenuItem` | contracts, bridge |
+| `venusian-surface/windows` | `Surface\Windows\` | `ToolkitWindowManager`, `MenuProfile`, `MenuItem`, primitive abstracts, `HostsPrimitives` | contracts, bridge, nuts-and-bolts |
 
 Toolkit drivers live outside: `jovian/venusian-appkit`, `-gtk`, `-qt`. A split never requires `venusian/surface`; only an app composes.
 

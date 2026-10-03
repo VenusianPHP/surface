@@ -5,7 +5,7 @@ description: Window kinds, the toolkit window driver contract, ToolkitWindowMana
 resource: src/Surface/Windows/
 tags: [surface, windows, menus]
 status: draft
-generated: { by: claude-opus/5.5, at: 2026-10-01T20:04:54Z }
+generated: { by: claude-opus/5.5, at: 2026-10-02T19:45:27Z }
 sources:
   - id: contracts
     resource: src/Surface/Contracts/Windows/
@@ -29,6 +29,8 @@ sources:
 * Close: notify-after, no veto. User close button and `close()` take one path: `WindowClosed` once, driver forgets the name, later calls throw `WindowException` ("closed").
 * Focus: `WindowFocused` on becoming active/key.
 * Names unique among open windows; reopening after close allowed.
+
+Primitives ([toolkit primitives](/architecture/primitives.md)): `column|row|grid|fixed(name, …)` declares the one content container (second → `WindowException`); `content()`, `view(path)`, `uuid(uuid)`, `size()` (content area, from the toolkit); `registry()`, `factory()`, `forgetContent($content)` (removed content only) serve primitives and containers. Driver windows `use HostsPrimitives`. Close removes the whole tree; lookups on a closed window throw.
 
 # ToolkitWindowDriver
 

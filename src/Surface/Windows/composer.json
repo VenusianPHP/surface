@@ -24,6 +24,7 @@
         "php": "^8.4|^8.5|^8.6",
         "venusian-surface/bridge": "^0.10.0",
         "venusian-surface/contracts": "^0.10.0",
+        "venusian-surface/nuts-and-bolts": "^0.10.0",
         "venusian-voyager/contracts": "^0.10.1",
         "venusian-voyager/nuts-and-bolts": "^0.10.1"
     },

@@ -5,7 +5,7 @@ description: ToolkitManager picks a toolkit driver; its session starts the engin
 resource: src/Surface/Bridge/
 tags: [surface, bridge, io-pools]
 status: draft
-generated: { by: claude-opus/5.5, at: 2026-10-01T20:04:54Z }
+generated: { by: claude-opus/5.5, at: 2026-10-02T19:45:27Z }
 sources:
   - id: manager
     resource: src/Surface/Bridge/ToolkitManager.php
@@ -49,7 +49,9 @@ Recommended: connect on demand in a sketch's `boot()`. Connecting in `AppService
 
 # Mail
 
-Native callbacks only `post($mail)`. Before `joinLoop()` mail waits in an outbox (windows can be opened and pumped by hand); after, it goes to `Loop::post()`, and the loop's MailHandler delivers it (sketch `loop($mail)` or Signals). API calls are plain synchronous calls; side effects arrive as mail. See [mail](/api/mail.md).
+Native callbacks only `post($mail)` or `postLatest($key, $mail)`. Before `joinLoop()` mail waits in an outbox (windows can be opened and pumped by hand); after, it goes to `Loop::post()`, and the loop's MailHandler delivers it (sketch `loop($mail)` or Signals). API calls are plain synchronous calls; side effects arrive as mail. See [mail](/api/mail.md), [view mail](/api/view-mail.md).
+
+`postLatest($key, $mail)`: holds mail under `$key`, a later post under the same key replaces it. `ToolkitPump` calls `flushLatest()` after every `pump()` (sleep and tick): pending mail goes out in first-seen key order, so a burst inside one wait (edge-drag resizes) becomes one mail per key with the last value. Keys: `window.resized.<window>`, `view.resized.<window>.<path>`. `forgetLatest($key)` drops a pending key when its target goes (view unwatched/removed, window closing). Latest mail reaches the outbox only through `ToolkitPump`, `joinLoop()` or an explicit `flushLatest()`: a hand-pumping caller (tests) pumps through `ToolkitPump::sleep()`.
 
 # Joining the loop
 
@@ -57,8 +59,8 @@ Native callbacks only `post($mail)`. Before `joinLoop()` mail waits in an outbox
 
 1. requires connected; requires `$loop->descriptor()` non-null (kqueue on macOS, epoll on Linux) → else `BridgeException` naming ext-kqueue / ext-epoll and `io-pools.pool_waiters.default`;
 2. `wakeDescriptor($fd)`: toolkit-specific; the loop waiter's fd readable ends the toolkit's wait;
-3. registers `ToolkitPump` as resource `bridge.toolkit` and `crown()`s it: the loop sleeps inside the toolkit (`sleep($budget)` → `pump($budget)`, `tick()` → `pump(0)`);
-4. flushes the outbox into the loop.
+3. registers `ToolkitPump` as resource `bridge.toolkit` and `crown()`s it: the loop sleeps inside the toolkit (`sleep($budget)` → `pump($budget)`, `tick()` → `pump(0)`, each then `flushLatest()`);
+4. flushes the outbox into the loop, then the pending latest mail.
 
 `leaveLoop()`: forget the resource, `releaseWakeDescriptor()`.
 

@@ -4,10 +4,19 @@ declare(strict_types=1);
 
 namespace Venusian\Surface\Tests\Fixtures;
 
+use LogicException;
 use Surface\Contracts\Windows\Menus\MenuProfile;
+use Surface\Contracts\Windows\Primitives\PrimitiveFactory;
+use Surface\Contracts\Windows\Primitives\TKColumn;
+use Surface\Contracts\Windows\Primitives\TKFixed;
+use Surface\Contracts\Windows\Primitives\TKGrid;
+use Surface\Contracts\Windows\Primitives\TKPrimitive;
+use Surface\Contracts\Windows\Primitives\TKPrimitiveGroup;
+use Surface\Contracts\Windows\Primitives\TKRow;
 use Surface\Contracts\Windows\ToolkitWindow;
 use Surface\Contracts\Windows\ToolkitWindowDriver;
 use Surface\Contracts\Windows\WindowException;
+use Surface\Contracts\Windows\Primitives\PrimitiveRegistry;
 
 /** Records what the manager hands a toolkit window driver. */
 final class FakeWindowDriver implements ToolkitWindowDriver
@@ -64,4 +73,25 @@ final class FakeWindow implements ToolkitWindow
     public function setMenuBar(string $profile): static { return $this; }
 
     public function setToggle(string $item, bool $on): static { return $this; }
+    public function column(string $name, int $spacing = 0, int $padding = 0): TKColumn { throw new LogicException('not used by this test'); }
+
+    public function row(string $name, int $spacing = 0, int $padding = 0): TKRow { throw new LogicException('not used by this test'); }
+
+    public function grid(string $name, int $spacing = 0, int $padding = 0): TKGrid { throw new LogicException('not used by this test'); }
+
+    public function fixed(string $name): TKFixed { throw new LogicException('not used by this test'); }
+
+    public function content(): ?TKPrimitiveGroup { return null; }
+
+    public function view(string $path): ?TKPrimitive { return null; }
+
+    public function uuid(string $uuid): ?TKPrimitive { return null; }
+
+    public function size(): array { return [0, 0]; }
+
+    public function registry(): PrimitiveRegistry { throw new LogicException('not used by this test'); }
+
+    public function factory(): PrimitiveFactory { throw new LogicException('not used by this test'); }
+
+    public function forgetContent(TKPrimitiveGroup $content): void {}
 }

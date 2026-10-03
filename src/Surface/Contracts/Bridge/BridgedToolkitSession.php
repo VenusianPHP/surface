@@ -21,4 +21,28 @@ interface BridgedToolkitSession
      * @return bool
      */
     public function connected(): bool;
+    /**
+     * Hold mail under $key until the next flush, replacing whatever is pending there.
+     * Bursts (resizes) become one mail per key per pump.
+     *
+     * @param string $key e.g. `window.resized.<window>`, `view.resized.<window>.<path>`
+     * @param object $mail
+     * @return void
+     */
+    public function postLatest(string $key, object $mail): void;
+
+    /**
+     * Deliver the pending latest mail in first-seen key order.
+     * @return void
+     */
+    public function flushLatest(): void;
+
+    /**
+     * Drop the mail pending under $key, if any: its target is gone (view unwatched or
+     * removed, window closing).
+     *
+     * @param string $key
+     * @return void
+     */
+    public function forgetLatest(string $key): void;
 }
