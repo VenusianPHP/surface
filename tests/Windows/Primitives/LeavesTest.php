@@ -241,6 +241,7 @@ it('refuses every setter and native read once removed', function (Closure $creat
     'label' => [fn ($h) => $h->label('x', 'x'), fn ($l) => $l->setWrap(true)],
     'button' => [fn ($h) => $h->button('x', 'x'), fn ($l) => $l->setLabel('y')],
     'image' => [fn ($h) => $h->image('x'), fn ($l) => $l->setFile('/a.png')],
+    'canvas' => [fn ($h) => $h->canvas('x'), fn ($l) => $l->framebuffer()],
     'spinner' => [fn ($h) => $h->spinner('x'), fn ($l) => $l->start()],
     'progress bar' => [fn ($h) => $h->progressBar('x'), fn ($l) => $l->setFraction(0.5)],
     'text input' => [fn ($h) => $h->textInput('x'), fn ($l) => $l->setPlaceholder('p')],

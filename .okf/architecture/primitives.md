@@ -5,7 +5,7 @@ description: Native widgets inside a ToolkitWindow - containers, registry, paths
 resource: src/Surface/Windows/Primitives/
 tags: [surface, windows, primitives, widgets]
 status: draft
-generated: { by: claude-opus/5.5, at: 2026-10-02T19:45:27Z }
+generated: { by: claude-opus/5.5, at: 2026-10-04T03:04:28Z }
 sources:
   - id: contracts
     resource: src/Surface/Contracts/Windows/Primitives/
@@ -81,6 +81,7 @@ Every primitive: `setVisible`/`show`/`hide`, `setEnabled`/`enable`/`disable` (`H
 | `TKLabel` | text | `applyText`, `applyWrap`, `applyAlignment`, `applyFont`, `applyTextColor` | — |
 | `TKButton` | label | `applyLabel`, `applyFont`, `applyTextColor` | — (driver posts `ButtonClicked`) |
 | `TKImage` | ?file | `applyFile`, `applyScaling` | — |
+| `TKCanvas` | — | `nativeScale`, `applyPixels(rgba8, w, h)` | — |
 | `TKSeparator` | horizontal | — (`isHorizontal()`) | — |
 | `TKSpinner` | — | `applySpinning` (change-only) | — |
 | `TKProgressBar` | ?fraction (0..1, null = indeterminate) | `applyFraction` | — |
@@ -107,3 +108,21 @@ Code-driven changes post nothing. Engine callbacks (`native*`) record state only
 [^contracts]: Primitive contracts
 [^abstracts]: Primitive abstracts, registry, placement, HostsPrimitives
 [^spec]: Toolkit primitives design
+
+# Canvas
+
+`TKCanvas` = rectangle the application draws. Toolkit lays it out, never paints it.
+
+```php
+$view = $column->canvas('view')->fill();
+$fb = $view->framebuffer('dirty');                       // RGBA8, bound to the canvas, sized to it in device pixels
+$velvet = app('drawing')->renderer('velvet', ['framebuffer' => $fb]);
+$velvet->frame($draw);
+$view->present();                                        // on screen
+```
+
+* `pixelSize()` = `size()` × display scale. `[0, 0]` before layout.
+* `framebuffer(kind = 'full', ?width, ?height, frames = 2, ?driver)`: `full`, `dirty` or `ring`. Same one answered while kind + size (+ frames, + named driver) match; else new one made and bound. After a resize: call again. Smaller size given = stretched over the view. No size given + not laid out yet: `WindowException`.
+* `present()`: full → always. Dirty → first time, then only with damage; begins a new epoch. Ring → front frame, once per frame presented. Shown opaque: alpha byte ignored.
+* Driver from the app's `FramebufferManager` (`WindowsServiceProvider` sets `TKCanvas::resolveFramebuffersUsing()`); with none set, the canvas builds `native` / `extended` itself.
+* Copy path: toolkit takes a whole image per present. A toolkit's canvas implements `nativeScale()` + `applyPixels()` only.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Venusian\Surface\Tests\Fixtures;
 
 use Surface\Contracts\Framebuffers\DamageGranularity;
+use Surface\Contracts\Framebuffers\Filter;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\FramebufferException;
 use Surface\Contracts\Framebuffers\PixelStore;
@@ -122,6 +123,21 @@ final class FakePixelStore implements PixelStore
         }
 
         return $box;
+    }
+
+    /** Writes the red byte of the nearest source pixel wherever the point lands inside: enough to see where a kind routes an image. */
+    public function paintRgba8(string $rgba8, int $width, int $height, array $inverse, Region $target, int $opacity, Filter $filter, int $row = 0): void
+    {
+        [$a, $b, $c, $d, $e, $f] = $inverse;
+        for ($y = $target->y; $y < $target->bottom(); $y++) {
+            for ($x = $target->x; $x < $target->right(); $x++) {
+                $u = $a * ($x + 0.5) + $c * ($y + $row + 0.5) + $e;
+                $v = $b * ($x + 0.5) + $d * ($y + $row + 0.5) + $f;
+                if ($u >= 0 && $u < $width && $v >= 0 && $v < $height) {
+                    $this->set($x, $y, ord($rgba8[((int) $v * $width + (int) $u) * 4]));
+                }
+            }
+        }
     }
 
     public function copy(PixelStore $source, Region $region): void

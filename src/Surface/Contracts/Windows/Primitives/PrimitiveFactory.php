@@ -40,6 +40,13 @@ interface PrimitiveFactory
     /**
      * @param TKPrimitiveGroup $host
      * @param string $name
+     * @return TKCanvas
+     */
+    public function mintCanvas(TKPrimitiveGroup $host, string $name): TKCanvas;
+
+    /**
+     * @param TKPrimitiveGroup $host
+     * @param string $name
      * @param bool $horizontal
      * @return TKSeparator
      */

@@ -34,6 +34,14 @@ interface TKPrimitiveGroup extends TKPrimitive
     public function image(string $name, ?string $file = null): TKImage;
 
     /**
+     * A rectangle the application draws itself, through a framebuffer.
+     *
+     * @param string $name
+     * @return TKCanvas
+     */
+    public function canvas(string $name): TKCanvas;
+
+    /**
      * @param string $name
      * @param bool $horizontal
      * @return TKSeparator

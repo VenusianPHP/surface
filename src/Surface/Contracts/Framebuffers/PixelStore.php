@@ -65,6 +65,17 @@ interface PixelStore
      */
     public function paintSpans(string $spans, int $rgba8): ?Region;
 
+    /**
+     * Paint RGBA8 pixels through an inverse placement: for each pixel of $target,
+     * a rect inside the store, the point (u, v) = $inverse × (x + ½, y + $row + ½)
+     * picks the source pixel when it lies inside the $width × $height image; see
+     * Framebuffer::paintImage() for the sampling and the blend.
+     *
+     * @param  array{float, float, float, float, float, float}  $inverse  a, b, c, d, e, f: u = a·x + c·y + e, v = b·x + d·y + f
+     * @param  int  $row  The surface row this store's row 0 stands for: a paged buffer's window sits $row rows down its surface.
+     */
+    public function paintRgba8(string $rgba8, int $width, int $height, array $inverse, Region $target, int $opacity, Filter $filter, int $row = 0): void;
+
     /** Copy a rect from a store of the same size and format, words as stored. */
     public function copy(PixelStore $source, Region $region): void;
 

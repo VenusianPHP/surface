@@ -14,6 +14,7 @@ use Surface\Contracts\Windows\Primitives\TKDatepicker;
 use Surface\Contracts\Windows\Primitives\TKDropdown;
 use Surface\Contracts\Windows\Primitives\TKFixed as FixedContract;
 use Surface\Contracts\Windows\Primitives\TKGrid as GridContract;
+use Surface\Contracts\Windows\Primitives\TKCanvas;
 use Surface\Contracts\Windows\Primitives\TKImage;
 use Surface\Contracts\Windows\Primitives\TKLabel as LabelContract;
 use Surface\Contracts\Windows\Primitives\TKPrimitive as PrimitiveContract;
@@ -42,6 +43,7 @@ use Surface\Windows\Primitives\TKButton;
 use Surface\Windows\Primitives\TKCheckbox as CheckboxAbstract;
 use Surface\Windows\Primitives\TKDatepicker as DatepickerAbstract;
 use Surface\Windows\Primitives\TKDropdown as DropdownAbstract;
+use Surface\Windows\Primitives\TKCanvas as CanvasAbstract;
 use Surface\Windows\Primitives\TKImage as ImageAbstract;
 use Surface\Windows\Primitives\TKProgressBar as ProgressBarAbstract;
 use Surface\Windows\Primitives\TKSeparator as SeparatorAbstract;
@@ -133,6 +135,8 @@ final class FakePrimitiveFactory implements PrimitiveFactory
     public function mintButton(GroupContract $host, string $name, string $label): ButtonContract { return new FakeButton($name, ...[...$this->slot($host, $name, 'Button'), $label]); }
 
     public function mintImage(GroupContract $host, string $name, ?string $file): TKImage { return new FakeImage($name, ...[...$this->slot($host, $name, 'Image'), $file]); }
+
+    public function mintCanvas(GroupContract $host, string $name): TKCanvas { return new FakeCanvas($name, ...$this->slot($host, $name, 'Canvas')); }
 
     public function mintSeparator(GroupContract $host, string $name, bool $horizontal): TKSeparator { return new FakeSeparator($name, ...[...$this->slot($host, $name, 'Separator'), $horizontal]); }
 
@@ -295,6 +299,25 @@ final class FakeImage extends ImageAbstract
     protected function applyFile(?string $file): void { $this->log[] = 'file:'.($file ?? 'none'); }
 
     protected function applyScaling(ImageScaling $scaling): void { $this->log[] = "scaling:{$scaling->value}"; }
+}
+
+final class FakeCanvas extends CanvasAbstract
+{
+    use FakeNative;
+
+    /** @var array{int, int} What the toolkit says the view measures; [0, 0] is a view not laid out yet. */
+    public array $measures = [40, 30];
+
+    public float $scale = 2.0;
+
+    /** @var list<array{string, int, int}> Every image handed to the toolkit. */
+    public array $pixels = [];
+
+    protected function nativeSize(): array { return $this->measures; }
+
+    protected function nativeScale(): float { return $this->scale; }
+
+    protected function applyPixels(string $rgba8, int $width, int $height): void { $this->pixels[] = [$rgba8, $width, $height]; }
 }
 
 final class FakeSeparator extends SeparatorAbstract

@@ -8,6 +8,7 @@ use Surface\Contracts\Windows\Primitives\Placement;
 use Surface\Contracts\Windows\Primitives\PrimitiveFactory;
 use Surface\Contracts\Windows\Primitives\PrimitiveRegistry;
 use Surface\Contracts\Windows\Primitives\TKButton;
+use Surface\Contracts\Windows\Primitives\TKCanvas;
 use Surface\Contracts\Windows\Primitives\TKCheckbox;
 use Surface\Contracts\Windows\Primitives\TKColumn;
 use Surface\Contracts\Windows\Primitives\TKDatepicker;
@@ -62,6 +63,11 @@ abstract class TKPrimitiveGroup extends TKPrimitive implements PrimitiveContract
     public function image(string $name, ?string $file = null): TKImage
     {
         return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintImage($this, $name, $file));
+    }
+
+    public function canvas(string $name): TKCanvas
+    {
+        return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintCanvas($this, $name));
     }
 
     public function separator(string $name, bool $horizontal = true): TKSeparator

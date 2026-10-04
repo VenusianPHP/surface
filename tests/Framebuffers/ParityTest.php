@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Surface\Contracts\Framebuffers\Filter;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\Region;
 use Surface\Contracts\Framebuffers\Spans;
@@ -9,6 +10,7 @@ use Surface\Framebuffers\Extended\ExtendedFullFramebuffer;
 use Surface\Framebuffers\Extended\FbFormats;
 use Surface\Framebuffers\Native\NativeFullFramebuffer;
 use Surface\Framebuffers\PixelMapper;
+use Surface\NutsAndBolts\Affine;
 use Venusian\Surface\Tests\Support\Framebuffers\Formats;
 use Venusian\Surface\Tests\Support\Framebuffers\Rgba8Source;
 
@@ -86,6 +88,38 @@ it('paints the same span bytes as the native store, in every format', function (
 
         $native->paintSpans($spans, $colour);
         $extended->paintSpans($spans, $colour);
+        expect(bin2hex($extended->dump()))->toBe(bin2hex($native->dump()), "bytes after step {$step}");
+    }
+})->with(Formats::dataset())->skip(! class_exists(FbBuffer::class), 'ext-fb 0.10 is not loaded in this PHP.');
+
+it('paints the same placed images as the native store, in every format', function (FormatSpec $spec): void {
+    $width = 13;
+    $height = 9;
+    $native = new NativeFullFramebuffer($spec, $width, $height);
+    $extended = new ExtendedFullFramebuffer($spec, $width, $height);
+    $random = new Random\Randomizer(new Random\Engine\Mt19937(20261005));
+    $noise = $random->getBytes($width * $height * 4);
+    $native->blitFrom(new Rgba8Source($noise, $width, $height));
+    $extended->blitFrom(new Rgba8Source($noise, $width, $height));
+
+    for ($step = 0; $step < 40; $step++) {
+        [$sw, $sh] = [$random->getInt(1, 7), $random->getInt(1, 5)];
+        $source = new Rgba8Source($random->getBytes($sw * $sh * 4), $sw, $sh);
+        // whole and half steps as often as free ones, so sample points land on pixel edges and centres too
+        $number = fn (float $low, float $high): float => match ($random->getInt(0, 2)) {
+            0 => floor($low + $random->getFloat(0, 1) * ($high - $low)),
+            1 => floor($low + $random->getFloat(0, 1) * ($high - $low)) + 0.5,
+            default => $low + $random->getFloat(0, 1) * ($high - $low),
+        };
+        $placement = Affine::translation($number(-4, $width), $number(-4, $height))
+            ->multiply($random->getInt(0, 1) ? Affine::rotation($random->getFloat(0, 6.3)) : Affine::identity())
+            ->multiply(Affine::scaling($number(-3, 4), $number(0, 3)));
+        $opacity = [255, 255, 128, 127, $random->getInt(0, 255)][$random->getInt(0, 4)];
+        $filter = $random->getInt(0, 1) ? Filter::LINEAR : Filter::NEAREST;
+        $clip = $random->getInt(0, 2) ? null : new Region($random->getInt(0, 6), $random->getInt(0, 4), $random->getInt(1, 9), $random->getInt(1, 7));
+
+        $native->paintImage($source, $placement, $opacity, $filter, $clip);
+        $extended->paintImage($source, $placement, $opacity, $filter, $clip);
         expect(bin2hex($extended->dump()))->toBe(bin2hex($native->dump()), "bytes after step {$step}");
     }
 })->with(Formats::dataset())->skip(! class_exists(FbBuffer::class), 'ext-fb 0.10 is not loaded in this PHP.');

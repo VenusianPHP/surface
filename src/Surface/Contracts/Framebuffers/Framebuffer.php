@@ -2,6 +2,8 @@
 
 namespace Surface\Contracts\Framebuffers;
 
+use Surface\NutsAndBolts\Affine;
+
 interface Framebuffer
 {
     public function viewportWidth(): int;
@@ -34,6 +36,17 @@ interface Framebuffer
      * and nothing is written.
      */
     public function paintSpans(string $spans, int $rgba8): static;
+
+    /**
+     * Paint another framebuffer's pixels through $placement, which maps the
+     * source's pixel coordinates onto this surface: scaled, turned, moved. A
+     * pixel here is painted when its centre maps inside the source, from the
+     * source pixel under that point (NEAREST) or the four around it (LINEAR,
+     * edges held), blended like paintSpans() with source alpha × $opacity
+     * (0..255) as the alpha. Pixels outside the surface or $clip are skipped.
+     * A paged source gives its current page, at its place.
+     */
+    public function paintImage(Framebuffer $source, Affine $placement, int $opacity = 255, Filter $filter = Filter::NEAREST, ?Region $clip = null): static;
 
     public function clear(): static;
 

@@ -2,6 +2,8 @@
 
 ## 2026-10-03
 
+* Surface 0.10 phase 4, canvas: [toolkit primitives](architecture/primitives.md) gains `TKCanvas` (framebuffer + present); [components](architecture/components.md): Windows now requires Framebuffers.
+* Surface 0.10 phase 4, Drawing: added [drawing](architecture/drawing.md); [framebuffers](architecture/framebuffers.md) gains image painting; [components](architecture/components.md), [config](api/config.md) and [testing](runbooks/testing.md) gain the split, `Affine`, its config and its tests.
 * Surface 0.10 phase 4, Rasterize: added [rasterize](architecture/rasterize.md); [framebuffers](architecture/framebuffers.md) gains span painting; [components](architecture/components.md), [config](api/config.md) and [testing](runbooks/testing.md) gain the split, its config and its tests.
 * Surface 0.10 phase 4, Framebuffers: added [framebuffers](architecture/framebuffers.md); [components](architecture/components.md), [config](api/config.md) and [testing](runbooks/testing.md) gain the split, its config and its tests.
 

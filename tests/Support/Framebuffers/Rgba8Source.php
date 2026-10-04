@@ -6,9 +6,11 @@ namespace Venusian\Surface\Tests\Support\Framebuffers;
 
 use LogicException;
 use Surface\Contracts\Framebuffers\DamageGranularity;
+use Surface\Contracts\Framebuffers\Filter;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\Framebuffer;
 use Surface\Contracts\Framebuffers\Region;
+use Surface\NutsAndBolts\Affine;
 
 /** RGBA8 bytes as a read-only framebuffer: what a fixture's rgba8 op blits from. Pixel words are 0xRRGGBBAA. */
 final class Rgba8Source implements Framebuffer
@@ -51,6 +53,8 @@ final class Rgba8Source implements Framebuffer
     public function setSegment(int $x, int $y, int $width, int $height, int $color): static { throw new LogicException('read-only source'); }
 
     public function paintSpans(string $spans, int $rgba8): static { throw new LogicException('read-only source'); }
+
+    public function paintImage(Framebuffer $source, Affine $placement, int $opacity = 255, Filter $filter = Filter::NEAREST, ?Region $clip = null): static { throw new LogicException('read-only source'); }
 
     public function clear(): static { throw new LogicException('read-only source'); }
 

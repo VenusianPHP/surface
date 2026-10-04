@@ -1,11 +1,11 @@
 ---
 type: Module
 title: Framebuffers
-description: Pixel storage behind a FormatSpec: five kinds over a pixel store, bytes in PHP (native) or C (extended, ext-fb); span painting.
+description: Pixel storage behind a FormatSpec: five kinds over a pixel store, bytes in PHP (native) or C (extended, ext-fb); span and image painting.
 resource: src/Surface/Framebuffers/
 tags: [surface, framebuffers, pixels, epaper]
 status: draft
-generated: { by: claude-opus/5.5, at: 2026-10-03T23:06:29Z }
+generated: { by: claude-opus/5.5, at: 2026-10-04T01:28:52Z }
 sources:
   - id: contracts
     resource: src/Surface/Contracts/Framebuffers/
@@ -68,6 +68,16 @@ Front = last finished frame (readers). Back = frame being drawn. On the ring: dr
 * Dirty/ring: bounding box is damage; ring paints the back; paged drops off-page rows (checks against the whole surface first).
 
 Integers throughout; `FbBuffer::paintSpans()` does the same in C. Fixtures 36–43 + spans parity enforce.
+
+# Images
+
+`paintImage(Framebuffer $source, Affine $placement, int $opacity = 255, Filter = NEAREST, ?Region $clip)` on every kind. Placement maps source pixels onto the surface: scale, turn, move.
+
+* Pixel painted when its centre maps (inverse placement) inside the source. Shape edge not anti-aliased.
+* `NEAREST`: pixel under the point. `LINEAR`: four around it, 1/256 weights, colours weighed by alpha, edges held.
+* Blend as spans, alpha `intdiv(source alpha × opacity + 127, 255)`.
+* `ImagePlacement::plan()`: target rect + inverse, once, in PHP, for both stores → `PixelStore::paintRgba8()`. Paged passes its page's top row, so sample points match a whole surface exactly. Paged source = its current page, in place.
+* `FbBuffer::paintRgba8()` same in C; ext built `-ffp-contract=off`. Hand-worked `ImageTest` + image parity enforce.
 
 # Words
 
