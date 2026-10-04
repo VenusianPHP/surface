@@ -22,6 +22,9 @@ sources:
   - id: framebuffers
     resource: src/Surface/Framebuffers/FramebuffersServiceProvider.php
     title: FramebuffersServiceProvider
+  - id: images
+    resource: src/Surface/Images/ImagesServiceProvider.php
+    title: ImagesServiceProvider
   - id: rasterize
     resource: src/Surface/Rasterize/RasterizeServiceProvider.php
     title: RasterizeServiceProvider
@@ -42,17 +45,19 @@ sources:
 | `venusian-surface/windows` | `Surface\Windows\` | `ToolkitWindowManager`, `MenuProfile`, `MenuItem`, primitive abstracts (incl. `TKCanvas`), `HostsPrimitives` | contracts, bridge, framebuffers, nuts-and-bolts |
 | `venusian-surface/framebuffers` | `Surface\Framebuffers\` | `FramebufferManager`, `Layout`, `PixelMapper`, `SpanList`, the five abstract kinds, `Native\*` (bytes in PHP), `Extended\*` (bytes in C) | contracts, nuts-and-bolts, voyager nuts-and-bolts; suggests ext-fb 0.10 |
 | `venusian-surface/drawing` | `Surface\Drawing\` | `DrawingManager`, `RenderingEngine` (base), `Velvet\VelvetGE` | contracts, framebuffers, rasterize, nuts-and-bolts, voyager contracts + nuts-and-bolts; suggests the four engine packages |
+| `venusian-surface/images` | `Surface\Images\` | `ImagesManager`, `ImageDecoder` (base), `TiffDirectory`, `Native\*` (gd + PHP TIFF), `Extended\*` (C) | contracts, framebuffers, voyager contracts + nuts-and-bolts; suggests ext-gd, ext-imgdec 0.10 |
 | `venusian-surface/rasterize` | `Surface\Rasterize\` | `RasterizeManager`, `Rasterizer` (shapes), `Stroker`, `Native\*` (geometry in PHP), `Extended\*` (geometry in C) | contracts, voyager contracts + nuts-and-bolts; suggests ext-rasterize 0.10 |
 
 Toolkit drivers live outside: `jovian/venusian-appkit`, `-gtk`, `-qt`. A split never requires `venusian/surface`; only an app composes.
 
 # Providers
 
-* Root discovers `Surface\Core\Providers\SurfaceServiceProvider` (aggregate): merges `config/bridge.php` → `bridge`, `config/windows.php` → `windows`, `config/framebuffers.php` → `framebuffers`, `config/rasterize.php` → `rasterize`, `config/drawing.php` → `drawing`; registers Windows, Bridge, Framebuffers, Rasterize and Drawing providers; publishes the five configs under tag `surface-config`.[^core]
+* Root discovers `Surface\Core\Providers\SurfaceServiceProvider` (aggregate): merges `config/bridge.php` → `bridge`, `config/windows.php` → `windows`, `config/framebuffers.php` → `framebuffers`, `config/rasterize.php` → `rasterize`, `config/images.php` → `images`, `config/drawing.php` → `drawing`; registers Windows, Bridge, Framebuffers, Rasterize, Images and Drawing providers; publishes the six configs under tag `surface-config`.[^core]
 * `BridgeServiceProvider`: singleton `toolkit-bridge` = `ToolkitManager`, alias `ToolkitManager::class`.[^bridge]
 * `WindowsServiceProvider`: singleton `toolkit-windows` = `ToolkitWindowManager(toolkit-bridge, config('windows.menus'), config('windows.default_menu'))`, alias `ToolkitWindowManager::class`. Profiles parsed on first resolve.[^windows]
-* `FramebuffersServiceProvider`: singleton `framebuffers` = `FramebufferManager`, alias `FramebufferManager::class`; `driver('native')` always, `driver('extended')` with ext-fb 0.10.[^framebuffers]
-* `RasterizeServiceProvider`: singleton `rasterize` = `RasterizeManager`, alias `RasterizeManager::class`; `driver('native')` always, `driver('extended')` with ext-rasterize 0.10.[^rasterize]
+* `FramebuffersServiceProvider`: singleton `framebuffers` = `FramebufferManager`, alias `FramebufferManager::class`; `driver('native')` always, `driver('extended')` with ext-fb 0.10, `driver('auto')` (default) picks between them.[^framebuffers]
+* `RasterizeServiceProvider`: singleton `rasterize` = `RasterizeManager`, alias `RasterizeManager::class`; `driver('native')` always, `driver('extended')` with ext-rasterize 0.10, `driver('auto')` (default) picks between them.[^rasterize]
+* `ImagesServiceProvider`: singleton `images` = `ImagesManager`, alias `ImagesManager::class`; `driver('native')` always (PNG/JPEG need ext-gd), `driver('extended')` with ext-imgdec 0.10, `driver('auto')` (default) picks between them.[^images]
 * `DrawingServiceProvider`: singleton `drawing` = `DrawingManager(config, framebuffers, rasterize)`, alias `DrawingManager::class`; `renderer('velvet', …)` built in.[^drawing]
 * Each driver package's provider binds its own contract to `toolkit-bridge`'s `driver('<name>')`: one driver, one session per process.
 
@@ -66,4 +71,5 @@ php computer vendor:publish --tag=surface-config
 [^windows]: WindowsServiceProvider
 [^framebuffers]: FramebuffersServiceProvider
 [^rasterize]: RasterizeServiceProvider
+[^images]: ImagesServiceProvider
 [^drawing]: DrawingServiceProvider

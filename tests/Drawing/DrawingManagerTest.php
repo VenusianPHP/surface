@@ -44,7 +44,7 @@ it('mints the framebuffer when none is handed in: a mode, a size, a format', fun
     $full = $buffer(['width' => 20, 'height' => 10]);
     expect([$full->viewportWidth(), $full->viewportHeight()])->toBe([20, 10])
         ->and($full->hostFormat())->toEqual(FormatSpec::rgba8())
-        ->and($full->pointer())->toBe(0)                                     // config's framebuffer driver: native
+        ->and($full->pointer() !== 0)->toBe(class_exists(FbBuffer::class))     // config's framebuffer driver: auto
         ->and($buffer(['width' => 8, 'height' => 8, 'mode' => 'dirty']))->toBeInstanceOf(DamageTrackingFramebuffer::class)
         ->and($buffer(['width' => 8, 'height' => 8, 'mode' => 'epaper', 'format' => Formats::planarBwr()]))->toBeInstanceOf(ePaperFramebuffer::class)
         ->and($buffer(['width' => 8, 'height' => 16, 'mode' => 'paged', 'page_rows' => 4, 'format' => Formats::rgb565()])->pages())->toBe(4)

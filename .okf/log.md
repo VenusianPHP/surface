@@ -1,5 +1,10 @@
 # Log
 
+## 2026-10-04
+
+* Framebuffers, Rasterize, Images: `auto` driver, the new config default (`FRAMEBUFFERS_DRIVER`, `RASTERIZE_DRIVER`, `IMAGES_DRIVER`), extended when the extension is loaded, native when not. [config](api/config.md), [components](architecture/components.md).
+* Surface 0.10 phase 4, Images: added [images](architecture/images.md); [framebuffers](architecture/framebuffers.md) gains `writeRgba8()`; [components](architecture/components.md), [config](api/config.md) and [testing](runbooks/testing.md) gain the split, its config and its tests.
+
 ## 2026-10-03
 
 * Surface 0.10 phase 4, canvas: [toolkit primitives](architecture/primitives.md) gains `TKCanvas` (framebuffer + present); [components](architecture/components.md): Windows now requires Framebuffers.

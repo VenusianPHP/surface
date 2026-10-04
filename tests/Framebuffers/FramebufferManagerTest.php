@@ -6,12 +6,17 @@ use Surface\Contracts\Framebuffers\FramebufferException;
 use Surface\Framebuffers\Extended\ExtendedFramebufferDriver;
 use Surface\Framebuffers\Native\NativeFramebufferDriver;
 
-it('defaults to the native driver and builds it once', function (): void {
+it('defaults to auto: extended when ext-fb 0.10 is loaded, native when not, built once', function (): void {
     $manager = framebuffers();
 
-    expect($manager->getDefaultDriver())->toBe('native')
-        ->and($manager->driver())->toBeInstanceOf(NativeFramebufferDriver::class)
-        ->and($manager->driver('native'))->toBe($manager->driver());
+    expect($manager->getDefaultDriver())->toBe('auto')
+        ->and($manager->driver())->toBeInstanceOf(class_exists(FbBuffer::class) ? ExtendedFramebufferDriver::class : NativeFramebufferDriver::class)
+        ->and($manager->driver('auto'))->toBe($manager->driver());
+});
+
+it('builds native when named, whatever is loaded', function (): void {
+    expect(framebuffers()->driver('native'))->toBeInstanceOf(NativeFramebufferDriver::class)
+        ->and(framebuffers(['framebuffers.default' => 'native'])->driver()->driver())->toBe('native');
 });
 
 it('takes its default from config', function (): void {

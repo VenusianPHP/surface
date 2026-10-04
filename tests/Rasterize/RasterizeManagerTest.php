@@ -6,13 +6,18 @@ use Surface\Contracts\Rasterize\RasterizeException;
 use Surface\Rasterize\Extended\ExtendedRasterizeDriver;
 use Surface\Rasterize\Native\NativeRasterizeDriver;
 
-it('defaults to the native driver and builds it once', function (): void {
+it('defaults to auto: extended when ext-rasterize is loaded, native when not, built once', function (): void {
     $manager = rasterize();
 
-    expect($manager->getDefaultDriver())->toBe('native')
-        ->and($manager->driver())->toBeInstanceOf(NativeRasterizeDriver::class)
-        ->and($manager->driver('native'))->toBe($manager->driver())
-        ->and($manager->driver()->driver())->toBe('native');
+    expect($manager->getDefaultDriver())->toBe('auto')
+        ->and($manager->driver())->toBeInstanceOf(class_exists(RasterScanner::class) ? ExtendedRasterizeDriver::class : NativeRasterizeDriver::class)
+        ->and($manager->driver('auto'))->toBe($manager->driver())
+        ->and($manager->driver()->driver())->toBe(class_exists(RasterScanner::class) ? 'extended' : 'native');
+});
+
+it('builds native when named, whatever is loaded', function (): void {
+    expect(rasterize()->driver('native'))->toBeInstanceOf(NativeRasterizeDriver::class)
+        ->and(rasterize(['rasterize.default' => 'native'])->driver()->driver())->toBe('native');
 });
 
 it('takes its default from config', function (): void {

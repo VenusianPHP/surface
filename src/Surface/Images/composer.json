@@ -1,0 +1,55 @@
+{
+    "name": "venusian-surface/images",
+    "description": "Surface images: PNG, JPEG and TIFF bytes into RGBA8 framebuffers, through ext-gd and PHP or in C through ext-imgdec.",
+    "keywords": [
+        "venusian",
+        "surface",
+        "images",
+        "png",
+        "jpeg",
+        "tiff"
+    ],
+    "license": "MIT",
+    "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.10.x/images",
+    "support": {
+        "issues": "https://github.com/VenusianPHP/surface/issues",
+        "source": "https://github.com/venusian-surface/images"
+    },
+    "authors": [
+        {
+            "name": "Angel Gonzalez",
+            "email": "angel@projectsaturnstudios.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4|^8.5|^8.6",
+        "venusian-surface/contracts": "^0.10.0",
+        "venusian-surface/framebuffers": "^0.10.0",
+        "venusian-voyager/contracts": "^0.10.1",
+        "venusian-voyager/nuts-and-bolts": "^0.10.1"
+    },
+    "suggest": {
+        "ext-gd": "* - The 'native' driver reads PNG and JPEG through it.",
+        "ext-imgdec": "^0.10.0 - The 'extended' driver: all three formats in C."
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Surface\\Images\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "0.10.x-dev"
+        },
+        "venusian": {
+            "providers": [
+                "Surface\\Images\\ImagesServiceProvider"
+            ]
+        }
+    }
+}

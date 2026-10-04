@@ -1,7 +1,7 @@
 ---
 type: Module
 title: Drawing
-description: Rendering engines: one draw API over a framebuffer, frames recorded then drawn, DrawingManager, VelvetGE the software engine.
+description: "Rendering engines: one draw API over a framebuffer, frames recorded then drawn, DrawingManager, VelvetGE the software engine."
 resource: src/Surface/Drawing/
 tags: [surface, drawing, rendering, velvet]
 status: draft
@@ -12,7 +12,7 @@ sources:
     title: RenderingEngine, DrawingException
   - id: base
     resource: src/Surface/Drawing/RenderingEngine.php
-    title: The engine base: frames, state, command lowering
+    title: "The engine base: frames, state, command lowering"
   - id: velvet
     resource: src/Surface/Drawing/Velvet/VelvetGE.php
     title: VelvetGE

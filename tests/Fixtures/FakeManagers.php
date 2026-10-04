@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use Surface\Drawing\DrawingManager;
+use Surface\Contracts\Framebuffers\FramebufferDriver;
 use Surface\Framebuffers\FramebufferManager;
+use Surface\Images\ImagesManager;
 use Surface\Rasterize\RasterizeManager;
 
 /** A config repository over an array, for managers built without a container. */
@@ -45,4 +47,20 @@ function rasterize(array $config = []): RasterizeManager
 function drawing(array $config = []): DrawingManager
 {
     return new DrawingManager(fakeConfig($config), framebuffers($config), rasterize($config));
+}
+
+/** An images manager reading the given config, minting on a framebuffer manager reading the same config. */
+function images(array $config = []): ImagesManager
+{
+    return new class($config) extends ImagesManager {
+        public function __construct(private readonly array $items)
+        {
+            $this->config = fakeConfig($items);
+        }
+
+        protected function framebuffers(): FramebufferDriver
+        {
+            return framebuffers($this->items)->driver($this->config->get('images.framebuffers'));
+        }
+    };
 }

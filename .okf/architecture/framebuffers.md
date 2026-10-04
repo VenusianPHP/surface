@@ -1,7 +1,7 @@
 ---
 type: Module
 title: Framebuffers
-description: Pixel storage behind a FormatSpec: five kinds over a pixel store, bytes in PHP (native) or C (extended, ext-fb); span and image painting.
+description: "Pixel storage behind a FormatSpec: five kinds over a pixel store, bytes in PHP (native) or C (extended, ext-fb); span and image painting."
 resource: src/Surface/Framebuffers/
 tags: [surface, framebuffers, pixels, epaper]
 status: draft
@@ -78,6 +78,10 @@ Integers throughout; `FbBuffer::paintSpans()` does the same in C. Fixtures 36–
 * Blend as spans, alpha `intdiv(source alpha × opacity + 127, 255)`.
 * `ImagePlacement::plan()`: target rect + inverse, once, in PHP, for both stores → `PixelStore::paintRgba8()`. Paged passes its page's top row, so sample points match a whole surface exactly. Paged source = its current page, in place.
 * `FbBuffer::paintRgba8()` same in C; ext built `-ffp-contract=off`. Hand-worked `ImageTest` + image parity enforce.
+
+# Raw pixels
+
+`writeRgba8(string $rgba8, int $width, int $height, int $x = 0, int $y = 0)` on every kind: a block of RGBA8 pixels, top-left at (x, y), each replacing the pixel there through the mapper. No blend. Off-surface part dropped. Bytes ≠ width × height × 4 throw, nothing written. Dirty/ring: written rect is damage; ring writes the back; paged takes surface coordinates, keeps current-page rows. `blitFrom()` = `writeRgba8()` of the source's RGBA8. How [Images](images.md) hands decoded pixels over.
 
 # Words
 

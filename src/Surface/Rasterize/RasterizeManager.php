@@ -2,6 +2,7 @@
 
 namespace Surface\Rasterize;
 
+use RasterScanner;
 use Surface\Contracts\Rasterize\RasterizeDriver;
 use Surface\Contracts\Rasterize\RasterizeException;
 use Surface\Rasterize\Extended\ExtendedRasterizeDriver;
@@ -10,7 +11,8 @@ use Voyager\NutsAndBolts\Manager;
 
 /**
  * Where the geometry runs. 'native' is PHP and always there; 'extended' is C
- * and needs ext-rasterize. Both answer the same span bytes:
+ * and needs ext-rasterize; 'auto' (the default) is extended when ext-rasterize
+ * is loaded, native when not. All answer the same span bytes:
  *
  *     app('rasterize')->driver()->rasterizer(Region::wholeSurface(320, 240), Edges::ANTIALIASED)->fillEllipse(160, 120, 80, 50);
  *
@@ -20,7 +22,13 @@ class RasterizeManager extends Manager
 {
     public function getDefaultDriver(): string
     {
-        return $this->config->get('rasterize.default', 'native');
+        return $this->config->get('rasterize.default', 'auto');
+    }
+
+    /** Extended when ext-rasterize is loaded, native when not. */
+    public function createAutoDriver(): RasterizeDriver
+    {
+        return class_exists(RasterScanner::class) ? $this->createExtendedDriver() : $this->createNativeDriver();
     }
 
     public function createNativeDriver(): RasterizeDriver

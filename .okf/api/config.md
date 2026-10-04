@@ -1,7 +1,7 @@
 ---
 type: Reference
 title: Config
-description: config/bridge.php, config/windows.php, config/framebuffers.php, config/rasterize.php and config/drawing.php keys.
+description: config/bridge.php, config/windows.php, config/framebuffers.php, config/rasterize.php, config/images.php and config/drawing.php keys.
 resource: config/
 tags: [surface, config]
 status: draft
@@ -19,6 +19,9 @@ sources:
   - id: rasterize
     resource: config/rasterize.php
     title: config/rasterize.php
+  - id: images
+    resource: config/images.php
+    title: config/images.php
   - id: drawing
     resource: config/drawing.php
     title: config/drawing.php
@@ -49,13 +52,20 @@ Driver keys, read with code defaults by each driver (absent from the published f
 
 | Key | Default | Values |
 |---|---|---|
-| `default` | `native` | `native` (bytes in PHP, always available), `extended` (bytes in C, needs ext-fb 0.10) |
+| `default` | `env('FRAMEBUFFERS_DRIVER', 'auto')` | `auto` (extended when ext-fb 0.10 is loaded, native when not), `native` (bytes in PHP, always available), `extended` (bytes in C, needs ext-fb 0.10) |
 
 `rasterize`:[^rasterize]
 
 | Key | Default | Values |
 |---|---|---|
-| `default` | `native` | `native` (geometry in PHP, always available), `extended` (geometry in C, needs ext-rasterize 0.10) |
+| `default` | `env('RASTERIZE_DRIVER', 'auto')` | `auto` (extended when ext-rasterize is loaded, native when not), `native` (geometry in PHP, always available), `extended` (geometry in C, needs ext-rasterize 0.10) |
+
+`images`:[^images]
+
+| Key | Default | Values |
+|---|---|---|
+| `default` | `env('IMAGES_DRIVER', 'auto')` | `auto` (extended when ext-imgdec is loaded, native when not), `native` (PNG/JPEG through ext-gd, TIFF in PHP), `extended` (all three in C, needs ext-imgdec 0.10) |
+| `framebuffers` | `null` | framebuffer driver decoded images live on; `null` = `framebuffers.default` |
 
 `drawing`:[^drawing]
 
@@ -67,4 +77,5 @@ Driver keys, read with code defaults by each driver (absent from the published f
 [^windows]: config/windows.php
 [^framebuffers]: config/framebuffers.php
 [^rasterize]: config/rasterize.php
+[^images]: config/images.php
 [^drawing]: config/drawing.php

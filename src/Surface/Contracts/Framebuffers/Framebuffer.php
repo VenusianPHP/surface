@@ -57,6 +57,15 @@ interface Framebuffer
     public function blitFrom(Framebuffer $source, int $offset_x = 0, int $offset_y = 0): Framebuffer;
 
     /**
+     * Put $width × $height RGBA8 pixels (top-left first) on the surface with
+     * their top-left at ($x, $y): each replaces the pixel there, mapped into
+     * the host format; what falls off the surface is dropped. A paged buffer
+     * takes surface coordinates and keeps the rows on its current page. Bytes
+     * other than $width × $height × 4 throw and nothing is written.
+     */
+    public function writeRgba8(string $rgba8, int $width, int $height, int $x = 0, int $y = 0): static;
+
+    /**
      * Raw host bytes (optional layer).
      */
     public function dump(?int $layer = null): string;
