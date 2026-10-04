@@ -1,11 +1,11 @@
 ---
 type: Reference
 title: Config
-description: config/bridge.php and config/windows.php keys.
+description: config/bridge.php, config/windows.php, config/framebuffers.php and config/rasterize.php keys.
 resource: config/
 tags: [surface, config]
 status: draft
-generated: { by: claude-opus/5.5, at: 2026-10-01T20:04:54Z }
+generated: { by: claude-opus/5.5, at: 2026-10-03T23:06:29Z }
 sources:
   - id: bridge
     resource: config/bridge.php
@@ -13,6 +13,12 @@ sources:
   - id: windows
     resource: config/windows.php
     title: config/windows.php
+  - id: framebuffers
+    resource: config/framebuffers.php
+    title: config/framebuffers.php
+  - id: rasterize
+    resource: config/rasterize.php
+    title: config/rasterize.php
 ---
 
 # Schema
@@ -36,5 +42,19 @@ Driver keys, read with code defaults by each driver (absent from the published f
 | `default_menu` | `main` | profile for the macOS default bar; `null` = empty bar |
 | `menus` | `main` profile | [menu profiles](/api/menu-profiles.md) |
 
+`framebuffers`:[^framebuffers]
+
+| Key | Default | Values |
+|---|---|---|
+| `default` | `native` | `native` (bytes in PHP, always available), `extended` (bytes in C, needs ext-fb 0.10) |
+
+`rasterize`:[^rasterize]
+
+| Key | Default | Values |
+|---|---|---|
+| `default` | `native` | `native` (geometry in PHP, always available), `extended` (geometry in C, needs ext-rasterize 0.10) |
+
 [^bridge]: config/bridge.php
 [^windows]: config/windows.php
+[^framebuffers]: config/framebuffers.php
+[^rasterize]: config/rasterize.php

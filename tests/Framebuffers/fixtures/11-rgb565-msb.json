@@ -1,0 +1,5 @@
+{"name":"RGB565 MSB 2x1","kind":"full","width":2,"height":1,
+ "format":{"pixel_format":"row_major","bit_depth":16,"endianness":"msb"},
+ "steps":[{"ops":[["set",0,0,63488],["set",1,0,2016]],"expect":{"bytes_hex":"f80007e0","get":[[0,0,63488],[1,0,2016]],
+   "rgba8_hex":"ff0000ff00ff00ff"}},
+  {"ops":[["clear"],["rgba8","ff0000ff00ff00ff"]],"expect":{"bytes_hex":"f80007e0"}}]}

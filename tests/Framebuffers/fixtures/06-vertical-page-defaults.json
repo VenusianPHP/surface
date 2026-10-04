@@ -1,0 +1,3 @@
+{"name":"vertical page defaults: LSB first, vertical axis","kind":"full","width":8,"height":8,
+ "format":{"pixel_format":"mono_vertical_page","bit_depth":1},
+ "steps":[{"ops":[["set",0,0,1],["set",1,7,1]],"expect":{"bytes_hex":"0180000000000000","granularity":[8,8]}}]}

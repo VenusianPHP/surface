@@ -1,0 +1,7 @@
+{"name":"BGRA8888 2x1: the word stays 0xRRGGBBAA, the bytes go B G R A","kind":"full","width":2,"height":1,
+ "format":{"pixel_format":"row_major","bit_depth":32,"channel_order":"bgra"},
+ "steps":[{"ops":[["set",0,0,287454020],["set",1,0,2864434397]],
+   "expect":{"bytes_hex":"33221144ccbbaadd","get":[[0,0,287454020],[1,0,2864434397]],"rgba8_hex":"11223344aabbccdd",
+     "flush":[{"format":{"pixel_format":"row_major","bit_depth":32},"bytes_hex":"11223344aabbccdd"},
+              {"format":{"pixel_format":"row_major","bit_depth":32,"channel_order":"rgba"},"bytes_hex":"11223344aabbccdd"}]}},
+  {"ops":[["fill",287454020]],"expect":{"bytes_hex":"3322114433221144"}}]}

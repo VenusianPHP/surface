@@ -1,0 +1,7 @@
+{"name":"packed index B2 MSB 4x1","kind":"full","width":4,"height":1,
+ "format":{"pixel_format":"row_major","bit_depth":2,"bit_order":"msb_first",
+   "palette":[{"color":1,"code":0},{"color":0,"code":1},{"color":3,"code":2},{"color":2,"code":3}]},
+ "steps":[{"ops":[["set",0,0,3],["set",1,0,1],["set",3,0,2]],
+   "expect":{"bytes_hex":"d2","get":[[0,0,3],[1,0,1],[2,0,0],[3,0,2]],
+     "rgba8_hex":"ff0000ffffffffff000000ffffff00ff"}},
+  {"ops":[["clear"],["rgba8","ff0000ffffffffff000000ffffff00ff"]],"expect":{"bytes_hex":"d2"}}]}

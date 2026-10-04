@@ -1,0 +1,7 @@
+{"name":"ring of two RGB565 frames: drawing addresses the back, draining the front","kind":"ring","width":2,"height":1,"frames":2,
+ "format":{"pixel_format":"row_major","bit_depth":16},
+ "steps":[{"expect":{"serial":0,"ready":true,"age":0,"bytes_hex":"00000000","preserves":false,"ring_damage":[[null,[]]]}},
+  {"ops":[["set",0,0,65535]],"expect":{"bytes_hex":"00000000","get":[[0,0,65535]],"rgba8_hex":"000000ff000000ff"}},
+  {"ops":[["present"]],"expect":{"serial":1,"bytes_hex":"ffff0000","get":[[0,0,0]],"age":0,"ring_damage":[[null,[[0,0,2,1]]]]}},
+  {"ops":[["set",1,0,4660]],"expect":{"bytes_hex":"ffff0000","get":[[1,0,4660]]}},
+  {"ops":[["present"]],"expect":{"serial":2,"bytes_hex":"00001234","age":2,"get":[[0,0,65535]],"frame":[[0,"00001234"],[1,null]],"ring_damage":[[null,[[0,0,2,1]]],[2,[]]]}}]}

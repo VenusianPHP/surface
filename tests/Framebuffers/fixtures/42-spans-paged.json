@@ -1,0 +1,3 @@
+{"name":"spans on a paged RGBA8 2x4 with 2-row pages: rows off the page are dropped, the rest land page-relative","kind":"paged","width":2,"height":4,"page_rows":2,
+ "format":{"pixel_format":"row_major","bit_depth":32},
+ "steps":[{"ops":[["page",1],["spans",[[0,0,2,255],[2,1,1,255],[3,0,1,255]],4294967295]],"expect":{"bytes_hex":"00000000ffffffffffffffff00000000","get":[[1,2,4294967295],[0,0,0]]}}]}

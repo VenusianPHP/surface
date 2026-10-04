@@ -1,0 +1,4 @@
+{"name":"spans on a dirty RGBA8 4x3: the bounding box of the list is the damage","kind":"dirty","width":4,"height":3,
+ "format":{"pixel_format":"row_major","bit_depth":32},
+ "steps":[{"ops":[["epoch"],["spans",[[0,1,2,255],[2,0,1,40]],16711935]],
+   "expect":{"damage":[[0,0,3,3]],"bytes_hex":"0000000000ff00ff00ff00ff000000000000000000000000000000000000000000280028000000000000000000000000"}}]}

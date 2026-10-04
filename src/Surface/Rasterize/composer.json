@@ -1,0 +1,52 @@
+{
+    "name": "venusian-surface/rasterize",
+    "description": "Surface rasterize: shapes into coverage spans, hard-edged or anti-aliased, with the geometry in PHP or in C through ext-rasterize.",
+    "keywords": [
+        "venusian",
+        "surface",
+        "rasterize",
+        "scanline",
+        "antialiasing"
+    ],
+    "license": "MIT",
+    "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.10.x/rasterize",
+    "support": {
+        "issues": "https://github.com/VenusianPHP/surface/issues",
+        "source": "https://github.com/venusian-surface/rasterize"
+    },
+    "authors": [
+        {
+            "name": "Angel Gonzalez",
+            "email": "angel@projectsaturnstudios.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4|^8.5|^8.6",
+        "venusian-surface/contracts": "^0.10.0",
+        "venusian-voyager/contracts": "^0.10.1",
+        "venusian-voyager/nuts-and-bolts": "^0.10.1"
+    },
+    "suggest": {
+        "ext-rasterize": "^0.10.0 - The 'extended' driver: the same geometry in C."
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Surface\\Rasterize\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "0.10.x-dev"
+        },
+        "venusian": {
+            "providers": [
+                "Surface\\Rasterize\\RasterizeServiceProvider"
+            ]
+        }
+    }
+}

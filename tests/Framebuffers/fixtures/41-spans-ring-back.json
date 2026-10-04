@@ -1,0 +1,5 @@
+{"name":"spans on a ring of two RGBA8 frames paint the back; after a repair, the next present reports just the span","kind":"ring","width":2,"height":1,"frames":2,
+ "format":{"pixel_format":"row_major","bit_depth":32},
+ "steps":[{"ops":[["spans",[[0,0,1,255]],4278190335]],"expect":{"bytes_hex":"0000000000000000"}},
+  {"ops":[["present"]],"expect":{"serial":1,"bytes_hex":"ff0000ff00000000"}},
+  {"ops":[["repair"],["spans",[[0,1,1,255]],16711935],["present"]],"expect":{"serial":2,"bytes_hex":"ff0000ff00ff00ff","ring_damage":[[1,[[1,0,1,1]]]]}}]}

@@ -1,0 +1,10 @@
+{"name":"BGR at 16 bits, and flushes to BGR at 12, 18 and 24","kind":"full","width":2,"height":1,
+ "format":{"pixel_format":"row_major","bit_depth":16,"channel_order":"bgr"},
+ "steps":[{"ops":[["set",0,0,63488],["set",1,0,2016]],
+   "expect":{"bytes_hex":"001f07e0","get":[[0,0,63488],[1,0,2016]],"rgba8_hex":"ff0000ff00ff00ff",
+     "flush":[{"format":{"pixel_format":"row_major","bit_depth":24,"channel_order":"bgr"},"bytes_hex":"0000ff00ff00"},
+              {"format":{"pixel_format":"row_major","bit_depth":24},"bytes_hex":"ff000000ff00"},
+              {"format":{"pixel_format":"row_major","bit_depth":18,"channel_order":"bgr"},"bytes_hex":"0000fc00fc00"},
+              {"format":{"pixel_format":"row_major","bit_depth":12,"channel_order":"bgr"},"bytes_hex":"00f0f0"},
+              {"format":{"pixel_format":"row_major","bit_depth":16,"channel_order":"bgr","endianness":"lsb"},"bytes_hex":"1f00e007"}]}},
+  {"ops":[["fill",63488]],"expect":{"bytes_hex":"001f001f"}}]}

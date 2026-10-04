@@ -1,0 +1,5 @@
+{"name":"ring of two mono frames: while the reader holds the old front there is nothing to draw into","kind":"ring","width":8,"height":1,"frames":2,
+ "format":{"pixel_format":"mono_horizontal","bit_depth":1},
+ "steps":[{"ops":[["fill",1],["present"],["hold"]],"expect":{"serial":1,"ready":true,"bytes_hex":"ff"}},
+  {"ops":[["present"]],"expect":{"serial":2,"ready":false,"bytes_hex":"00","frame":[[1,"ff"]]}},
+  {"ops":[["release"]],"expect":{"ready":true,"age":2,"frame":[[1,null]]}}]}

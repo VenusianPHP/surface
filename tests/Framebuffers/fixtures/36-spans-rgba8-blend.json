@@ -1,0 +1,5 @@
+{"name":"spans on RGBA8 3x1: full coverage writes, half coverage blends source-over, zero leaves the pixel; alpha and coverage both scale","kind":"full","width":3,"height":1,
+ "format":{"pixel_format":"row_major","bit_depth":32},
+ "steps":[{"ops":[["fill",4294967295],["spans",[[0,0,1,255],[0,1,1,128],[0,2,1,0]],4278190335]],"expect":{"bytes_hex":"ff0000ffff7f7fffffffffff"}},
+  {"ops":[["spans",[[0,2,1,255]],65408]],"expect":{"bytes_hex":"ff0000ffff7f7fff7f7fffff"}},
+  {"ops":[["fill",0],["spans",[[0,0,1,255]],4278190208]],"expect":{"bytes_hex":"800000800000000000000000"}}]}

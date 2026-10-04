@@ -3,6 +3,8 @@
 namespace Surface\Core\Providers;
 
 use Surface\Bridge\BridgeServiceProvider;
+use Surface\Framebuffers\FramebuffersServiceProvider;
+use Surface\Rasterize\RasterizeServiceProvider;
 use Surface\Windows\WindowsServiceProvider;
 use Voyager\NutsAndBolts\AggregateServiceProvider;
 
@@ -11,6 +13,8 @@ class SurfaceServiceProvider extends AggregateServiceProvider
     protected array $providers = [
         WindowsServiceProvider::class,
         BridgeServiceProvider::class,
+        FramebuffersServiceProvider::class,
+        RasterizeServiceProvider::class,
     ];
 
     /**
@@ -24,6 +28,8 @@ class SurfaceServiceProvider extends AggregateServiceProvider
 
         return [
             'bridge' => "{$dir}/bridge.php",
+            'framebuffers' => "{$dir}/framebuffers.php",
+            'rasterize' => "{$dir}/rasterize.php",
             'windows' => "{$dir}/windows.php",
         ];
     }

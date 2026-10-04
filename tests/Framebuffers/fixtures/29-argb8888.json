@@ -1,0 +1,5 @@
+{"name":"ARGB8888 1x1 and its flush to ABGR","kind":"full","width":1,"height":1,
+ "format":{"pixel_format":"row_major","bit_depth":32,"channel_order":"argb"},
+ "steps":[{"ops":[["set",0,0,287454020]],
+   "expect":{"bytes_hex":"44112233","get":[[0,0,287454020]],"rgba8_hex":"11223344",
+     "flush":[{"format":{"pixel_format":"row_major","bit_depth":32,"channel_order":"abgr"},"bytes_hex":"44332211"}]}}]}

@@ -1,0 +1,4 @@
+{"name":"spans on planar BWR ePaper 8x1: thresholded, red at 200 lands in the red plane, red at 100 does not","kind":"epaper","width":8,"height":1,
+ "format":{"pixel_format":"planar","bit_depth":1,"palette":[{"color":1,"inverted":true},{"color":2}]},
+ "steps":[{"expect":{"bytes_hex":"ff00"}},
+  {"ops":[["spans",[[0,0,2,200],[0,6,2,100]],4278190335]],"expect":{"bytes_hex":"ffc0","get":[[0,0,2],[6,0,0]]}}]}

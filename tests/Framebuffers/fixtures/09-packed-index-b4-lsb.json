@@ -1,0 +1,5 @@
+{"name":"packed index B4 LSB 3x2, rows padded","kind":"full","width":3,"height":2,
+ "format":{"pixel_format":"row_major","bit_depth":4,"bit_order":"lsb_first",
+   "palette":[{"color":1,"code":0},{"color":0,"code":1},{"color":3,"code":2},{"color":2,"code":3},{"color":4,"code":5},{"color":5,"code":6},{"color":6,"code":10},{"color":6,"code":15}]},
+ "steps":[{"ops":[["set",0,0,10],["set",1,0,5],["set",2,0,15],["set",2,1,1]],
+   "expect":{"bytes_hex":"5a0f0001","get":[[0,0,10],[1,0,5],[2,0,15],[2,1,1],[0,1,0]]}}]}

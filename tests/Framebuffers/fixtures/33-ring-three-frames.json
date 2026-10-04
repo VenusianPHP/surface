@@ -1,0 +1,8 @@
+{"name":"ring of three mono frames: a held front is never drawn into, age and repair, damage by serial","kind":"ring","width":8,"height":1,"frames":3,
+ "format":{"pixel_format":"mono_horizontal","bit_depth":1},
+ "steps":[{"ops":[["fill",1],["present"]],"expect":{"serial":1,"bytes_hex":"ff","age":0,"ready":true,"ring_damage":[[null,[[0,0,8,1]]]]}},
+  {"ops":[["hold"],["set",0,0,1],["present"]],"expect":{"serial":2,"bytes_hex":"80","age":0,"ready":true,"frame":[[1,"ff"]]}},
+  {"ops":[["fill",0],["set",7,0,1],["present"]],"expect":{"serial":3,"bytes_hex":"01","age":2,"ready":true,"frame":[[1,null],[2,"ff"]]}},
+  {"ops":[["release"]],"expect":{"ready":true,"age":2}},
+  {"ops":[["repair"]],"expect":{"age":1,"get":[[7,0,1],[0,0,0]]}},
+  {"ops":[["set",0,0,1],["present"]],"expect":{"serial":4,"bytes_hex":"81","age":4,"frame":[[1,"01"],[2,null],[3,null]],"ring_damage":[[null,[[0,0,1,1]]],[2,[[0,0,8,1]]],[0,[[0,0,8,1]]],[4,[]]]}}]}

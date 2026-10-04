@@ -1,0 +1,6 @@
+{"name":"Spectra 6 packed codes 6x1: starts as paper, maps six inks, dumps one ink as a plane","kind":"epaper","width":6,"height":1,
+ "format":{"pixel_format":"row_major","bit_depth":4,"palette":[{"color":1,"code":0},{"color":0,"code":1},{"color":3,"code":2},{"color":2,"code":3},{"color":4,"code":5},{"color":5,"code":6}]},
+ "steps":[{"expect":{"bytes_hex":"111111","paper":1}},
+  {"ops":[["rgba8","000000ffffffffffffff00ffff0000ff0000ffff00ff00ff"]],
+   "expect":{"bytes_hex":"012356","get":[[2,0,2],[4,0,5]],"rgba8_hex":"000000ffffffffffffff00ffff0000ff0000ffff00ff00ff","channel":[[2,"10"],[1,"80"],[0,"40"]]}},
+  {"ops":[["clear"]],"expect":{"bytes_hex":"111111"}}]}

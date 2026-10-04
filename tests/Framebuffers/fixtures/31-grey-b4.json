@@ -1,0 +1,6 @@
+{"name":"four-bit grey 4x1: a palette-less B4 is sixteen grey levels","kind":"full","width":4,"height":1,
+ "format":{"pixel_format":"row_major","bit_depth":4},
+ "steps":[{"ops":[["rgba8","000000ff555555ffaaaaaaffffffffff"]],
+   "expect":{"bytes_hex":"05af","get":[[1,0,5],[2,0,10]],"rgba8_hex":"000000ff555555ffaaaaaaffffffffff",
+     "flush":[{"format":{"pixel_format":"row_major","bit_depth":2},"bytes_hex":"1b"},
+              {"format":{"pixel_format":"row_major","bit_depth":8},"bytes_hex":"0055aaff"}]}}]}
