@@ -2,6 +2,8 @@
 
 ## 2026-10-04
 
+* EmbeddedDisplays on 0.10: added [embedded-displays](architecture/embedded-displays.md); `Output` shared with `TKCanvas`; `app('displays')`, `config/embedded-displays.php`. [drawing](architecture/drawing.md) gains partial frames, `damage()`, `invalidate()`, the region `clear`. [components](architecture/components.md), [config](api/config.md).
+* Fonts ported to 0.10: added [fonts](architecture/fonts.md); `text()` / `textBounds()` on `RenderingEngine`, the `spans` command; `app('fonts')`, `config/fonts.php`, `make:font`. [drawing](architecture/drawing.md), [components](architecture/components.md).
 * Framebuffers, Rasterize, Images: `auto` driver, the new config default (`FRAMEBUFFERS_DRIVER`, `RASTERIZE_DRIVER`, `IMAGES_DRIVER`), extended when the extension is loaded, native when not. [config](api/config.md), [components](architecture/components.md).
 * Surface 0.10 phase 4, Images: added [images](architecture/images.md); [framebuffers](architecture/framebuffers.md) gains `writeRgba8()`; [components](architecture/components.md), [config](api/config.md) and [testing](runbooks/testing.md) gain the split, its config and its tests.
 

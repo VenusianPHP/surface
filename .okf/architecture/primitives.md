@@ -111,7 +111,7 @@ Code-driven changes post nothing. Engine callbacks (`native*`) record state only
 
 # Canvas
 
-`TKCanvas` = rectangle the application draws. Toolkit lays it out, never paints it.
+`TKCanvas` = rectangle the application draws. Toolkit lays it out, never paints it. A `Surface\Contracts\Drawing\Output`, like an [embedded display](embedded-displays.md).
 
 ```php
 $view = $column->canvas('view')->fill();

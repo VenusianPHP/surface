@@ -1,0 +1,38 @@
+{
+    "name": "venusian-surface/fonts",
+    "description": "Surface bitmap faces: the GFXFont registry, the classic 5x7, and make:font.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Angel Gonzalez",
+            "email": "angel@projectsaturnstudios.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4|^8.5|^8.6",
+        "venusian-surface/contracts": "^0.10.0",
+        "venusian-voyager/console": "^0.10.1",
+        "venusian-voyager/contracts": "^0.10.1",
+        "venusian-voyager/filesystem": "^0.10.1",
+        "venusian-voyager/nuts-and-bolts": "^0.10.1"
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "Surface\\Fonts\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "0.10.x-dev"
+        },
+        "venusian": {
+            "providers": [
+                "Surface\\Fonts\\FontsServiceProvider"
+            ]
+        }
+    }
+}

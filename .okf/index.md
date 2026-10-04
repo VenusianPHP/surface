@@ -14,6 +14,8 @@ okf_version: "0.2"
 * [Drawing](architecture/drawing.md) - Rendering engines: one draw API over a framebuffer, frames recorded then drawn, DrawingManager, VelvetGE the software engine.
 * [Rasterize](architecture/rasterize.md) - Shapes into coverage spans, hard-edged or anti-aliased, geometry in PHP (native) or C (extended, ext-rasterize).
 * [Images](architecture/images.md) - PNG, JPEG and TIFF bytes into full RGBA8 framebuffers; ext-gd + PHP (native) or C (extended, ext-imgdec).
+* [Fonts](architecture/fonts.md) - Bitmap faces and their registry; text() on a rendering engine, onto any framebuffer.
+* [EmbeddedDisplays](architecture/embedded-displays.md) - An IC panel as a drawing output beside TKCanvas: framebuffer in the panel's format, present() sends what changed.
 * [Toolkit primitives](architecture/primitives.md) - Native widgets inside a ToolkitWindow: containers, registry, paths, placement, factory, apply hooks, engine callbacks.
 
 # API
@@ -22,7 +24,7 @@ okf_version: "0.2"
 * [View mail](api/view-mail.md) - Mail primitive natives post: clicks, text, toggles, values, selections, dates, rows, resizes, video state.
 * [Styling](api/styling.md) - Color (nuts-and-bolts) and the Windows typography values FontSpec, FontWeight, TextAlignment.
 * [Menu profiles](api/menu-profiles.md) - config/windows.php menus: folders, items, roles, toggles, hotkeys, ids.
-* [Config](api/config.md) - config/bridge.php, config/windows.php, config/framebuffers.php, config/rasterize.php, config/images.php and config/drawing.php keys.
+* [Config](api/config.md) - config/bridge.php, config/windows.php, config/framebuffers.php, config/rasterize.php, config/images.php, config/drawing.php and config/embedded-displays.php keys.
 
 # Runbooks
 

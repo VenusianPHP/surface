@@ -2,6 +2,7 @@
 
 namespace Surface\Contracts\Drawing;
 
+use Surface\Contracts\Fonts\GFXFont;
 use Surface\Contracts\Framebuffers\Filter;
 use Surface\Contracts\Framebuffers\Framebuffer;
 use Surface\Contracts\Framebuffers\Region;
@@ -41,8 +42,31 @@ interface RenderingEngine
     /** Start a frame: identity transform, no clip, nothing recorded. */
     public function begin(): static;
 
-    /** Draw what was recorded into the framebuffer, and keep it for replay(). */
+    /**
+     * Draw what was recorded into the framebuffer, and keep it for replay().
+     *
+     * A frame that begins with clear() is compared with the last one, command
+     * by command: only where they differ is drawn, and that is what damage()
+     * answers. The first frame, the one after invalidate(), and a paged
+     * framebuffer's frames are drawn and reported whole. A frame that does
+     * not begin with clear() draws over what is there: all of it is drawn,
+     * and the boxes of its commands are reported.
+     */
     public function end(): static;
+
+    /**
+     * Where the last ended frame changed the framebuffer, snapped to its
+     * damageGranularity(). Nothing for a frame identical to the one before.
+     *
+     * @return list<Region>
+     */
+    public function damage(): array;
+
+    /**
+     * Draw the next frame whole. For when the framebuffer was written outside
+     * this engine, so the last frame no longer says what it holds.
+     */
+    public function invalidate(): static;
 
     /**
      * begin(), $draw($this), end(). If $draw throws, the frame is dropped: nothing is drawn and the last frame stays the one replay() repeats.
@@ -115,4 +139,19 @@ interface RenderingEngine
      * @param  float  $opacity  0..1
      */
     public function image(Framebuffer $source, float $x, float $y, ?float $width = null, ?float $height = null, float $opacity = 1.0, Filter $filter = Filter::NEAREST): static;
+
+    /**
+     * Bitmap text from the face's own glyphs. ($x, $y) is the top-left of the
+     * first line box; "\n" starts a new line, "\r" is ignored, codes outside
+     * the face are skipped. One glyph pixel is one unit: scale and turn it
+     * through the transform.
+     */
+    public function text(string $text, float $x, float $y, Color $color, GFXFont $font): static;
+
+    /**
+     * The ink box of a text, relative to its origin, before any transform.
+     *
+     * @return array{float, float, float, float} [x, y, width, height]; all zero when nothing inks.
+     */
+    public function textBounds(string $text, GFXFont $font): array;
 }

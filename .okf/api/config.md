@@ -1,7 +1,7 @@
 ---
 type: Reference
 title: Config
-description: config/bridge.php, config/windows.php, config/framebuffers.php, config/rasterize.php, config/images.php and config/drawing.php keys.
+description: config/bridge.php, config/windows.php, config/framebuffers.php, config/rasterize.php, config/images.php, config/drawing.php and config/embedded-displays.php keys.
 resource: config/
 tags: [surface, config]
 status: draft
@@ -25,6 +25,9 @@ sources:
   - id: drawing
     resource: config/drawing.php
     title: config/drawing.php
+  - id: embedded-displays
+    resource: config/embedded-displays.php
+    title: config/embedded-displays.php
 ---
 
 # Schema
@@ -73,9 +76,18 @@ Driver keys, read with code defaults by each driver (absent from the published f
 |---|---|---|
 | `default` | `velvet` | the engine `renderer()` builds when none is named: `velvet` (software, built in), or one an engine package registers |
 
+`embedded-displays`:[^embedded-displays]
+
+| Key | Default | Values |
+|---|---|---|
+| `defaults.refreshing` | `epaper` | framebuffer kind for a panel that refreshes on command |
+| `defaults.addressable` | `dirty` | for a panel that takes region writes |
+| `defaults.whole` | `full` | for a panel that takes whole frames only |
+
 [^bridge]: config/bridge.php
 [^windows]: config/windows.php
 [^framebuffers]: config/framebuffers.php
 [^rasterize]: config/rasterize.php
 [^images]: config/images.php
 [^drawing]: config/drawing.php
+[^embedded-displays]: config/embedded-displays.php

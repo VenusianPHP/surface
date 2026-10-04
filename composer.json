@@ -23,6 +23,7 @@
     ],
     "require": {
         "php": "^8.4|^8.5|^8.6",
+        "gpio/contracts": "^0.10.0",
         "venusian-voyager/console": "^0.10.1",
         "venusian-voyager/filesystem": "^0.10.1",
         "venusian-voyager/io-pools": "^0.10.1",

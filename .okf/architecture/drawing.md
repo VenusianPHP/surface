@@ -37,10 +37,29 @@ Layers, each usable alone: Framebuffers (pixels) · Rasterize (shapes → spans)
 # Frames
 
 * Draw + state calls only between `begin()` / `end()`, or inside `frame(callable)`. Outside: `DrawingException`.
-* Calls recorded in order, already transformed. `end()` draws the list, keeps it. `replay()` draws it again.
+* Calls recorded in order, already transformed. `end()` draws the list (only what changed, below), keeps it. `replay()` draws it whole again.
 * `frame()` whose callable throws: dropped, nothing drawn, last frame stays.
 * Each frame starts identity transform, no clip.
 * Image sources read when the frame is drawn: a frame can draw its own framebuffer.
+
+# Partial frames
+
+`end()` compares a frame that begins with `clear()` with the last frame, command by command, by position.
+
+* Equal command (`==`) at the same place: unchanged. `image` never equal (source may hold new pixels).
+* Changed: box of the new command + box of the one it replaced; extra commands either side. Boxes: geometry floor/ceil, +1 px for AA; strokes +2·stroke+1 (miter reaches four half-strokes); cut by clip.
+* Boxes snapped to framebuffer `damageGranularity()`, merged until disjoint → `damage()`.
+* Drawn: each region gets the frame with clips cut to it, `['clear', rgba, Region]`, spans trimmed. Disjoint → no pixel drawn twice.
+* Identical frame: nothing drawn, `damage()` `[]` (no ring present, no panel send).
+* Whole: first frame, after `invalidate()`, paged framebuffer. Frame without leading clear: all drawn, damage = its boxes.
+* `keepsFrame(fb)`: `preservesContentsOnPresent()`; VelvetGE also true for a ring (repaired before drawing). False → whole drawn, diff still reported.
+* `invalidate()`: framebuffer written outside the engine.
+* Text spans run top to bottom: trimming halves to the first row.
+
+| Bench (20 frames, Mac) | native before → after | C before → after | changed |
+|---|---|---|---|
+| 240×240 RGB565 clock | 111.6 → 32.4 ms | 0.97 → 1.02 ms | 8.7% |
+| 240×480 page, 2400 chars + counter | 89.8 → 30.8 ms | 28.3 → 30.6 ms | 0.1% |
 
 # State
 
@@ -62,6 +81,10 @@ Commands the base hands an engine's `execute()`:[^base]
 | `['image', Framebuffer, Affine, 1..255, Filter, clip]` | `image` |
 
 Stroke width × `sqrt(|det|)`. Turned ellipse → polygon within 0.1 px (`π·sqrt(r / 0.2)` sides, 12..1024). Trig lives here, never in Rasterize.
+
+# Text
+
+`text(string, x, y, Color, GFXFont)`, `textBounds(string, GFXFont)`: bitmap faces, drawn under the transform and clip. Whole-pixel opaque text lowers to a `spans` command (no rasterising); the rest to one `path`. See [Fonts](fonts.md).
 
 # VelvetGE
 

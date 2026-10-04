@@ -2,6 +2,7 @@
 
 namespace Surface\Contracts\Windows\Primitives;
 
+use Surface\Contracts\Drawing\Output;
 use Surface\Contracts\Framebuffers\Framebuffer;
 
 /**
@@ -10,7 +11,7 @@ use Surface\Contracts\Framebuffers\Framebuffer;
  * stretched over the view, opaque. Draw into the framebuffer directly, or
  * hand it to a rendering engine. Posts no mail of its own.
  */
-interface TKCanvas extends TKPrimitive
+interface TKCanvas extends TKPrimitive, Output
 {
     /**
      * The canvas in device pixels: size() times the display's scale, so 2x on a HiDPI display.

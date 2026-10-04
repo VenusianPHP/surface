@@ -4,6 +4,8 @@ namespace Surface\Core\Providers;
 
 use Surface\Bridge\BridgeServiceProvider;
 use Surface\Drawing\DrawingServiceProvider;
+use Surface\EmbeddedDisplays\EmbeddedDisplaysServiceProvider;
+use Surface\Fonts\FontsServiceProvider;
 use Surface\Framebuffers\FramebuffersServiceProvider;
 use Surface\Images\ImagesServiceProvider;
 use Surface\Rasterize\RasterizeServiceProvider;
@@ -16,8 +18,10 @@ class SurfaceServiceProvider extends AggregateServiceProvider
         WindowsServiceProvider::class,
         BridgeServiceProvider::class,
         FramebuffersServiceProvider::class,
+        EmbeddedDisplaysServiceProvider::class,
         RasterizeServiceProvider::class,
         ImagesServiceProvider::class,
+        FontsServiceProvider::class,
         DrawingServiceProvider::class,
     ];
 
@@ -33,6 +37,8 @@ class SurfaceServiceProvider extends AggregateServiceProvider
         return [
             'bridge' => "{$dir}/bridge.php",
             'drawing' => "{$dir}/drawing.php",
+            'embedded-displays' => "{$dir}/embedded-displays.php",
+            'fonts' => "{$dir}/fonts.php",
             'framebuffers' => "{$dir}/framebuffers.php",
             'images' => "{$dir}/images.php",
             'rasterize' => "{$dir}/rasterize.php",
