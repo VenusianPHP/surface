@@ -22,7 +22,7 @@ const RED = 'ff0000ff';
 const GREEN = '00ff00ff';
 const BLUE = '0000ffff';
 const WHITE = 'ffffffff';
-const NONE = '00000000';
+const TRANSPARENT = '00000000';
 
 function image(int $width, int $height, string ...$pixels): Rgba8Source
 {
@@ -34,10 +34,10 @@ it('places a source pixel for pixel under a translation', function (FramebufferD
     $buffer->paintImage(image(2, 2, RED, GREEN, BLUE, WHITE), Affine::translation(1.0, 1.0));
 
     expect(bin2hex($buffer->dump()))->toBe(
-        NONE.NONE.NONE.NONE.
-        NONE.RED.GREEN.NONE.
-        NONE.BLUE.WHITE.NONE.
-        NONE.NONE.NONE.NONE
+        TRANSPARENT.TRANSPARENT.TRANSPARENT.TRANSPARENT.
+        TRANSPARENT.RED.GREEN.TRANSPARENT.
+        TRANSPARENT.BLUE.WHITE.TRANSPARENT.
+        TRANSPARENT.TRANSPARENT.TRANSPARENT.TRANSPARENT
     );
 })->with('framebuffer drivers');
 
@@ -60,14 +60,14 @@ it('weighs colours by their alpha when it smooths, so a clear pixel lends no col
     $buffer->paintImage(image(2, 1, '00ff0000', 'ff0000ff'), Affine::scaling(2.0, 1.0), filter: Filter::LINEAR);
 
     // pure red at alpha 0, 64, 191, 255 over clear black: never a trace of the clear pixel's green
-    expect(bin2hex($buffer->dump()))->toBe(NONE.'40000040'.'bf0000bf'.'ff0000ff');
+    expect(bin2hex($buffer->dump()))->toBe(TRANSPARENT.'40000040'.'bf0000bf'.'ff0000ff');
 })->with('framebuffer drivers');
 
 it('turns a source a quarter turn', function (FramebufferDriver $driver): void {
     $buffer = $driver->full(FormatSpec::rgba8(), 2, 2);
     $buffer->paintImage(image(2, 1, RED, GREEN), new Affine(0.0, 1.0, -1.0, 0.0, 2.0, 0.0));
 
-    expect(bin2hex($buffer->dump()))->toBe(NONE.RED.NONE.GREEN);
+    expect(bin2hex($buffer->dump()))->toBe(TRANSPARENT.RED.TRANSPARENT.GREEN);
 })->with('framebuffer drivers');
 
 it('blends by source alpha and by opacity alike', function (FramebufferDriver $driver): void {
@@ -92,7 +92,7 @@ it('keeps inside the clip and reports what it touched as damage', function (Fram
     $buffer->beginEpoch();
     $buffer->paintImage(image(2, 2, RED, GREEN, BLUE, WHITE), Affine::translation(1.0, 1.0), clip: new Region(2, 0, 2, 4));
 
-    expect(bin2hex($buffer->flushRegion(new Region(1, 1, 2, 2), FormatSpec::rgba8())))->toBe(NONE.GREEN.NONE.WHITE)
+    expect(bin2hex($buffer->flushRegion(new Region(1, 1, 2, 2), FormatSpec::rgba8())))->toBe(TRANSPARENT.GREEN.TRANSPARENT.WHITE)
         ->and(array_map(fn (Region $r): array => [$r->x, $r->y, $r->width, $r->height], $buffer->damage()))->toBe([[2, 1, 1, 2]]);
 })->with('framebuffer drivers');
 
@@ -101,7 +101,7 @@ it('paints nothing, and reports no damage, when nothing lands', function (Frameb
     $buffer->beginEpoch();
     $buffer->paintImage(image(2, 2, RED, GREEN, BLUE, WHITE), $placement, clip: $clip);
 
-    expect(bin2hex($buffer->dump()))->toBe(str_repeat(NONE, 16))
+    expect(bin2hex($buffer->dump()))->toBe(str_repeat(TRANSPARENT, 16))
         ->and($buffer->damage())->toBe([]);
 })->with('framebuffer drivers')->with([
     'off the surface' => [Affine::translation(40.0, 0.0), null],
@@ -121,7 +121,7 @@ it('paints the back of a ring', function (FramebufferDriver $driver): void {
     $ring = $driver->ring(FormatSpec::rgba8(), 1, 1, 2);
     $ring->paintImage(image(1, 1, RED), Affine::identity());
 
-    expect(bin2hex($ring->dump()))->toBe(NONE)
+    expect(bin2hex($ring->dump()))->toBe(TRANSPARENT)
         ->and(bin2hex($ring->present()->dump()))->toBe(RED);
 })->with('framebuffer drivers');
 
@@ -136,7 +136,7 @@ it('paints the rows of the current page of a paged buffer', function (Framebuffe
     expect(bin2hex($paged->dump()))->toBe(RED.GREEN);
 
     $paged->setPage(1)->paintImage($source, Affine::translation(0.0, 1.0), clip: new Region(0, 3, 1, 1));
-    expect(bin2hex($paged->dump()))->toBe(NONE.BLUE);
+    expect(bin2hex($paged->dump()))->toBe(TRANSPARENT.BLUE);
 })->with('framebuffer drivers');
 
 it('takes the current page of a paged source, at its place', function (FramebufferDriver $driver): void {
@@ -145,5 +145,5 @@ it('takes the current page of a paged source, at its place', function (Framebuff
     $buffer = $driver->full(FormatSpec::rgba8(), 1, 4);
     $buffer->paintImage($source, Affine::identity());
 
-    expect(bin2hex($buffer->dump()))->toBe(NONE.NONE.RED.RED);
+    expect(bin2hex($buffer->dump()))->toBe(TRANSPARENT.TRANSPARENT.RED.RED);
 })->with('framebuffer drivers');

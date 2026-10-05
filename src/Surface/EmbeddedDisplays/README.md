@@ -47,6 +47,24 @@ display and posts one `DisplayFaulted` mail (`display.faulted.<name>`) to the
 event loop; `detach()` and attach again to recover. `close()` switches the panel
 off and leaves the chip and its bus to the sketch.
 
+## Piping from memory
+
+`direct: true` builds a `DirectEDisplay`, which sends the same regions without
+passing the pixels through PHP: for each region the chip opens a window, and its
+bus reads the region's rows straight out of the framebuffer's ext-fb memory.
+
+```php
+$tft = app('displays')->panel('st7796', direct: true);
+$engine = app('drawing')->renderer('velvet', ['output' => $tft]);
+```
+
+It needs a panel that implements gpio/contracts `PipeablePanel` on a bus that
+writes from memory (today the ST7735, ST7789 and ST7796 on the Pi's spidev), and
+an ext-fb framebuffer in the panel's own format with whole bytes a pixel.
+Anything else is refused with the reason, never sent another way. On the Pi 5's
+ST7796 at 10 MHz a whole frame takes 246 ms, the wire time, against 298 ms
+through PHP.
+
 ## Panels
 
 `dept-of-scrapyard-robotics/ssd1306`, `/st77xx` (ST7735, ST7789, ST7796),

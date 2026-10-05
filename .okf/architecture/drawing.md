@@ -52,7 +52,7 @@ Layers, each usable alone: Framebuffers (pixels) · Rasterize (shapes → spans)
 * Drawn: each region gets the frame with clips cut to it, `['clear', rgba, Region]`, spans trimmed. Disjoint → no pixel drawn twice.
 * Identical frame: nothing drawn, `damage()` `[]` (no ring present, no panel send).
 * Whole: first frame, after `invalidate()`, paged framebuffer. Frame without leading clear: all drawn, damage = its boxes.
-* `keepsFrame(fb)`: `preservesContentsOnPresent()`; VelvetGE also true for a ring (repaired before drawing). False → whole drawn, diff still reported.
+* `keepsFrame(fb)`: `preservesContentsOnPresent()`, or a ring (every engine repairs a ring before drawing). False → whole drawn, diff still reported.
 * `invalidate()`: framebuffer written outside the engine.
 * Text spans run top to bottom: trimming halves to the first row.
 
@@ -104,7 +104,7 @@ Measured (Mac, 320×240 RGBA8, 100 shapes + 1 image): 6.8 ms both extended · 31
 
 `app('drawing')->renderer(?string $engine, array $args)`: new engine every call; null = `config('drawing.default')`. `extend(name, fn (array $args, DrawingManager): RenderingEngine)` for engine packages. Unknown name: `DrawingException` listing registered engines + the package for `metal`, `opengl`, `vulkan`, `sdl3`.[^manager]
 
-Velvet args: `framebuffer` alone, or `width` + `height` with `mode` (`full`, `dirty`, `epaper`, `paged` + `page_rows`, `ring` + `frames` = 2), `format` (RGBA8), `framebuffers` (driver); `rasterize` (driver); `edges`. Unknown key throws.
+Velvet args: `output` alone (an `OutputTarget`: Velvet draws over its `framebuffer()`, so a canvas pipes and a display sends what changed), `framebuffer` alone, or `width` + `height` with `mode` (`full`, `dirty`, `epaper`, `paged` + `page_rows`, `ring` + `frames` = 2), `format` (RGBA8), `framebuffers` (driver); `rasterize` (driver); `edges`. Unknown key throws.
 
 [^contract]: `Surface\Contracts\Drawing`.
 [^base]: `Surface\Drawing\RenderingEngine`: an engine supplies `name()`, `framebuffer()`, `execute()`.

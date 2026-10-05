@@ -2,6 +2,8 @@
 
 ## 2026-10-04
 
+* Slice 0, Tasks 5 and 11: `renderer('velvet', ['output' => $target])` draws over a target's `framebuffer()`; `keepsFrame()` keeps a ring's frame for every engine. Added `DirectEDisplay` (`Pipeable`): regions piped from ext-fb memory through a gpio/contracts `PipeablePanel`'s `WritesFromMemory` bus; `attach()` / `panel()` take `direct: true`. Measured on the Pi 5's ST7796. [embedded-displays](architecture/embedded-displays.md), [drawing](architecture/drawing.md).
+* Slice 0, Task 4: `Output` renamed `OutputTarget` and gains `framebuffer()`; added `Pipeable` (`canPipe()`); `TKCanvas` is pipeable — an extended RGBA8 framebuffer reaches the toolkit by address (`applyAddress`) with its damage, default kind `dirty`. [primitives](architecture/primitives.md), [embedded-displays](architecture/embedded-displays.md).
 * EmbeddedDisplays on 0.10: added [embedded-displays](architecture/embedded-displays.md); `Output` shared with `TKCanvas`; `app('displays')`, `config/embedded-displays.php`. [drawing](architecture/drawing.md) gains partial frames, `damage()`, `invalidate()`, the region `clear`. [components](architecture/components.md), [config](api/config.md).
 * Fonts ported to 0.10: added [fonts](architecture/fonts.md); `text()` / `textBounds()` on `RenderingEngine`, the `spans` command; `app('fonts')`, `config/fonts.php`, `make:font`. [drawing](architecture/drawing.md), [components](architecture/components.md).
 * Framebuffers, Rasterize, Images: `auto` driver, the new config default (`FRAMEBUFFERS_DRIVER`, `RASTERIZE_DRIVER`, `IMAGES_DRIVER`), extended when the extension is loaded, native when not. [config](api/config.md), [components](architecture/components.md).

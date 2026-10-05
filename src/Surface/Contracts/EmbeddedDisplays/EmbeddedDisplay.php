@@ -2,7 +2,7 @@
 
 namespace Surface\Contracts\EmbeddedDisplays;
 
-use Surface\Contracts\Drawing\Output;
+use Surface\Contracts\Drawing\OutputTarget;
 use Surface\Contracts\Framebuffers\Framebuffer;
 
 /**
@@ -11,7 +11,7 @@ use Surface\Contracts\Framebuffers\Framebuffer;
  * changed, in the panel's own format, then refreshes a panel that needs it.
  * GPIO-free: the chip itself is reached through the concrete class.
  */
-interface EmbeddedDisplay extends Output
+interface EmbeddedDisplay extends OutputTarget
 {
     public function name(): string;
 

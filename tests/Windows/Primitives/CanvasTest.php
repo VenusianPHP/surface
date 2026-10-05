@@ -6,6 +6,7 @@ use Surface\Contracts\Drawing\RenderingEngine;
 use Surface\Contracts\Framebuffers\DamageTrackingFramebuffer;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\RingFramebuffer;
+use Surface\Contracts\Framebuffers\Region;
 use Surface\Contracts\Windows\WindowException;
 use Surface\Drawing\Velvet\VelvetGE;
 use Surface\Framebuffers\Native\NativeFramebufferDriver;
@@ -42,19 +43,18 @@ it('hands out an RGBA8 framebuffer its own size in pixels, and the same one agai
     $canvas = canvas();
 
     expect($canvas->boundFramebuffer())->toBeNull();
-    $buffer = $canvas->framebuffer();
+    $buffer = $canvas->framebuffer('full');
 
     expect([$buffer->viewportWidth(), $buffer->viewportHeight()])->toBe([80, 60])
         ->and($buffer->hostFormat())->toEqual(FormatSpec::rgba8())
         ->and($buffer)->not->toBeInstanceOf(DamageTrackingFramebuffer::class)
-        ->and($canvas->framebuffer())->toBe($buffer)
         ->and($canvas->framebuffer('full'))->toBe($buffer)
         ->and($canvas->boundFramebuffer())->toBe($buffer);
 });
 
 it('makes a new framebuffer when the kind, the size or the frame count no longer matches', function (): void {
     $canvas = canvas();
-    $full = $canvas->framebuffer();
+    $full = $canvas->framebuffer('full');
     $dirty = $canvas->framebuffer('dirty');
 
     expect($dirty)->toBeInstanceOf(DamageTrackingFramebuffer::class)->not->toBe($full)
@@ -94,7 +94,7 @@ it('gets its framebuffer driver from the application, by name', function (): voi
         return new NativeFramebufferDriver();
     });
     $canvas = canvas();
-    $canvas->framebuffer();
+    $canvas->framebuffer('full');
     $canvas->framebuffer('dirty', driver: 'native');
 
     expect($asked)->toBe([null, 'native']);
@@ -192,4 +192,57 @@ it('refuses everything once removed', function (): void {
     expect(fn () => $canvas->present())->toThrow(WindowException::class, "was removed")
         ->and(fn () => $canvas->framebuffer())->toThrow(WindowException::class, 'was removed')
         ->and(fn () => $canvas->pixelSize())->toThrow(WindowException::class, 'was removed');
+});
+
+it('pipes an extended RGBA8 framebuffer and nothing else', function (): void {
+    $canvas = canvas();
+
+    expect($canvas->canPipe(framebuffers()->driver('extended')->dirty(FormatSpec::rgba8(), 8, 4)))->toBeTrue()
+        ->and($canvas->canPipe(framebuffers()->driver('native')->dirty(FormatSpec::rgba8(), 8, 4)))->toBeFalse()
+        ->and($canvas->canPipe(framebuffers()->driver('extended')->dirty(rgb565(), 8, 4)))->toBeFalse();
+})->skip(! class_exists(FbBuffer::class), 'ext-fb 0.10 is not loaded in this PHP.');
+
+it('hands the toolkit an extended framebuffer by address, whole first, then its damage', function (): void {
+    $canvas = canvas();
+    $fb = $canvas->framebuffer('dirty', 8, 4, driver: 'extended');
+
+    $canvas->present();
+    $fb->setPixel(2, 1, 0xFFFFFFFF);
+    $canvas->present();
+
+    expect($canvas->pixels)->toBe([])
+        ->and(array_column($canvas->addresses, 0))->toBe([$fb->pointer(), $fb->pointer()])
+        ->and($canvas->addresses[0][1])->toBe(8)->and($canvas->addresses[0][3])->toBe(32)
+        ->and($canvas->addresses[0][4])->toBe([])
+        ->and($canvas->addresses[1][4])->toEqual([new Region(2, 1, 1, 1)]);
+})->skip(! class_exists(FbBuffer::class), 'ext-fb 0.10 is not loaded in this PHP.');
+
+it('hands a ring its front frame and the damage since the frame last shown', function (): void {
+    $canvas = canvas();
+    $ring = $canvas->framebuffer('ring', 8, 4, frames: 3, driver: 'extended');
+
+    $ring->repair();
+    $ring->setPixel(0, 0, 0xFFFFFFFF);
+    $ring->present();
+    $canvas->present();
+    $before = $ring->serial();
+    $ring->repair();
+    $ring->setPixel(5, 2, 0xFF0000FF);
+    $ring->present();
+    $canvas->present();
+
+    expect($canvas->addresses[1][0])->toBe($ring->pointer())
+        ->and($canvas->addresses[1][4])->toEqual($ring->damage($before));
+})->skip(! class_exists(FbBuffer::class), 'ext-fb 0.10 is not loaded in this PHP.');
+
+it('keeps the string path for the native driver', function (): void {
+    $canvas = canvas();
+    $canvas->framebuffer('dirty', 8, 4, driver: 'native');
+    $canvas->present();
+
+    expect($canvas->addresses)->toBe([])->and($canvas->pixels)->toHaveCount(1);
+});
+
+it('defaults a canvas framebuffer to dirty', function (): void {
+    expect(canvas()->framebuffer(width: 8, height: 4))->toBeInstanceOf(DamageTrackingFramebuffer::class);
 });

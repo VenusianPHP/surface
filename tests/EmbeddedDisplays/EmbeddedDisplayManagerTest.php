@@ -6,6 +6,7 @@ use Surface\Contracts\Framebuffers\BitDepth;
 use Surface\Contracts\Framebuffers\Endianness;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\PixelFormat;
+use Surface\EmbeddedDisplays\DirectEDisplay;
 use Surface\EmbeddedDisplays\EmbeddedDisplay;
 use Surface\EmbeddedDisplays\EmbeddedDisplayManager;
 
@@ -128,4 +129,21 @@ it('posts a display fault through the manager', function () {
     expect($mail)->toHaveCount(1)
         ->and($mail[0])->toBeInstanceOf(DisplayFaulted::class)
         ->and($mail[0]->name())->toBe('display.faulted.oled');
+});
+
+it('attaches a direct display when asked', function () {
+    $manager = displayManager();
+
+    expect($manager->attach(new FakePipePanel(16, 8, rgb565()), 'direct', direct: true))->toBeInstanceOf(DirectEDisplay::class)
+        ->and($manager->attach(new FakePipePanel(16, 8, rgb565()), 'plain'))->not->toBeInstanceOf(DirectEDisplay::class);
+});
+
+it('conjures a direct display, and refuses one by a name attached otherwise', function () {
+    $manager = displayManager(fn () => fakeCatalog(new FakePipePanel(16, 8, rgb565())));
+
+    expect($manager->panel('st7796', name: 'tft', direct: true))->toBeInstanceOf(DirectEDisplay::class)
+        ->and($manager->panel('st7796', name: 'tft', direct: true))->toBe($manager->display('tft'));
+
+    $manager->panel('st7796', name: 'plain');
+    expect(fn () => $manager->panel('st7796', name: 'plain', direct: true))->toThrow(EmbeddedDisplayException::class, 'already attached');
 });

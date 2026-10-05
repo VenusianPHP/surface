@@ -8,10 +8,12 @@ use Surface\Contracts\Framebuffers\DamageTrackingFramebuffer;
 use Surface\Contracts\Framebuffers\ePaperFramebuffer;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\PagedFramebuffer;
+use Surface\Contracts\Framebuffers\Region;
 use Surface\Contracts\Framebuffers\RingFramebuffer;
 use Surface\Contracts\Rasterize\Edges;
 use Surface\Drawing\DrawingManager;
 use Surface\Drawing\Velvet\VelvetGE;
+use Surface\EmbeddedDisplays\EmbeddedDisplay;
 use Surface\Framebuffers\Native\NativeFullFramebuffer;
 use Surface\NutsAndBolts\Color;
 use Venusian\Surface\Tests\Support\Framebuffers\Formats;
@@ -79,7 +81,7 @@ it('refuses arguments it cannot build an engine from, saying which', function (a
     'paged without its page rows' => [['width' => 8, 'height' => 8, 'mode' => 'paged'], "'paged' needs 'page_rows'"],
     'a format that is no FormatSpec' => [['width' => 8, 'height' => 8, 'format' => 'rgb565'], "'format' is a FormatSpec"],
     'edges that are neither' => [['width' => 8, 'height' => 8, 'edges' => 'soft'], "'edges' is 'hard' or 'antialiased', got 'soft'"],
-    'a misspelt argument' => [['width' => 8, 'hieght' => 8], "velvet does not take 'hieght'. It takes: framebuffer, width, height, mode, format, page_rows, frames, framebuffers, rasterize, edges."],
+    'a misspelt argument' => [['width' => 8, 'hieght' => 8], "velvet does not take 'hieght'. It takes: output, framebuffer, width, height, mode, format, page_rows, frames, framebuffers, rasterize, edges."],
 ]);
 
 it('says which package brings an engine that is not installed', function (string $engine, string $package): void {
@@ -102,4 +104,40 @@ it('takes engines registered by other packages, and hands them their arguments',
     expect($manager->renderer('recording', ['headless' => true]))->toBeInstanceOf(RecordingEngine::class)
         ->and($seen)->toBe([['headless' => true], true])
         ->and($manager->engines())->toBe(['velvet', 'recording']);
+});
+
+it('draws for a target over the target framebuffer', function (): void {
+    $panel = new FakeWindowPanel(16, 8, rgb565());
+    $display = new EmbeddedDisplay('tft', $panel, framebuffers(), ['refreshing' => 'epaper', 'addressable' => 'dirty', 'whole' => 'full']);
+
+    $engine = drawing()->renderer('velvet', ['output' => $display]);
+
+    expect($engine)->toBeInstanceOf(VelvetGE::class)
+        ->and($engine->framebuffer())->toBe($display->boundFramebuffer())
+        ->and([$engine->framebuffer()->viewportWidth(), $engine->framebuffer()->viewportHeight()])->toBe([16, 8]);
+});
+
+it('refuses a target with framebuffer arguments, and a non-target', function (Closure $args, string $message): void {
+    expect(fn () => drawing()->renderer('velvet', $args()))->toThrow(DrawingException::class, $message);
+})->with([
+    'with width' => [fn (): array => ['output' => fakeDisplay(), 'width' => 8], "'output' comes alone"],
+    'not a target' => [fn (): array => ['output' => new stdClass], "'output' is an OutputTarget"],
+]);
+
+it('keeps a ring frame in the base engine', function (): void {
+    $ring = framebuffers()->driver('native')->ring(FormatSpec::rgba8(), 16, 8, 2);
+    $engine = new RecordingEngine($ring);
+    $scene = fn (int $x): Closure => fn (RenderingEngine $d): RenderingEngine => $d->clear(Color::rgb(0, 0, 0))->fillRect($x, 2, 2, 2, Color::rgb(255, 255, 255));
+
+    $ring->repair();
+    $engine->frame($scene(1));
+    $ring->present();
+    $ring->repair();
+    $engine->frame($scene(4));
+
+    expect($engine->executed)->toHaveCount(2)
+        ->and($engine->damage())->toEqual([new Region(0, 1, 7, 4)])
+        ->and($engine->executed[0][0])->toBe(['clear', 0x000000FF])                    // the first frame: whole
+        ->and($engine->executed[1][0])->toEqual(['clear', 0x000000FF, new Region(0, 1, 7, 4)])   // the clear, cut to the damage
+        ->and($engine->executed[1][1][4])->toEqual(new Region(0, 1, 7, 4));             // the rect, clipped to it
 });

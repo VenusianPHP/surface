@@ -1,14 +1,14 @@
 <?php
 
 use Surface\Contracts\Core\SurfaceException;
-use Surface\Contracts\Drawing\Output;
+use Surface\Contracts\Drawing\OutputTarget;
 use Surface\Contracts\EmbeddedDisplays\EmbeddedDisplay;
 use Surface\Contracts\EmbeddedDisplays\EmbeddedDisplayException;
 use Surface\Contracts\EmbeddedDisplays\Mail\DisplayFaulted;
 use Voyager\Contracts\Signals\NamedSignal;
 
 it('makes an embedded display a drawing output with a lifecycle', function () {
-    expect(is_subclass_of(EmbeddedDisplay::class, Output::class))->toBeTrue();
+    expect(is_subclass_of(EmbeddedDisplay::class, OutputTarget::class))->toBeTrue();
 
     foreach (['name', 'framebuffer', 'bind', 'boundFramebuffer', 'present', 'show', 'hide', 'isVisible', 'switchable', 'close', 'isOpen', 'faulted', 'fault'] as $verb) {
         expect(method_exists(EmbeddedDisplay::class, $verb))->toBeTrue();

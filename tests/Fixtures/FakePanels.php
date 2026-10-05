@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 use GeneralPurposeIO\Contracts\IntegratedCircuits\BootSequence;
 use GeneralPurposeIO\Contracts\IntegratedCircuits\DisplayPanel;
+use GeneralPurposeIO\Contracts\IntegratedCircuits\PipeablePanel;
 use GeneralPurposeIO\Contracts\IntegratedCircuits\RefreshesOnCommand;
 use GeneralPurposeIO\Contracts\IntegratedCircuits\RefreshMode;
 use GeneralPurposeIO\Contracts\IntegratedCircuits\Switchable;
 use GeneralPurposeIO\Contracts\IntegratedCircuits\WindowAddressable;
+use GeneralPurposeIO\Contracts\SPI\WritesFromMemory;
 use Surface\Contracts\Framebuffers\FormatSpec;
 
 /** Records transmit(), refresh() and setDisplay() calls in order; the next call throws $fail when it is set. */
@@ -116,4 +118,40 @@ class FakeFormatlessPanel implements DisplayPanel
     }
 
     public function transmit(int $origin_x, int $origin_y, array $raw_data, ?int $frame_width = null, ?int $frame_height = null): void {}
+}
+
+/** Records every writeFrom(). */
+class FakeMemoryBus implements WritesFromMemory
+{
+    /** @var list<list<array{int, int}>> */
+    public array $spans = [];
+
+    /** Every write answers this when set. */
+    public ?int $answer = null;
+
+    public function writeFrom(array $spans): int
+    {
+        $this->spans[] = $spans;
+
+        return $this->answer ?? array_sum(array_column($spans, 1));
+    }
+}
+
+/** A TFT fed from memory, as the ST7796 on spidev. */
+class FakePipePanel extends FakeWindowPanel implements PipeablePanel
+{
+    public function __construct(int $w, int $h, FormatSpec $format, public ?FakeMemoryBus $bus = new FakeMemoryBus)
+    {
+        parent::__construct($w, $h, $format);
+    }
+
+    public function openWindow(int $x, int $y, int $width, int $height): void
+    {
+        $this->call('window', $x, $y, $width, $height);
+    }
+
+    public function pixelBus(): ?WritesFromMemory
+    {
+        return $this->bus;
+    }
 }

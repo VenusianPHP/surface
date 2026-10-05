@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Surface\Drawing\DrawingManager;
 use Surface\Contracts\Framebuffers\FramebufferDriver;
+use Surface\EmbeddedDisplays\EmbeddedDisplay;
 use Surface\Framebuffers\FramebufferManager;
 use Surface\Images\ImagesManager;
 use Surface\Rasterize\RasterizeManager;
@@ -47,6 +48,12 @@ function rasterize(array $config = []): RasterizeManager
 function drawing(array $config = []): DrawingManager
 {
     return new DrawingManager(fakeConfig($config), framebuffers($config), rasterize($config));
+}
+
+/** A display over a window-addressable fake panel, as a drawing target. */
+function fakeDisplay(): EmbeddedDisplay
+{
+    return new EmbeddedDisplay('tft', new FakeWindowPanel(16, 8, rgb565()), framebuffers(), ['refreshing' => 'epaper', 'addressable' => 'dirty', 'whole' => 'full']);
 }
 
 /** An images manager reading the given config, minting on a framebuffer manager reading the same config. */

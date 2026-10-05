@@ -71,4 +71,28 @@ class EmbeddedDisplayException extends SurfaceException
     {
         return new static("A display framebuffer is 'full', 'dirty', 'epaper', 'paged' or 'ring', got '{$kind}'.");
     }
+    public static function notPipeable(string $name, string $type): static
+    {
+        return new static("Embedded display '{$name}' pipes from memory, but {$type} is not a PipeablePanel.");
+    }
+
+    public static function noMemoryBus(string $name): static
+    {
+        return new static("Embedded display '{$name}' pipes from memory, but its panel's bus cannot write from memory (I2C, an offloaded bus, MPSSE). Attach it without direct: true.");
+    }
+
+    public static function cannotPipe(string $name, string $why): static
+    {
+        return new static("Embedded display '{$name}' cannot pipe this framebuffer: {$why}.");
+    }
+
+    public static function formatChanged(string $name): static
+    {
+        return new static("Embedded display '{$name}' pipes in the format it was bound in, and the panel's format changed. Call framebuffer() or bind() again.");
+    }
+
+    public static function pipeShort(string $name, int $expected, int $written): static
+    {
+        return new static("Embedded display '{$name}' piped {$written} of {$expected} bytes.");
+    }
 }

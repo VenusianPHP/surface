@@ -15,9 +15,14 @@ final class RecordingEngine extends RenderingEngine
 
     private Framebuffer $framebuffer;
 
-    public function __construct(int $width = 100, int $height = 80)
+    /**
+     * @param  int|Framebuffer  $framebuffer  A surface size, or the framebuffer the engine draws over.
+     */
+    public function __construct(int|Framebuffer $framebuffer = 100, int $height = 80)
     {
-        $this->framebuffer = new NativeFullFramebuffer(FormatSpec::rgba8(), $width, $height);
+        $this->framebuffer = $framebuffer instanceof Framebuffer
+            ? $framebuffer
+            : new NativeFullFramebuffer(FormatSpec::rgba8(), $framebuffer, $height);
     }
 
     public function name(): string

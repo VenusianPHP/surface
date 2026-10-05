@@ -7,6 +7,7 @@ use Surface\Contracts\Framebuffers\DamageTrackingFramebuffer;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\Framebuffer;
 use Surface\Contracts\Framebuffers\FramebufferDriver;
+use Surface\Contracts\Framebuffers\Region;
 use Surface\Contracts\Framebuffers\RingFramebuffer;
 use Surface\Contracts\Windows\Primitives\TKCanvas as PrimitiveContract;
 use Surface\Contracts\Windows\WindowException;
@@ -50,7 +51,7 @@ abstract class TKCanvas extends TKPrimitive implements PrimitiveContract
         return [(int) round($width * $scale), (int) round($height * $scale)];
     }
 
-    public function framebuffer(string $kind = 'full', ?int $width = null, ?int $height = null, int $frames = 2, ?string $driver = null): Framebuffer
+    public function framebuffer(string $kind = 'dirty', ?int $width = null, ?int $height = null, int $frames = 2, ?string $driver = null): Framebuffer
     {
         $this->live();
         if (! in_array($kind, ['full', 'dirty', 'ring'], true)) {
@@ -93,28 +94,42 @@ abstract class TKCanvas extends TKPrimitive implements PrimitiveContract
         return $this->framebuffer;
     }
 
+    public function canPipe(Framebuffer $framebuffer): bool
+    {
+        return $framebuffer->pointer() !== 0 && $framebuffer->hostFormat()->equals(FormatSpec::rgba8());
+    }
+
     public function present(): static
     {
         $this->live();
         $bound = $this->framebuffer ?? throw new WindowException("Canvas '{$this->path()}' has no framebuffer: call framebuffer() first.");
 
+        $damage = [];
         if ($bound instanceof RingFramebuffer) {
             if ($this->shown === $bound->serial()) {
                 return $this;
             }
+            $damage = is_null($this->shown) ? [] : $bound->damage($this->shown);
             $this->shown = $bound->serial();
         } elseif ($bound instanceof DamageTrackingFramebuffer) {
             if (! is_null($this->shown) && $bound->damage() === []) {
                 return $this;
             }
+            $damage = is_null($this->shown) ? [] : $bound->damage();
             $bound->beginEpoch();
             $this->shown = 0;
         } else {
             $this->shown = 0;
         }
 
-        // Draining a ring reads its front frame; every kind here stores RGBA8, so the dump is the pixels.
-        $this->applyPixels($bound->dump(), $bound->viewportWidth(), $bound->viewportHeight());
+        $width = $bound->viewportWidth();
+        $height = $bound->viewportHeight();
+        // C memory in RGBA8: the toolkit copies it itself. PHP-held bytes go as a string.
+        if ($this->canPipe($bound)) {
+            $this->applyAddress($bound->pointer(), $width, $height, $width * 4, $damage);
+        } else {
+            $this->applyPixels($bound->dump(), $width, $height);
+        }
 
         return $this;
     }
@@ -128,4 +143,15 @@ abstract class TKCanvas extends TKPrimitive implements PrimitiveContract
      * @param  string  $rgba8  $width × $height × 4 bytes, top row first.
      */
     abstract protected function applyPixels(string $rgba8, int $width, int $height): void;
+
+    /**
+     * Put the framebuffer's C memory on screen by its address: $stride bytes a
+     * row, $height rows, top row first, stretched over the view, the fourth
+     * byte ignored. $damage lists the regions changed since the last present;
+     * [] is the whole frame. The toolkit copies what it needs before returning.
+     *
+     * @param  int  $address  The framebuffer's pointer(): trusted, $stride × $height readable bytes.
+     * @param  list<Region>  $damage
+     */
+    abstract protected function applyAddress(int $address, int $width, int $height, int $stride, array $damage): void;
 }

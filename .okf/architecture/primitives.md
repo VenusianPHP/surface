@@ -81,7 +81,7 @@ Every primitive: `setVisible`/`show`/`hide`, `setEnabled`/`enable`/`disable` (`H
 | `TKLabel` | text | `applyText`, `applyWrap`, `applyAlignment`, `applyFont`, `applyTextColor` | — |
 | `TKButton` | label | `applyLabel`, `applyFont`, `applyTextColor` | — (driver posts `ButtonClicked`) |
 | `TKImage` | ?file | `applyFile`, `applyScaling` | — |
-| `TKCanvas` | — | `nativeScale`, `applyPixels(rgba8, w, h)` | — |
+| `TKCanvas` | — | `nativeScale`, `applyPixels(rgba8, w, h)`, `applyAddress(addr, w, h, stride, damage)` | — |
 | `TKSeparator` | horizontal | — (`isHorizontal()`) | — |
 | `TKSpinner` | — | `applySpinning` (change-only) | — |
 | `TKProgressBar` | ?fraction (0..1, null = indeterminate) | `applyFraction` | — |
@@ -111,7 +111,7 @@ Code-driven changes post nothing. Engine callbacks (`native*`) record state only
 
 # Canvas
 
-`TKCanvas` = rectangle the application draws. Toolkit lays it out, never paints it. A `Surface\Contracts\Drawing\Output`, like an [embedded display](embedded-displays.md).
+`TKCanvas` = rectangle the application draws. Toolkit lays it out, never paints it. A `Surface\Contracts\Drawing\Pipeable` output target, unlike an [embedded display](embedded-displays.md).
 
 ```php
 $view = $column->canvas('view')->fill();
@@ -122,7 +122,8 @@ $view->present();                                        // on screen
 ```
 
 * `pixelSize()` = `size()` × display scale. `[0, 0]` before layout.
-* `framebuffer(kind = 'full', ?width, ?height, frames = 2, ?driver)`: `full`, `dirty` or `ring`. Same one answered while kind + size (+ frames, + named driver) match; else new one made and bound. After a resize: call again. Smaller size given = stretched over the view. No size given + not laid out yet: `WindowException`.
-* `present()`: full → always. Dirty → first time, then only with damage; begins a new epoch. Ring → front frame, once per frame presented. Shown opaque: alpha byte ignored.
+* `framebuffer(kind = 'dirty', ?width, ?height, frames = 2, ?driver)`: `dirty`, `full` or `ring`. Same one answered while kind + size (+ frames, + named driver) match; else new one made and bound. After a resize: call again. Smaller size given = stretched over the view. No size given + not laid out yet: `WindowException`.
+* `present()`: full → always. Dirty → first time, then only with damage; begins a new epoch. Ring → front frame, once per frame presented, with the damage since the serial last shown. Shown opaque: alpha byte ignored.
+* `canPipe(Framebuffer)`: true of an extended RGBA8 framebuffer — its bytes are in C memory. A pipable framebuffer goes to the toolkit by `applyAddress(pointer, w, h, stride, damage)`, no pixel byte through PHP; a PHP-held one goes as a string through `applyPixels()` as before.
 * Driver from the app's `FramebufferManager` (`WindowsServiceProvider` sets `TKCanvas::resolveFramebuffersUsing()`); with none set, the canvas builds `native` / `extended` itself.
-* Copy path: toolkit takes a whole image per present. A toolkit's canvas implements `nativeScale()` + `applyPixels()` only.
+* A toolkit's canvas implements `nativeScale()` + `applyPixels()` + `applyAddress()`; the toolkit copies what it needs before returning.

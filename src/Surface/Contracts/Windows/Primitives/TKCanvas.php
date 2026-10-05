@@ -2,7 +2,7 @@
 
 namespace Surface\Contracts\Windows\Primitives;
 
-use Surface\Contracts\Drawing\Output;
+use Surface\Contracts\Drawing\Pipeable;
 use Surface\Contracts\Framebuffers\Framebuffer;
 
 /**
@@ -11,7 +11,7 @@ use Surface\Contracts\Framebuffers\Framebuffer;
  * stretched over the view, opaque. Draw into the framebuffer directly, or
  * hand it to a rendering engine. Posts no mail of its own.
  */
-interface TKCanvas extends TKPrimitive, Output
+interface TKCanvas extends TKPrimitive, Pipeable
 {
     /**
      * The canvas in device pixels: size() times the display's scale, so 2x on a HiDPI display.
@@ -26,7 +26,7 @@ interface TKCanvas extends TKPrimitive, Output
      * while its kind and size still match; otherwise a new one is made and bound,
      * so calling this again after a resize gives one at the new size.
      *
-     * @param  string  $kind  'full', 'dirty' or 'ring'
+     * @param  string  $kind  'dirty', 'full' or 'ring'
      * @param  int|null  $width  Pixels across; pixelSize()'s unless given. A smaller framebuffer is stretched over the view.
      * @param  int|null  $height  Pixels down; pixelSize()'s unless given.
      * @param  int  $frames  Frames of a ring.
@@ -34,7 +34,7 @@ interface TKCanvas extends TKPrimitive, Output
      *
      * @throws \Surface\Contracts\Windows\WindowException When no size is given and the view has none yet, or the kind is not one of the three.
      */
-    public function framebuffer(string $kind = 'full', ?int $width = null, ?int $height = null, int $frames = 2, ?string $driver = null): Framebuffer;
+    public function framebuffer(string $kind = 'dirty', ?int $width = null, ?int $height = null, int $frames = 2, ?string $driver = null): Framebuffer;
 
     /** The framebuffer bound now; null before framebuffer() is first called. */
     public function boundFramebuffer(): ?Framebuffer;

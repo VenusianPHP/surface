@@ -34,9 +34,11 @@ class EmbeddedDisplayManager
     /**
      * A display over a chip the sketch built. The chip must have booted and
      * answer formatSpec(); gpio/contracts leaves that method out because pixel
-     * formats are Surface's vocabulary.
+     * formats are Surface's vocabulary. direct: true builds a DirectEDisplay,
+     * which pipes the framebuffer's memory onto the panel's bus and refuses a
+     * panel or framebuffer it cannot pipe.
      */
-    public function attach(DisplayPanel $panel, string $name): EmbeddedDisplay
+    public function attach(DisplayPanel $panel, string $name, bool $direct = false): EmbeddedDisplay
     {
         if (isset($this->displays[$name])) {
             throw EmbeddedDisplayException::nameTaken($name);
@@ -48,7 +50,7 @@ class EmbeddedDisplayManager
             throw EmbeddedDisplayException::notBooted($name);
         }
 
-        return $this->displays[$name] = new EmbeddedDisplay(
+        return $this->displays[$name] = new ($direct ? DirectEDisplay::class : EmbeddedDisplay::class)(
             $name,
             $panel,
             $this->framebuffers,
@@ -62,12 +64,17 @@ class EmbeddedDisplayManager
      * Conjure a chip from config/circuits/<panel>.php — its default_config, or
      * the one named — and attach it, so a sketch never spells out an adapter,
      * a bus or a pin. Asking again for a display already conjured answers the
-     * same one.
+     * same one; asking for it direct when it was attached otherwise is refused.
+     * direct: true as attach().
      */
-    public function panel(string $panel, ?string $config = null, ?string $name = null): EmbeddedDisplay
+    public function panel(string $panel, ?string $config = null, ?string $name = null, bool $direct = false): EmbeddedDisplay
     {
         $name ??= is_null($config) ? $panel : "{$panel}.{$config}";
         if (isset($this->displays[$name])) {
+            if ($direct && ! $this->displays[$name] instanceof DirectEDisplay) {
+                throw EmbeddedDisplayException::nameTaken($name);
+            }
+
             return $this->displays[$name];
         }
 
@@ -77,7 +84,7 @@ class EmbeddedDisplayManager
             throw EmbeddedDisplayException::notADisplayPanel($panel, get_debug_type($chip));
         }
 
-        return $this->attach($chip, $name);
+        return $this->attach($chip, $name, $direct);
     }
 
     /** Close the display; it leaves the manager. */

@@ -35,6 +35,7 @@ use Surface\Contracts\Windows\Styling\FontSpec;
 use Surface\Contracts\Windows\Styling\TextAlignment;
 use Surface\Contracts\Windows\ToolkitWindow;
 use Surface\Contracts\Windows\WindowException;
+use Surface\Contracts\Framebuffers\Region;
 use Surface\NutsAndBolts\Color;
 use Surface\Windows\Primitives\HostsPrimitives;
 use Surface\Contracts\Windows\Primitives\Placement;
@@ -313,11 +314,16 @@ final class FakeCanvas extends CanvasAbstract
     /** @var list<array{string, int, int}> Every image handed to the toolkit. */
     public array $pixels = [];
 
+    /** @var list<array{int, int, int, int, list<Region>}> Every frame handed to the toolkit by address: [address, width, height, stride, damage]. */
+    public array $addresses = [];
+
     protected function nativeSize(): array { return $this->measures; }
 
     protected function nativeScale(): float { return $this->scale; }
 
     protected function applyPixels(string $rgba8, int $width, int $height): void { $this->pixels[] = [$rgba8, $width, $height]; }
+
+    protected function applyAddress(int $address, int $width, int $height, int $stride, array $damage): void { $this->addresses[] = [$address, $width, $height, $stride, $damage]; }
 }
 
 final class FakeSeparator extends SeparatorAbstract
