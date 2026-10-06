@@ -1,7 +1,7 @@
 ---
 type: Module
 title: Drawing
-description: "Rendering engines: one draw API over a framebuffer, frames recorded then drawn, DrawingManager, VelvetGE the software engine."
+description: "Rendering engines: one draw API over a framebuffer, frames recorded then drawn, DrawingManager, VelvetGE the software engine, GpuRenderingEngine over a package's device."
 resource: src/Surface/Drawing/
 tags: [surface, drawing, rendering, velvet]
 status: draft
@@ -16,6 +16,9 @@ sources:
   - id: velvet
     resource: src/Surface/Drawing/Velvet/VelvetGE.php
     title: VelvetGE
+  - id: gpu
+    resource: src/Surface/Drawing/Gpu/
+    title: GpuRenderingEngine, GpuDevice, DrawList, Lowering
   - id: manager
     resource: src/Surface/Drawing/DrawingManager.php
     title: DrawingManager
@@ -100,13 +103,50 @@ Framebuffer kind = mode:
 
 Measured (Mac, 320×240 RGBA8, 100 shapes + 1 image): 6.8 ms both extended · 310 ms extended geometry / native bytes · 670 ms native geometry / extended bytes · 990 ms both native.
 
+# GPU engines
+
+`new GpuRenderingEngine(GpuDevice, int $width, int $height, ?Edges, ?OutputTarget)`. Engine package supplies the `GpuDevice`; everything neutral here.[^gpu] Creator in a package = one call: `$drawing->extend('metal', fn (array $args, DrawingManager $drawing) => GpuRenderingEngine::from(new MetalDevice, $args, $drawing))`. `from()` reads `output` alone or `width` + `height`, and `edges`; checks before touching the device; refuses `framebuffer` by name (engine owns its own, `framebuffer()` answers a `GLFramebuffer`, see [Framebuffers](framebuffers.md)).
+
+`GpuDevice`: `name()` · `target(w, h, samples): GLFramebuffer` · `draw(DrawList)` · `surfaces()` (kinds it presents into, best first) · `handles()` (native handles a window needs to make the surface; `instance` for Vulkan) · `adopt(LentSurface)` · `present(LentSurface): bool` · `release()`. Made and used on one thread.
+
+* Frame: commands → `Lowering::lower()` → `DrawList` → `draw()`, then `framebuffer()->drawn(damage())`. Frames, damage, partial frames = base class's: target keeps its pixels, so a partial frame is scissored regions.
+* Edges: anti-aliased = 4 samples resolved; hard = 1. Default from the output's `pixelFormat()`: hard where it cannot blend.
+
+| Output | Engine does |
+|---|---|
+| window (`WindowOutput`) | borrows the first kind in `device->surfaces()` the window lends; `adopt()`, then `target()`. Resize: next `begin()` re-makes target at new size, frame drawn whole. Nothing in common → `DrawingException` naming engines the window can host. `release()` reclaims |
+| display (`EmbeddedDisplay`) | `bind(framebuffer())`; display's `present()` reads back what changed |
+| none | offscreen: holder drains `framebuffer()` |
+
+`DrawList`: `width`, `height`, `vertices` (float32 LE x,y pairs, target pixels, origin top-left; quad = six vertices; triangle lists only, Metal and SDL_GPU have no fans), `operations`:
+
+| Operation | Meaning |
+|---|---|
+| `[CLEAR, rgba]` | whole target, no blend |
+| `[SCISSOR, Region]` | until next |
+| `[SOLID, first, rgba]` | quad, no blend |
+| `[STENCIL_FILL, first, count, FillRule]` | triangles into stencil; non-zero counts front up, back down; even-odd inverts |
+| `[COVER, first, rgba]` | quad where stencil ≠ 0, resets to 0 |
+| `[ELLIPSE, first, cx, cy, rx, ry, rgba]` | quad; coverage per pixel |
+| `[RING, first, cx, cy, rx, ry, stroke, rgba]` | quad; band r ± stroke / 2 |
+| `[UPLOAD, texture, Framebuffer]` | source texture from `toRgba8()` |
+| `[IMAGE, first, texture, Affine, opacity, Filter]` | quad over placed corners; Affine maps target pixel centre → source |
+| `[RECTS, first, count, rgba]` | count / 6 quads, one a span |
+
+Lowering: `clear` → `CLEAR`, or `SCISSOR` + `SOLID` for a region · `path` → `STENCIL_FILL` + `COVER` (contour of n points = n − 2 triangles from its first point, cover = box floor/ceil) · `polyline` → `Stroker::outline()` then as path, non-zero · `ellipse` / `ring` → one quad a pixel past the shape · `image` → `UPLOAD` once a frame a source, `IMAGE` with the inverse placement · `spans` → `RECTS`. `SCISSOR` only when the clip changes.
+
+Output contracts (`Surface\Contracts\Drawing`): `OutputTarget` gains `pixelSize()` and `pixelFormat()` (RGBA8 for a window, wire format for a display) · `WindowOutput extends Pipeable`: `surfaces()`, `lend(kind, borrower)`, `lent()`, `reclaim()` · `SurfaceKind`: `METAL_LAYER`, `VULKAN_SURFACE`, `GL_CONTEXT`, `SDL_WINDOW`, `DMABUF`, each with `handle()` and `engines()` · `LentSurface`: kind, handles by name, live `size()`, `released()` · `SurfaceBorrower` (the engine): `framebuffer()`, `lendingHandles()`, `presentInto(LentSurface): bool`.
+
 # Manager
 
 `app('drawing')->renderer(?string $engine, array $args)`: new engine every call; null = `config('drawing.default')`. `extend(name, fn (array $args, DrawingManager): RenderingEngine)` for engine packages. Unknown name: `DrawingException` listing registered engines + the package for `metal`, `opengl`, `vulkan`, `sdl3`.[^manager]
+
+Public for package creators: `edgesFrom(array): ?Edges` (`edges` as an `Edges`, `'hard'` or `'antialiased'`; null = engine picks) and `framebufferFrom(array, string $engine = 'velvet'): Framebuffer` (an output's own, one handed in, or one made from the sizing arguments).
 
 Velvet args: `output` alone (an `OutputTarget`: Velvet draws over its `framebuffer()`, so a canvas pipes and a display sends what changed), `framebuffer` alone, or `width` + `height` with `mode` (`full`, `dirty`, `epaper`, `paged` + `page_rows`, `ring` + `frames` = 2), `format` (RGBA8), `framebuffers` (driver); `rasterize` (driver); `edges`. Unknown key throws.
 
 [^contract]: `Surface\Contracts\Drawing`.
 [^base]: `Surface\Drawing\RenderingEngine`: an engine supplies `name()`, `framebuffer()`, `execute()`.
 [^velvet]: Byte-identical to Rasterize + framebuffer called directly; `VelvetTest` enforces through every driver pairing.
+[^gpu]: `Surface\\Drawing\\Gpu`: `GpuRenderingEngine`, `GpuDevice`, `DrawList`, `Op`, `Lowering`.
 [^manager]: Not a Voyager `Manager`: engines are built per call from arguments, never cached.

@@ -1,5 +1,9 @@
 # Log
 
+## 2026-10-05
+
+* GPU engine contracts: [drawing](architecture/drawing.md) gains GPU engines, the draw list and the manager's shared arguments; [framebuffers](architecture/framebuffers.md) gains GLFramebuffer; [primitives](architecture/primitives.md) gains surface lending on the canvas; [embedded displays](architecture/embedded-displays.md) gains output size and format and the staging copy; [testing](runbooks/testing.md) names the GPU fakes and the parity suite.
+
 ## 2026-10-04
 
 * Slice 0, Tasks 5 and 11: `renderer('velvet', ['output' => $target])` draws over a target's `framebuffer()`; `keepsFrame()` keeps a ring's frame for every engine. Added `DirectEDisplay` (`Pipeable`): regions piped from ext-fb memory through a gpio/contracts `PipeablePanel`'s `WritesFromMemory` bus; `attach()` / `panel()` take `direct: true`. Measured on the Pi 5's ST7796. [embedded-displays](architecture/embedded-displays.md), [drawing](architecture/drawing.md).

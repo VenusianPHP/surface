@@ -3,6 +3,9 @@
 namespace Surface\Windows\Primitives;
 
 use Closure;
+use Surface\Contracts\Drawing\LentSurface;
+use Surface\Contracts\Drawing\SurfaceBorrower;
+use Surface\Contracts\Drawing\SurfaceKind;
 use Surface\Contracts\Framebuffers\DamageTrackingFramebuffer;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\Framebuffer;
@@ -31,6 +34,10 @@ abstract class TKCanvas extends TKPrimitive implements PrimitiveContract
     /** The ring serial last shown, or whether a full or dirty framebuffer has been shown at all. */
     protected ?int $shown = null;
 
+    protected ?LentSurface $lent = null;
+
+    protected ?SurfaceBorrower $borrower = null;
+
     /**
      * Where canvases get their framebuffer drivers: the application's FramebufferManager.
      * Without one, a canvas builds the named driver itself.
@@ -51,9 +58,17 @@ abstract class TKCanvas extends TKPrimitive implements PrimitiveContract
         return [(int) round($width * $scale), (int) round($height * $scale)];
     }
 
+    public function pixelFormat(): FormatSpec
+    {
+        return FormatSpec::rgba8();
+    }
+
     public function framebuffer(string $kind = 'dirty', ?int $width = null, ?int $height = null, int $frames = 2, ?string $driver = null): Framebuffer
     {
         $this->live();
+        if (! is_null($this->lent)) {
+            throw new WindowException("Canvas '{$this->path()}' has lent its surface: its pixels are the borrower's. reclaim() it to draw into the canvas's own framebuffer.");
+        }
         if (! in_array($kind, ['full', 'dirty', 'ring'], true)) {
             throw new WindowException("A canvas framebuffer is 'full', 'dirty' or 'ring', got '{$kind}'.");
         }
@@ -91,7 +106,7 @@ abstract class TKCanvas extends TKPrimitive implements PrimitiveContract
 
     public function boundFramebuffer(): ?Framebuffer
     {
-        return $this->framebuffer;
+        return $this->borrower?->framebuffer() ?? $this->framebuffer;
     }
 
     public function canPipe(Framebuffer $framebuffer): bool
@@ -102,6 +117,9 @@ abstract class TKCanvas extends TKPrimitive implements PrimitiveContract
     public function present(): static
     {
         $this->live();
+        if (! is_null($this->lent) && ! is_null($this->borrower)) {
+            return $this->presentLent($this->lent, $this->borrower);
+        }
         $bound = $this->framebuffer ?? throw new WindowException("Canvas '{$this->path()}' has no framebuffer: call framebuffer() first.");
 
         $damage = [];
@@ -133,6 +151,97 @@ abstract class TKCanvas extends TKPrimitive implements PrimitiveContract
 
         return $this;
     }
+
+    /** No toolkit lends until its engine slice says what it lends. */
+    public function surfaces(): array
+    {
+        return [];
+    }
+
+    public function lend(SurfaceKind $kind, SurfaceBorrower $to): LentSurface
+    {
+        $this->live();
+        if (! is_null($this->lent)) {
+            throw new WindowException("Canvas '{$this->path()}' has already lent its {$this->lent->kind->value} surface: reclaim() it first.");
+        }
+        if (! in_array($kind, $this->surfaces(), true)) {
+            $lends = implode(', ', array_map(fn (SurfaceKind $offered): string => $offered->value, $this->surfaces())) ?: 'none';
+
+            throw new WindowException("Canvas '{$this->path()}' lends no {$kind->value} surface (it lends: {$lends}).");
+        }
+
+        $this->lent = new LentSurface($kind, $this->makeSurface($kind, $to->lendingHandles()), fn (): array => $this->pixelSize());
+        $this->borrower = $to;
+        $this->shown = null;
+
+        return $this->lent;
+    }
+
+    public function lent(): ?LentSurface
+    {
+        return $this->lent;
+    }
+
+    public function reclaim(): void
+    {
+        if (is_null($this->lent)) {
+            return;
+        }
+
+        // Released first: the borrower frees what it made while the native surface still exists.
+        $lent = $this->lent;
+        $lent->release();
+        $this->removeSurface($lent->kind);
+        $this->lent = null;
+        $this->borrower = null;
+        $this->shown = null;
+    }
+
+    /** Terminal, as every primitive's: a lent surface is reclaimed while the native view still exists. */
+    public function remove(): void
+    {
+        $this->live();
+        $this->reclaim();
+
+        parent::remove();
+    }
+
+    /**
+     * The borrower's GPU copy. Nothing when it has drawn nothing since the
+     * last copy that landed; a skipped copy (no free drawable) leaves its
+     * damage for the next present.
+     */
+    protected function presentLent(LentSurface $surface, SurfaceBorrower $borrower): static
+    {
+        $frame = $borrower->framebuffer();
+        $tracked = $frame instanceof DamageTrackingFramebuffer;
+        if (! is_null($this->shown) && $tracked && $frame->damage() === []) {
+            return $this;
+        }
+        if ($borrower->presentInto($surface)) {
+            $this->shown = 0;
+            if ($tracked) {
+                $frame->beginEpoch();
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Make the native surface of $kind inside the view. A toolkit's canvas
+     * overrides this for every kind its surfaces() lists.
+     *
+     * @param  array<string, int>  $handles  The borrower's lendingHandles().
+     * @return array<string, int> The surface's handles by name; always $kind->handle().
+     */
+    protected function makeSurface(SurfaceKind $kind, array $handles): array
+    {
+        throw new WindowException("Canvas '{$this->path()}' cannot make a {$kind->value} surface.");
+    }
+
+    /** Remove the native surface made by makeSurface(), after the lent surface was released; the view shows what applyPixels() / applyAddress() gives it again. */
+    protected function removeSurface(SurfaceKind $kind): void {}
 
     /** Device pixels per unit of size(): 2.0 on a HiDPI display. */
     abstract protected function nativeScale(): float;

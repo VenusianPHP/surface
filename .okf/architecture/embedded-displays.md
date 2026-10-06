@@ -104,6 +104,12 @@ Measured, Pi 5 ST7796 480×320 RGB565 at 10 MHz, bufsiz 65536, same VelvetGE sce
 * `panel(panel, ?config, ?name, direct = false)`: `app('circuit')->conjure(panel, config)` (scrapyard-io/framework), name `panel` or `panel.config`; again → same display; again with `direct: true` over one attached otherwise → `nameTaken`. No catalog → `noCatalog`.
 * `display`, `has`, `displays`, `detach` (closes), `destroy` (closes all, first failure rethrown after).
 
+# GPU framebuffers
+
+* `pixelSize()` (panel width, height) and `pixelFormat()` (wire format) on every display, as `OutputTarget` asks.
+* A GPU engine's `GLFramebuffer` binds like any framebuffer and is sent as damage through `flushRegion()`, converted to the panel's format.
+* On a `DirectEDisplay`: `bind()` gives it an ext-fb staging copy in the panel's format (`stageIn()`); `present()` runs `stage($region)`, then pipes the staging copy's memory. Refused with the reason when the panel's format is sub-byte, planar or bottom-up; refused framebuffer stays unstaged.
+
 # Panels (0.10 chips)
 
 | Chip | Format | Region writes | Refresh | Switch | Kind |

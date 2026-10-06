@@ -10,6 +10,7 @@ use Surface\Contracts\EmbeddedDisplays\DirectEDisplay as DirectEDisplayContract;
 use Surface\Contracts\EmbeddedDisplays\EmbeddedDisplayException;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\Framebuffer;
+use Surface\Contracts\Framebuffers\GLFramebuffer;
 use Surface\Contracts\Framebuffers\PagedFramebuffer;
 use Surface\Contracts\Framebuffers\Region;
 use Surface\Contracts\Framebuffers\ScanDirection;
@@ -20,6 +21,11 @@ use Surface\Framebuffers\Layout;
  * An EmbeddedDisplay that pipes: it sends the same regions, each as
  * openWindow() then one writeFrom() over the framebuffer's memory — one span
  * for a full-width region, whose rows are contiguous, one a row otherwise.
+ *
+ * A GPU engine's framebuffer has no memory of its own to pipe from: bound
+ * here, it is given a staging copy on ext-fb in the panel's format, each
+ * region is brought up to date before it is sent, and the staging copy's
+ * memory is piped.
  */
 class DirectEDisplay extends EmbeddedDisplay implements DirectEDisplayContract
 {
@@ -56,6 +62,18 @@ class DirectEDisplay extends EmbeddedDisplay implements DirectEDisplayContract
 
     public function bind(Framebuffer $framebuffer): static
     {
+        if ($framebuffer instanceof GLFramebuffer) {
+            $why = static::formatRefusal($this->wireFormat());
+            if (! is_null($why)) {
+                throw EmbeddedDisplayException::cannotPipe($this->name, $why);
+            }
+            $staging = $this->stagingCopy();
+            parent::bind($framebuffer);
+            $framebuffer->stageIn($staging);
+
+            return $this;
+        }
+
         $why = $this->pipeRefusal($framebuffer);
         if (! is_null($why)) {
             throw EmbeddedDisplayException::cannotPipe($this->name, $why);
@@ -66,16 +84,25 @@ class DirectEDisplay extends EmbeddedDisplay implements DirectEDisplayContract
 
     public function canPipe(Framebuffer $framebuffer): bool
     {
-        return is_null($this->pipeRefusal($framebuffer));
+        return $framebuffer instanceof GLFramebuffer
+            ? is_null(static::formatRefusal($this->wireFormat()))
+            : is_null($this->pipeRefusal($framebuffer));
     }
 
-    /** Open the region as the panel's window and send its rows straight out of the framebuffer's memory. */
+    /** A framebuffer in the panel's format on ext-fb, the size of the panel: where a GPU framebuffer is staged. */
+    protected function stagingCopy(): Framebuffer
+    {
+        return $this->framebuffers->driver('extended')->full($this->wireFormat(), $this->panel->width(), $this->panel->height());
+    }
+
+    /** Open the region as the panel's window and send its rows straight out of memory: the framebuffer's, or a GPU framebuffer's staging copy brought up to date first. */
     protected function send(Framebuffer $framebuffer, Region $region, bool $whole): void
     {
-        if (! $framebuffer->hostFormat()->equals($this->wireFormat())) {
+        $source = $framebuffer instanceof GLFramebuffer ? $framebuffer->stage($region) : $framebuffer;
+        if (! $source->hostFormat()->equals($this->wireFormat())) {
             throw EmbeddedDisplayException::formatChanged($this->name);
         }
-        $spans = $this->spans($framebuffer, $region);
+        $spans = $this->spans($source, $region);
         $expected = array_sum(array_column($spans, 1));
         /** @var PipeablePanel $panel */
         $panel = $this->panel;
@@ -122,6 +149,14 @@ class DirectEDisplay extends EmbeddedDisplay implements DirectEDisplayContract
             $framebuffer->pointer() === 0 => 'its pixels are not in C memory (the native driver)',
             $framebuffer instanceof PagedFramebuffer => 'a paged framebuffer holds one page, not the frame',
             ! $framebuffer->hostFormat()->equals($format) => "its format is not the panel's",
+            default => static::formatRefusal($format),
+        };
+    }
+
+    /** Why no framebuffer in $format can be piped; null when one can. */
+    protected static function formatRefusal(FormatSpec $format): ?string
+    {
+        return match (true) {
             $format->scan_direction !== ScanDirection::TOP_TO_BOTTOM => 'its rows run bottom-up',
             is_null(self::bytesPerPixel($format)) => 'the panel packs pixels into part of a byte, or into planes',
             default => null,

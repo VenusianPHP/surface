@@ -48,6 +48,16 @@ Kind = logic over a `PixelStore` (the pixel glob). Kinds written once, abstract.
 
 `Layout::of(spec)` = one rule set for storable specs; both flavors resolve there. `PixelMapper` = colour ↔ word in integers, same arithmetic as ext-fb. Result: identical bytes; fixtures + `ParityTest` enforce.[^fixtures]
 
+# GLFramebuffer
+
+A GPU engine's own framebuffer. Contract `Surface\Contracts\Framebuffers\GLFramebuffer extends DamageTrackingFramebuffer` + `drawn(list<Region>)`, `stageIn(?Framebuffer)`, `stage(Region): Framebuffer`. Abstract `Surface\Framebuffers\GLFramebuffer`: a package supplies `width()`, `height()`, `readRgba8(Region)`, `uploadRgba8(string, Region)`. New size = new instance.
+
+* RGBA8, pixel damage granularity, keeps contents on present. Pixels live on the GPU: `pointer()` 0.
+* Reads (`getPixel`, `toRgba8`, `dump`, `flush`, `flushRegion`) go to the GPU each call. `flushRegion()` packs the read-back region as a native framebuffer the region's size would.
+* Writes (`setPixel`…`blitFrom`, `writeRgba8`, `paintSpans`, `paintImage`, `fill`) run on a native RGBA8 dirty copy read back once and kept until `drawn()`; changed regions uploaded and recorded as damage.
+* `drawn(regions)`: the engine drew these on the GPU. Joins damage; drops the CPU copy.
+* `stageIn(staging)`: a framebuffer of this size in a display's format, bytes in C memory; `pointer()` answers its address. Other size throws. Null drops it. `stage(region)` brings that region of the staging copy up to date, answers it; no staging copy throws.
+
 # Ring
 
 Front = last finished frame (readers). Back = frame being drawn. On the ring: draw calls → back, drain calls → front.

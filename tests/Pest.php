@@ -14,6 +14,7 @@ require_once __DIR__.'/Fixtures/FakeFramebuffers.php';
 require_once __DIR__.'/Fixtures/RecordingEngine.php';
 require_once __DIR__.'/Fixtures/FakeManagers.php';
 require_once __DIR__.'/Fixtures/FakePanels.php';
+require_once __DIR__.'/Fixtures/FakeGpu.php';
 
 /** An RGB565 host format, MSB first. */
 function rgb565(): FormatSpec

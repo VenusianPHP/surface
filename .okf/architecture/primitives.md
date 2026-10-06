@@ -127,3 +127,10 @@ $view->present();                                        // on screen
 * `canPipe(Framebuffer)`: true of an extended RGBA8 framebuffer — its bytes are in C memory. A pipable framebuffer goes to the toolkit by `applyAddress(pointer, w, h, stride, damage)`, no pixel byte through PHP; a PHP-held one goes as a string through `applyPixels()` as before.
 * Driver from the app's `FramebufferManager` (`WindowsServiceProvider` sets `TKCanvas::resolveFramebuffersUsing()`); with none set, the canvas builds `native` / `extended` itself.
 * A toolkit's canvas implements `nativeScale()` + `applyPixels()` + `applyAddress()`; the toolkit copies what it needs before returning.
+
+Surface lending: `TKCanvas` is a `WindowOutput` (`Surface\Contracts\Drawing`). A GPU engine borrows a native surface inside the canvas instead of drawing into its framebuffer.
+
+* `surfaces()`: `[]` until a toolkit's canvas overrides it, with `makeSurface(kind, handles): array` (the surface's handles by name, always `kind->handle()`) and `removeSurface(kind)`. Both have default bodies.
+* `lend(kind, borrower)`: one at a time; a kind not in `surfaces()` throws `WindowException` naming the kinds it lends. Handles come from the borrower's `lendingHandles()`. `LentSurface::size()` reads `pixelSize()` live.
+* While lent: `boundFramebuffer()` = the borrower's, `framebuffer()` throws, `present()` = `borrower->presentInto()`. Skipped when the borrower's framebuffer has no damage since the last landed copy; epoch begun only when the copy lands, so a skipped copy (no free drawable) is retried next `present()`.
+* `reclaim()`: removes the native surface, releases the `LentSurface`; the next `present()` of the canvas's own framebuffer is whole. `remove()` reclaims first, while the native view exists.

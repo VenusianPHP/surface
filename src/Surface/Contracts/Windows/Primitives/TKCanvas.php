@@ -2,16 +2,16 @@
 
 namespace Surface\Contracts\Windows\Primitives;
 
-use Surface\Contracts\Drawing\Pipeable;
+use Surface\Contracts\Drawing\WindowOutput;
 use Surface\Contracts\Framebuffers\Framebuffer;
 
 /**
  * A rectangle of the layout whose pixels the application draws. It hands out
  * a framebuffer bound to it, and present() puts that framebuffer on screen,
  * stretched over the view, opaque. Draw into the framebuffer directly, or
- * hand it to a rendering engine. Posts no mail of its own.
+ * hand it to a rendering engine. A GPU engine borrows a surface inside it instead (WindowOutput). Posts no mail of its own.
  */
-interface TKCanvas extends TKPrimitive, Pipeable
+interface TKCanvas extends TKPrimitive, WindowOutput
 {
     /**
      * The canvas in device pixels: size() times the display's scale, so 2x on a HiDPI display.

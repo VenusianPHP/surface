@@ -147,6 +147,16 @@ class EmbeddedDisplay implements EmbeddedDisplayContract
         return $this->framebuffer;
     }
 
+    public function pixelSize(): array
+    {
+        return [$this->panel->width(), $this->panel->height()];
+    }
+
+    public function pixelFormat(): FormatSpec
+    {
+        return $this->wireFormat();
+    }
+
     /** Which refresh a panel that refreshes on command is asked for. Ignored by every other panel. */
     public function refreshMode(RefreshMode $mode): static
     {

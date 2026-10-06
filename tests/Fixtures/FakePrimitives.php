@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Venusian\Surface\Tests\Fixtures;
 
 use DateTimeImmutable;
+use Surface\Contracts\Drawing\SurfaceKind;
 use Surface\Contracts\Windows\Primitives\Align;
 use Surface\Contracts\Windows\Primitives\PrimitiveFactory;
 use Surface\Contracts\Windows\Primitives\TKButton as ButtonContract;
@@ -316,6 +317,20 @@ final class FakeCanvas extends CanvasAbstract
 
     /** @var list<array{int, int, int, int, list<Region>}> Every frame handed to the toolkit by address: [address, width, height, stride, damage]. */
     public array $addresses = [];
+
+    /** @var list<SurfaceKind> What this toolkit lends; [] as every toolkit before its engine slice. */
+    public array $lends = [];
+
+    public function surfaces(): array { return $this->lends; }
+
+    protected function makeSurface(SurfaceKind $kind, array $handles): array
+    {
+        $this->log[] = "surface:{$kind->value}:".json_encode($handles);
+
+        return [$kind->handle() => 0xC0FFEE];
+    }
+
+    protected function removeSurface(SurfaceKind $kind): void { $this->log[] = "unsurface:{$kind->value}"; }
 
     protected function nativeSize(): array { return $this->measures; }
 

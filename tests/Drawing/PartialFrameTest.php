@@ -14,6 +14,7 @@ use Surface\Contracts\Framebuffers\ScanDirection;
 use Surface\Drawing\Velvet\VelvetGE;
 use Surface\Fonts\ClassicFont;
 use Surface\NutsAndBolts\Color;
+use Venusian\Surface\Tests\Support\GpuParity\GpuParity;
 
 /*
  * A frame is compared with the one before it: only where they differ is drawn
@@ -52,18 +53,10 @@ function partialTile(): Framebuffer
     return $tile;
 }
 
-/** Frame $i of a clock: a border that stays, a dot that moves, digits that change, a line that grows, a fixed image, and a triangle on frame 3 only. */
+/** Frame $i of a clock: the sequence the GPU parity suite holds every engine to as well. */
 function clockFrame(RenderingEngine $g, int $i, Framebuffer $tile): void
 {
-    $g->clear(Color::rgb(0, 0, 0));
-    $g->strokeRect(1, 1, 62, 30, Color::rgb(255, 255, 255));
-    $g->fillEllipse(10 + 3 * $i, 16, 4, 3, Color::rgba(255, 128, 0, 0.8));
-    $g->text(sprintf('%02d', 10 + $i), 30, 4, Color::rgb(255, 255, 255), new ClassicFont);
-    $g->line(2, 28, 20 + 5 * $i, 20, Color::rgb(0, 255, 0), 1.5);
-    $g->image($tile, 44, 18);
-    if ($i === 3) {
-        $g->push()->translate(0.5, 0.5)->fillTriangle(40, 2, 46, 10, 36, 9, Color::rgb(0, 0, 255))->pop();
-    }
+    GpuParity::clockFrame($g, $i, $tile);
 }
 
 it('draws a sequence of frames byte for byte as whole redraws would', function (string $kind, string $driver) {

@@ -65,6 +65,22 @@ Anything else is refused with the reason, never sent another way. On the Pi 5's
 ST7796 at 10 MHz a whole frame takes 246 ms, the wire time, against 298 ms
 through PHP.
 
+## GPU engines
+
+Every display says its `pixelSize()` and `pixelFormat()`. A GPU engine's
+framebuffer binds like any other and is sent as what changed, converted to the
+panel's format. On a direct display, `bind()` gives it an ext-fb staging copy in
+the panel's format; `present()` brings each region of the copy up to date, then
+pipes the copy's memory. A panel whose pixels share bytes or planes, or whose
+rows run bottom-up, is refused with the reason.
+
+```php
+$tft = app('displays')->panel('st7796', direct: true);
+$engine = app('drawing')->renderer('vulkan', ['output' => $tft]);
+$engine->frame(fn ($g) => $g->clear(Color::rgb(0, 0, 0))->fillEllipse(160, 240, 80, 80, Color::rgb(255, 128, 0)));
+$tft->present();
+```
+
 ## Panels
 
 `dept-of-scrapyard-robotics/ssd1306`, `/st77xx` (ST7735, ST7789, ST7796),

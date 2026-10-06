@@ -141,3 +141,23 @@ it('keeps a ring frame in the base engine', function (): void {
         ->and($engine->executed[1][0])->toEqual(['clear', 0x000000FF, new Region(0, 1, 7, 4)])   // the clear, cut to the damage
         ->and($engine->executed[1][1][4])->toEqual(new Region(0, 1, 7, 4));             // the rect, clipped to it
 });
+
+it('reads the edge mode for any engine', function () {
+    expect(drawing()->edgesFrom([]))->toBeNull()
+        ->and(drawing()->edgesFrom(['edges' => Edges::HARD]))->toBe(Edges::HARD)
+        ->and(drawing()->edgesFrom(['edges' => 'antialiased']))->toBe(Edges::ANTIALIASED);
+    expect(fn () => drawing()->edgesFrom(['edges' => 'soft']))->toThrow(DrawingException::class, "'edges' is 'hard' or 'antialiased', got 'soft'.");
+    expect(fn () => drawing()->edgesFrom(['edges' => 4]))->toThrow(DrawingException::class, "'edges' is 'hard' or 'antialiased', or an Edges.");
+});
+
+it('reads the framebuffer arguments for any engine that draws on the CPU', function () {
+    $display = fakeDisplay();
+    $handed = new NativeFullFramebuffer(FormatSpec::rgba8(), 2, 2);
+    $minted = drawing()->framebufferFrom(['width' => 8, 'height' => 4, 'mode' => 'dirty', 'framebuffers' => 'native']);
+
+    expect(drawing()->framebufferFrom(['output' => $display]))->toBe($display->boundFramebuffer())
+        ->and(drawing()->framebufferFrom(['framebuffer' => $handed]))->toBe($handed)
+        ->and([$minted->viewportWidth(), $minted->viewportHeight()])->toBe([8, 4])
+        ->and($minted)->toBeInstanceOf(Surface\Contracts\Framebuffers\DamageTrackingFramebuffer::class);
+    expect(fn () => drawing()->framebufferFrom([], 'pencil'))->toThrow(DrawingException::class, "pencil needs a 'framebuffer', or a 'width' and a 'height' to make one.");
+});
