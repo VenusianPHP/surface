@@ -89,6 +89,8 @@ Integers throughout; `FbBuffer::paintSpans()` does the same in C. Fixtures 36–
 * `ImagePlacement::plan()`: target rect + inverse, once, in PHP, for both stores → `PixelStore::paintRgba8()`. Paged passes its page's top row, so sample points match a whole surface exactly. Paged source = its current page, in place.
 * `FbBuffer::paintRgba8()` same in C; ext built `-ffp-contract=off`. Hand-worked `ImageTest` + image parity enforce.
 
+`HdrImage`: read-only Framebuffer of half floats (LE RGBA, linear extended sRGB, 1.0 = SDR white, straight alpha). `fromRgba16f()` / `fromFloats()`; reads as SDR (sRGB-encoded, clamped; NaN/negative 0, past white 255), so CPU engines draw it; GPU devices on HDR targets upload `rgba16f()`. Writes throw. `HdrReadback::readRgba16f(Region)` on HDR GPU targets.
+
 # Raw pixels
 
 `writeRgba8(string $rgba8, int $width, int $height, int $x = 0, int $y = 0)` on every kind: a block of RGBA8 pixels, top-left at (x, y), each replacing the pixel there through the mapper. No blend. Off-surface part dropped. Bytes ≠ width × height × 4 throw, nothing written. Dirty/ring: written rect is damage; ring writes the back; paged takes surface coordinates, keeps current-page rows. `blitFrom()` = `writeRgba8()` of the source's RGBA8. How [Images](images.md) hands decoded pixels over.

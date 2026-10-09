@@ -2,6 +2,10 @@
 
 namespace Surface\Contracts\Bridge;
 
+use Surface\Contracts\HumanInput\InputTap;
+use Voyager\Contracts\IOPools\Loop;
+use Voyager\Contracts\IOPools\Loop as LoopInterface;
+
 interface BridgedToolkitSession
 {
     /**
@@ -31,6 +35,18 @@ interface BridgedToolkitSession
      */
     public function postLatest(string $key, object $mail): void;
 
+
+    /**
+     * Put this toolkit's native wait in charge of the loop's sleep and fold the loop's
+     * waiter into it, so every wake of the loop ends the toolkit's sleep too. A session
+     * that does not sleep natively joins as a ToolkitPoller instead: ticked at the pace,
+     * never crowned, no descriptor taken.
+     *
+     * @param Loop $loop
+     * @return void
+     */
+    public function joinLoop(Loop $loop): void;
+
     /**
      * Deliver the pending latest mail in first-seen key order.
      * @return void
@@ -45,4 +61,21 @@ interface BridgedToolkitSession
      * @return void
      */
     public function forgetLatest(string $key): void;
+
+    /**
+     * Show every native event this session handles to $tap, before the toolkit
+     * dispatches it. Tapping twice is tapping once.
+     *
+     * @param InputTap $tap
+     * @return void
+     */
+    public function tap(InputTap $tap): void;
+
+    /**
+     * Stop showing native events to $tap. A tap never added is ignored.
+     *
+     * @param InputTap $tap
+     * @return void
+     */
+    public function untap(InputTap $tap): void;
 }

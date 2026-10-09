@@ -7,6 +7,7 @@ use Surface\Drawing\DrawingServiceProvider;
 use Surface\EmbeddedDisplays\EmbeddedDisplaysServiceProvider;
 use Surface\Fonts\FontsServiceProvider;
 use Surface\Framebuffers\FramebuffersServiceProvider;
+use Surface\HumanInput\HumanInputServiceProvider;
 use Surface\Images\ImagesServiceProvider;
 use Surface\Rasterize\RasterizeServiceProvider;
 use Surface\Windows\WindowsServiceProvider;
@@ -17,6 +18,7 @@ class SurfaceServiceProvider extends AggregateServiceProvider
     protected array $providers = [
         WindowsServiceProvider::class,
         BridgeServiceProvider::class,
+        HumanInputServiceProvider::class,
         FramebuffersServiceProvider::class,
         EmbeddedDisplaysServiceProvider::class,
         RasterizeServiceProvider::class,
@@ -40,6 +42,7 @@ class SurfaceServiceProvider extends AggregateServiceProvider
             'embedded-displays' => "{$dir}/embedded-displays.php",
             'fonts' => "{$dir}/fonts.php",
             'framebuffers' => "{$dir}/framebuffers.php",
+            'human-input' => "{$dir}/human-input.php",
             'images' => "{$dir}/images.php",
             'rasterize' => "{$dir}/rasterize.php",
             'windows' => "{$dir}/windows.php",

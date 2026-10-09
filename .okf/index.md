@@ -9,7 +9,7 @@ okf_version: "0.2"
 # Architecture
 
 * [Bridge](architecture/bridge.md) - ToolkitManager picks a toolkit driver; its session starts the engine once, connects on demand, joins the loop as its sleeper.
-* [Windows](architecture/windows.md) - Window kinds, the toolkit window driver contract, ToolkitWindowManager.
+* [Windows](architecture/windows.md) - Window kinds, the toolkit and staged window driver contracts, ToolkitWindowManager, StagedWindowManager.
 * [Framebuffers](architecture/framebuffers.md) - Pixel storage behind a FormatSpec: five kinds over a pixel store, bytes in PHP (native) or C (extended, ext-fb); span and image painting.
 * [Drawing](architecture/drawing.md) - Rendering engines: one draw API over a framebuffer, frames recorded then drawn, DrawingManager, VelvetGE the software engine.
 * [Rasterize](architecture/rasterize.md) - Shapes into coverage spans, hard-edged or anti-aliased, geometry in PHP (native) or C (extended, ext-rasterize).

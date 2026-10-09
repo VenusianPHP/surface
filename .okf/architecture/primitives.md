@@ -81,7 +81,7 @@ Every primitive: `setVisible`/`show`/`hide`, `setEnabled`/`enable`/`disable` (`H
 | `TKLabel` | text | `applyText`, `applyWrap`, `applyAlignment`, `applyFont`, `applyTextColor` | — |
 | `TKButton` | label | `applyLabel`, `applyFont`, `applyTextColor` | — (driver posts `ButtonClicked`) |
 | `TKImage` | ?file | `applyFile`, `applyScaling` | — |
-| `TKCanvas` | — | `nativeScale`, `applyPixels(rgba8, w, h)`, `applyAddress(addr, w, h, stride, damage)` | — |
+| `TKCanvas` | — | `nativeScale`, `applyPixels(rgba8, w, h, damage)`, `applyAddress(addr, w, h, stride, damage)` | — |
 | `TKSeparator` | horizontal | — (`isHorizontal()`) | — |
 | `TKSpinner` | — | `applySpinning` (change-only) | — |
 | `TKProgressBar` | ?fraction (0..1, null = indeterminate) | `applyFraction` | — |

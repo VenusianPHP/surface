@@ -1,5 +1,11 @@
 # Log
 
+## 2026-10-08
+
+* Staged windows phase 5, staged frames: [drawing](architecture/drawing.md) gains vsync, HDR targets, pacing, fixed resolution and `DamageHistory` on GPU engines; [framebuffers](architecture/framebuffers.md) gains `HdrImage` and `HdrReadback`; [windows](architecture/windows.md) gains scaling and HDR on lent surfaces; [testing](runbooks/testing.md) names the staged GPU fakes.
+* `HostsDrawing::applyPixels()` takes the damage list like `applyAddress()`: a PHP-held framebuffer's damage reaches the host.
+* Staged windows grow what a game engine asks of its window: `WindowMode` incl. exclusive fullscreen at a `DisplayMode`, `Display` and display modes, position, limits, aspect, safe area, style toggles, `WindowCapability` per backend, vsync carried to `LentSurface`, scaling fit and filter with `presentRect()`, keep-awake, attention, icon, hit tests, HDR, and ten mail types incl. `confirm_close`. `fullscreen(bool)` and the `fullscreen` option replaced by `setMode()` and `mode`. [windows](architecture/windows.md).
+
 ## 2026-10-05
 
 * GPU engine contracts: [drawing](architecture/drawing.md) gains GPU engines, the draw list and the manager's shared arguments; [framebuffers](architecture/framebuffers.md) gains GLFramebuffer; [primitives](architecture/primitives.md) gains surface lending on the canvas; [embedded displays](architecture/embedded-displays.md) gains output size and format and the staging copy; [testing](runbooks/testing.md) names the GPU fakes and the parity suite.

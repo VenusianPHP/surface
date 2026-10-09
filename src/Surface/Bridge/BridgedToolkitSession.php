@@ -3,6 +3,8 @@
 namespace Surface\Bridge;
 
 use Surface\Contracts\Bridge\BridgeException;
+use Surface\Contracts\HumanInput\InputTap;
+use WeakMap;
 use Voyager\Contracts\IOPools\Loop as LoopInterface;
 use Surface\Contracts\Bridge\BridgedToolkitSession as SessionBridge;
 
@@ -35,6 +37,17 @@ abstract class BridgedToolkitSession implements SessionBridge
      */
     protected array $latest = [];
 
+    /**
+     * @var array<int, InputTap> shown every native event, by object id
+     */
+    protected array $taps = [];
+
+    /**
+     * @var WeakMap<BridgedToolkitSession, true>|null every connected session in the process
+     */
+    private static ?WeakMap $live = null;
+
+    /** Every session joins the loop under this prefix and its own object id, so sessions of several toolkits pump side by side. */
     public const string PUMP = 'bridge.toolkit';
 
     public function __construct() {
@@ -82,6 +95,18 @@ abstract class BridgedToolkitSession implements SessionBridge
     abstract protected function releaseWakeDescriptor(): void;
 
     /**
+     * Whether the toolkit can fold the loop's descriptor into its own wait and
+     * hold the sleep (AppKit, GTK, Qt). A toolkit that cannot (SDL 3, GLFW)
+     * answers false and is polled at the pace instead.
+     *
+     * @return bool
+     */
+    protected function sleepsNatively(): bool
+    {
+        return true;
+    }
+
+    /**
      * Bring the session up, initializing the engine first if it has never run.
      * @return $this
      */
@@ -89,9 +114,11 @@ abstract class BridgedToolkitSession implements SessionBridge
     {
         if ($this->connected) return $this;
 
+        $this->refuseSecondToolkit();
         $this->initialize();
         $this->connectToEngine();
         $this->connected = true;
+        self::live()[$this] = true;
 
         return $this;
     }
@@ -106,6 +133,52 @@ abstract class BridgedToolkitSession implements SessionBridge
 
         $this->disconnectEngine();
         $this->connected = false;
+        unset(self::live()[$this]);
+    }
+
+    /**
+     * On macOS every toolkit dequeues the application's one event queue in its own pump,
+     * and GTK's and SDL's key translation runs only in theirs, so a second toolkit's
+     * session loses key events. One toolkit at a time there: a session of another
+     * class is refused while one is connected and both answer onMacOs(). Sessions of
+     * the same class (one toolkit) are not limited, and Linux gives every toolkit its
+     * own display connection.
+     *
+     * @return void
+     * @throws BridgeException Another toolkit's session is connected on macOS.
+     */
+    protected function refuseSecondToolkit(): void
+    {
+        if (! $this->onMacOs()) {
+            return;
+        }
+
+        foreach (self::live() as $session => $_) {
+            if ($session::class !== static::class && $session->connected() && $session->onMacOs()) {
+                $theirs = (new \ReflectionClass($session))->getShortName();
+                $ours = (new \ReflectionClass($this))->getShortName();
+
+                throw new BridgeException("{$theirs} is connected. On macOS one toolkit session pumps the application's events: disconnect it before connecting {$ours}.");
+            }
+        }
+    }
+
+    /**
+     * Whether the one-toolkit rule applies here.
+     *
+     * @return bool
+     */
+    protected function onMacOs(): bool
+    {
+        return device_os_family() === 'mac';
+    }
+
+    /**
+     * @return WeakMap<BridgedToolkitSession, true>
+     */
+    private static function live(): WeakMap
+    {
+        return self::$live ??= new WeakMap();
     }
 
     /**
@@ -173,12 +246,62 @@ abstract class BridgedToolkitSession implements SessionBridge
     }
 
     /**
+     * Show every native event this session handles to $tap, before the toolkit
+     * dispatches it. Tapping twice is tapping once.
+     *
+     * @param InputTap $tap
+     * @return void
+     */
+    public function tap(InputTap $tap): void
+    {
+        $this->taps[spl_object_id($tap)] = $tap;
+    }
+
+    /**
+     * Stop showing native events to $tap. A tap never added is ignored.
+     *
+     * @param InputTap $tap
+     * @return void
+     */
+    public function untap(InputTap $tap): void
+    {
+        unset($this->taps[spl_object_id($tap)]);
+    }
+
+    /**
+     * Show a native event to every tap. The session's pump calls this for every event
+     * it dequeues before dispatching it; where the toolkit dispatches internally, the
+     * native hook the session installed (a GTK controller, a Qt event filter) calls it.
+     *
+     * @param object $native_event
+     * @return void
+     */
+    public function see(object $native_event): void
+    {
+        foreach ($this->taps as $tap) {
+            $tap->see($native_event);
+        }
+    }
+
+    /**
+     * The loop resource name this session pumps under.
+     *
+     * @return string
+     */
+    protected function pumpName(): string
+    {
+        return self::PUMP.'.'.spl_object_id($this);
+    }
+
+    /**
      * Put this toolkit's native wait in charge of the loop's sleep and fold the loop's
-     * waiter into it, so every wake of the loop ends the toolkit's sleep too.
+     * waiter into it, so every wake of the loop ends the toolkit's sleep too. A session
+     * that does not sleep natively joins as a ToolkitPoller instead: ticked at the pace,
+     * never crowned, no descriptor taken.
      *
      * @param LoopInterface $loop
      * @return void
-     * @throws BridgeException Unless connected, or when the waiter has no descriptor.
+     * @throws BridgeException Unless connected, or when a natively sleeping session's waiter has no descriptor.
      */
     public function joinLoop(LoopInterface $loop): void
     {
@@ -186,15 +309,20 @@ abstract class BridgedToolkitSession implements SessionBridge
             throw new BridgeException('Connect the session before joining a loop.');
         }
 
-        $descriptor = $loop->descriptor();
-        if ($descriptor === null) {
-            throw new BridgeException('The loop waiter has no descriptor: install ext-kqueue (macOS) or ext-epoll (Linux) and set io-pools.pool_waiters.default accordingly.');
-        }
+        if ($this->sleepsNatively()) {
+            $descriptor = $loop->descriptor();
+            if ($descriptor === null) {
+                throw new BridgeException('The loop waiter has no descriptor: install ext-kqueue (macOS) or ext-epoll (Linux) and set io-pools.pool_waiters.default accordingly.');
+            }
 
-        $this->wakeDescriptor($descriptor);
-        $this->loop = $loop;
-        $loop->resource(self::PUMP, new ToolkitPump($this));
-        $loop->crown(self::PUMP);
+            $this->wakeDescriptor($descriptor);
+            $this->loop = $loop;
+            $loop->resource($this->pumpName(), new ToolkitPump($this));
+            $loop->crown($this->pumpName());
+        } else {
+            $this->loop = $loop;
+            $loop->resource($this->pumpName(), new ToolkitPoller($this));
+        }
 
         foreach ($this->outbox as $mail) {
             $loop->post($mail);
@@ -208,8 +336,10 @@ abstract class BridgedToolkitSession implements SessionBridge
     {
         if (!is_null($this->loop))
         {
-            $this->loop->forget(self::PUMP);
-            $this->releaseWakeDescriptor();
+            $this->loop->forget($this->pumpName());
+            if ($this->sleepsNatively()) {
+                $this->releaseWakeDescriptor();
+            }
             $this->loop = null;
         }
     }

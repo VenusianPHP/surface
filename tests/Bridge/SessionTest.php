@@ -10,6 +10,7 @@ use Surface\Contracts\Windows\Mail\WindowClosed;
 use Surface\Contracts\Windows\Mail\WindowFocused;
 use Surface\Contracts\Windows\Mail\WindowResized;
 use Venusian\Surface\Tests\Fixtures\FakeSession;
+use Venusian\Surface\Tests\Fixtures\OtherFakeSession;
 use Voyager\IOPools\EventLoop;
 use Voyager\IOPools\LoopWaiter;
 use Voyager\IOPools\PromiseEngines\GuzzlePromiseEngine;
@@ -161,3 +162,86 @@ it('hands pending latest mail to the loop on join, after the held mail, and coal
 
     expect($registry->mail())->toBe([$last]);
 })->skip(fn () => nestableBackend() === null, 'needs ext-kqueue or ext-epoll');
+
+it('shows every native event to every tap until it is untapped', function (): void {
+    $session = new FakeSession();
+    $first = new RecordingTap();
+    $second = new RecordingTap();
+    $session->tap($first);
+    $session->tap($second);
+    $session->tap($second);
+
+    $session->see($one = new stdClass());
+    $session->untap($first);
+    $session->see($two = new stdClass());
+
+    expect($first->seen)->toBe([$one])
+        ->and($second->seen)->toBe([$one, $two]);
+});
+
+it('joins two sessions to one loop side by side, each under its own name', function (): void {
+    [$loop, $registry] = loopOver(new StreamSelectWaiterBackend());
+    $gtk = new FakeSession();
+    $gtk->sleeps_natively = false;
+    $sdl = new FakeSession();
+    $sdl->sleeps_natively = false;
+    $gtk->connect()->joinLoop($loop);
+    $sdl->connect()->joinLoop($loop);
+
+    $registry->tick();
+    $gtk->leaveLoop();
+    $registry->tick();
+
+    expect($gtk->pumped)->toBe([0])
+        ->and($sdl->pumped)->toBe([0, 0]);
+});
+
+it('lets the last natively sleeping session hold the sleep and ticks the one before it', function (): void {
+    [$loop, $registry] = loopOver(nestableBackend());
+    $gtk = (new FakeSession())->connect();
+    $qt = (new FakeSession())->connect();
+    $gtk->joinLoop($loop);
+    $qt->joinLoop($loop);
+
+    $registry->tick();
+
+    expect($gtk->pumped)->toBe([0])
+        ->and($qt->pumped)->toBe([0])
+        ->and($registry->sleeper())->toBeInstanceOf(ToolkitPump::class)
+        ->and($registry->hasPollables())->toBeTrue();
+})->skip(fn () => nestableBackend() === null, 'needs ext-kqueue or ext-epoll');
+
+it('refuses a second toolkit session on macOS while one is connected, and allows it once that disconnects', function (): void {
+    $appkit = new FakeSession();
+    $sdl = new OtherFakeSession();
+    $appkit->mac = $sdl->mac = true;
+    $appkit->connect();
+
+    expect(fn () => $sdl->connect())->toThrow(BridgeException::class, 'FakeSession is connected. On macOS one toolkit session pumps the application\'s events: disconnect it before connecting OtherFakeSession.')
+        ->and($sdl->connected())->toBeFalse();
+
+    $appkit->disconnect();
+    $sdl->connect();
+
+    expect($sdl->connected())->toBeTrue();
+    $sdl->disconnect();
+});
+
+it('limits macOS to one toolkit, not one session, and Linux to neither', function (): void {
+    $one = new FakeSession();
+    $two = new FakeSession();
+    $one->mac = $two->mac = true;
+    $one->connect();
+    $two->connect();
+
+    expect($two->connected())->toBeTrue();
+    $one->disconnect();
+    $two->disconnect();
+
+    $gtk = (new FakeSession())->connect();
+    $sdl = (new OtherFakeSession())->connect();
+
+    expect($sdl->connected())->toBeTrue();
+    $gtk->disconnect();
+    $sdl->disconnect();
+});

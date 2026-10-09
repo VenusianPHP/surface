@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Surface\Contracts\Drawing\SurfaceKind;
 use Surface\Contracts\Framebuffers\Region;
+use Surface\Contracts\Windows\ScaleFilter;
+use Surface\Contracts\Windows\ScaleFit;
 use Surface\Contracts\Windows\WindowException;
 use Venusian\Surface\Tests\Fixtures\FakeCanvas;
 use Venusian\Surface\Tests\Fixtures\FakeHost;
@@ -164,4 +166,11 @@ it('reclaims before it is removed', function () {
 
     expect($surface->released())->toBeTrue()
         ->and(array_search('unsurface:metal-layer', $canvas->log, true))->toBeLessThan(array_search('destroy', $canvas->log, true));
+});
+
+it('lends its surface stretched over itself, with no HDR state', function (): void {
+    $surface = lendingCanvas(SurfaceKind::GL_CONTEXT)->lend(SurfaceKind::GL_CONTEXT, borrower());
+
+    expect($surface->scaling())->toBe([ScaleFilter::Linear, ScaleFit::Stretch])
+        ->and($surface->hdr())->toBeNull();
 });

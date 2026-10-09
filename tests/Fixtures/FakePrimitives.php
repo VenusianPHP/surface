@@ -336,7 +336,7 @@ final class FakeCanvas extends CanvasAbstract
 
     protected function nativeScale(): float { return $this->scale; }
 
-    protected function applyPixels(string $rgba8, int $width, int $height): void { $this->pixels[] = [$rgba8, $width, $height]; }
+    protected function applyPixels(string $rgba8, int $width, int $height, array $damage): void { $this->pixels[] = [$rgba8, $width, $height, $damage]; }
 
     protected function applyAddress(int $address, int $width, int $height, int $stride, array $damage): void { $this->addresses[] = [$address, $width, $height, $stride, $damage]; }
 }

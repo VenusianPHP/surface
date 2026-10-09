@@ -11,6 +11,7 @@ use Surface\Drawing\Gpu\DrawList;
 use Surface\Drawing\Gpu\Lowering;
 use Surface\Drawing\Gpu\Op;
 use Surface\Fonts\ClassicFont;
+use Surface\Framebuffers\HdrImage;
 use Surface\Framebuffers\Native\NativeFullFramebuffer;
 use Surface\NutsAndBolts\Affine;
 use Surface\NutsAndBolts\Color;
@@ -196,4 +197,11 @@ it('lowers a frame the engine recorded, every operation inside the vertex string
         $count = in_array($op[0], [Op::STENCIL_FILL, Op::RECTS], true) ? $op[2] : 6;
         expect($op[1] + $count)->toBeLessThanOrEqual($list->vertexCount());
     }
+});
+
+it('uploads an HdrImage as itself, so a device can upload its half floats', function () {
+    $hdr = HdrImage::fromFloats([2.0, 2.0, 2.0, 1.0], 1, 1);
+    $list = Lowering::lower([['image', $hdr, Affine::translation(1.0, 1.0), 255, Filter::LINEAR, loweringClip()]], 64, 32);
+
+    expect($list->operations[0])->toBe([Op::UPLOAD, 0, $hdr]);
 });

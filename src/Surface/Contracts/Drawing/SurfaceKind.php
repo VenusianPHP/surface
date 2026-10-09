@@ -17,7 +17,7 @@ enum SurfaceKind: string
     /** An SDL_Window wrapping the native view. */
     case SDL_WINDOW = 'sdl-window';
 
-    /** A dmabuf texture builder the engine's exported image is shown through. */
+    /** The canvas's GdkDisplay: the engine exports its frame as a dmabuf and the canvas imports it as a texture for that display. */
     case DMABUF = 'dmabuf';
 
     /** The handle a surface of this kind always carries, by name. */
@@ -28,7 +28,7 @@ enum SurfaceKind: string
             self::VULKAN_SURFACE => 'surface',
             self::GL_CONTEXT => 'context',
             self::SDL_WINDOW => 'window',
-            self::DMABUF => 'texture_builder',
+            self::DMABUF => 'display',
         };
     }
 

@@ -19,6 +19,16 @@ it('names each mail so listeners can match it by name', function (object $mail, 
     'activated' => [new MenuActivated('main', 'view.refresh'), 'menu.activated.main.view.refresh'],
     'toggled' => [new MenuToggled('main', 'grid', true), 'menu.toggled.main.grid'],
     'quit' => [new QuitRequested('main'), 'quit.requested'],
+    'focus lost' => [new \Surface\Contracts\Windows\Mail\WindowFocusLost('main'), 'window.focus-lost.main'],
+    'occluded' => [new \Surface\Contracts\Windows\Mail\WindowOccluded('main'), 'window.occluded.main'],
+    'exposed' => [new \Surface\Contracts\Windows\Mail\WindowExposed('main'), 'window.exposed.main'],
+    'close requested' => [new \Surface\Contracts\Windows\Mail\WindowCloseRequested('main'), 'window.close-requested.main'],
+    'moved' => [new \Surface\Contracts\Windows\Mail\WindowMoved('main', 1, 2), 'window.moved.main'],
+    'mode changed' => [new \Surface\Contracts\Windows\Mail\WindowModeChanged('main', \Surface\Contracts\Windows\WindowMode::Maximized), 'window.mode-changed.main'],
+    'display changed' => [new \Surface\Contracts\Windows\Mail\WindowDisplayChanged('main', 2), 'window.display-changed.main'],
+    'scale changed' => [new \Surface\Contracts\Windows\Mail\WindowScaleChanged('main', 2.0), 'window.scale-changed.main'],
+    'frame due' => [new \Surface\Contracts\Windows\Mail\WindowFrameDue('main', 1.0, 1.016), 'window.frame-due.main'],
+    'displays changed' => [new \Surface\Contracts\Windows\Mail\DisplaysChanged(), 'displays.changed'],
 ]);
 
 it('carries the window and item', function (): void {

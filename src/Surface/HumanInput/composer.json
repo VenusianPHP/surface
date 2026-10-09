@@ -1,0 +1,51 @@
+{
+    "name": "venusian-surface/human-input",
+    "description": "Surface human input: keyboards, mice, game pads and game controllers from every toolkit session, the OS pad source and attached circuits, polled on the loop.",
+    "keywords": [
+        "venusian",
+        "surface",
+        "input",
+        "keyboard",
+        "gamepad"
+    ],
+    "license": "MIT",
+    "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.10.x/human-input",
+    "support": {
+        "issues": "https://github.com/VenusianPHP/surface/issues",
+        "source": "https://github.com/venusian-surface/human-input"
+    },
+    "authors": [
+        {
+            "name": "Angel Gonzalez",
+            "email": "angel@projectsaturnstudios.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4|^8.5|^8.6",
+        "venusian-surface/bridge": "^0.10.0",
+        "venusian-surface/contracts": "^0.10.0",
+        "venusian-voyager/contracts": "^0.10.1",
+        "venusian-voyager/io-pools": "^0.10.1",
+        "venusian-voyager/nuts-and-bolts": "^0.10.1"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Surface\\HumanInput\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "0.10.x-dev"
+        },
+        "venusian": {
+            "providers": [
+                "Surface\\HumanInput\\HumanInputServiceProvider"
+            ]
+        }
+    }
+}

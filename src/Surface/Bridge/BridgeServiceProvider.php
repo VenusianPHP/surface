@@ -20,9 +20,4 @@ class BridgeServiceProvider extends ServiceProvider
         $this->app->registerSingleton('toolkit-bridge', fn (FrameworkCore $app) => new ToolkitManager($app));
         $this->app->alias('toolkit-bridge', ToolkitManager::class);
     }
-
-    public function boot(): void
-    {
-
-    }
 }

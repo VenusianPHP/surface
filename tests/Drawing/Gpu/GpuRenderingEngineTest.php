@@ -302,8 +302,8 @@ it('refuses arguments it cannot be built from, before touching the device', func
         ->and($device->log)->toBe([]);
 })->with([
     'a framebuffer' => [fn (): array => ['framebuffer' => new NativeFullFramebuffer(FormatSpec::rgba8(), 2, 2)], "metal draws into its own framebuffer and does not take one: read it from the engine's framebuffer()."],
-    'a misspelt argument' => [fn (): array => ['width' => 8, 'hieght' => 8], "metal does not take 'hieght'. It takes: output, width, height, edges."],
-    'a Velvet argument' => [fn (): array => ['width' => 8, 'height' => 8, 'mode' => 'ring'], "metal does not take 'mode'. It takes: output, width, height, edges."],
+    'a misspelt argument' => [fn (): array => ['width' => 8, 'hieght' => 8], "metal does not take 'hieght'. It takes: output, width, height, edges, format, colorspace, frames_in_flight, resolution."],
+    'a Velvet argument' => [fn (): array => ['width' => 8, 'height' => 8, 'mode' => 'ring'], "metal does not take 'mode'. It takes: output, width, height, edges, format, colorspace, frames_in_flight, resolution."],
     'nothing to size from' => [fn (): array => [], "metal needs an 'output', or a 'width' and a 'height'."],
     'a width alone' => [fn (): array => ['width' => 8], "metal needs an 'output', or a 'width' and a 'height'."],
     'a size that is not whole numbers' => [fn (): array => ['width' => 8.5, 'height' => 8], "'width' and 'height' are integers."],

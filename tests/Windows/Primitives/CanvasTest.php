@@ -124,7 +124,7 @@ it('shows a full framebuffer every time it is presented', function (): void {
     $buffer->setPixel(1, 0, 0x11223344);
     $canvas->present()->present();
 
-    expect($canvas->pixels)->toBe([["\0\0\0\0\x11\x22\x33\x44", 2, 1], ["\0\0\0\0\x11\x22\x33\x44", 2, 1]]);
+    expect($canvas->pixels)->toBe([["\0\0\0\0\x11\x22\x33\x44", 2, 1, []], ["\0\0\0\0\x11\x22\x33\x44", 2, 1, []]]);
 });
 
 it('shows a dirty framebuffer once, then only when something was drawn, starting its epoch anew', function (): void {
@@ -138,7 +138,7 @@ it('shows a dirty framebuffer once, then only when something was drawn, starting
     $buffer->setPixel(0, 0, 0xFF0000FF);
     $canvas->present();
     expect($canvas->pixels)->toHaveCount(2)
-        ->and($canvas->pixels[1])->toBe(["\xff\0\0\xff\0\0\0\0", 2, 1])
+        ->and($canvas->pixels[1])->toEqual(["\xff\0\0\xff\0\0\0\0", 2, 1, [new \Surface\Contracts\Framebuffers\Region(0, 0, 1, 1)]])
         ->and($buffer->damage())->toBe([]);
 
     $canvas->present();
@@ -150,7 +150,7 @@ it('shows a ring\'s front frame, once per frame presented', function (): void {
     $ring = $canvas->framebuffer('ring', 1, 1);
 
     $canvas->present()->present();                                   // the empty front, once
-    expect($canvas->pixels)->toBe([["\0\0\0\0", 1, 1]]);
+    expect($canvas->pixels)->toBe([["\0\0\0\0", 1, 1, []]]);
 
     $ring->setPixel(0, 0, 0xFF0000FF);                               // drawn into the back: not on screen yet
     $canvas->present();
@@ -159,7 +159,8 @@ it('shows a ring\'s front frame, once per frame presented', function (): void {
     $ring->present();
     $canvas->present()->present();
     expect($canvas->pixels)->toHaveCount(2)
-        ->and($canvas->pixels[1])->toBe(["\xff\0\0\xff", 1, 1]);
+        ->and($canvas->pixels[1][0])->toBe("\xff\0\0\xff")
+        ->and($canvas->pixels[1][3])->not->toBe([]);
 });
 
 it('shows what a rendering engine drew into its framebuffer', function (): void {

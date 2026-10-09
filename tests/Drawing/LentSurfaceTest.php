@@ -5,10 +5,14 @@ declare(strict_types=1);
 use Surface\Contracts\Drawing\DrawingException;
 use Surface\Contracts\Drawing\LentSurface;
 use Surface\Contracts\Drawing\SurfaceKind;
+use Surface\Contracts\Framebuffers\Region;
+use Surface\Contracts\Windows\Hdr;
+use Surface\Contracts\Windows\ScaleFilter;
+use Surface\Contracts\Windows\ScaleFit;
 
 it('names the handle every surface of a kind carries', function () {
     expect(array_map(fn (SurfaceKind $kind): string => $kind->handle(), SurfaceKind::cases()))
-        ->toBe(['layer', 'surface', 'context', 'window', 'texture_builder']);
+        ->toBe(['layer', 'surface', 'context', 'window', 'display']);
 });
 
 it('names the engines that present into each kind', function () {
@@ -43,7 +47,7 @@ it('refuses a handle it does not have, naming the ones it has', function () {
 })->throws(DrawingException::class, "This sdl-window surface has no 'layer' handle (it has: window).");
 
 it('is released once, by whoever lent it', function () {
-    $surface = new LentSurface(SurfaceKind::DMABUF, ['texture_builder' => 1], fn (): array => [1, 1]);
+    $surface = new LentSurface(SurfaceKind::DMABUF, ['display' => 1], fn (): array => [1, 1]);
 
     expect($surface->released())->toBeFalse();
     $surface->release();
@@ -77,4 +81,37 @@ it('runs at once what is registered after it was released', function () {
     });
 
     expect($ran)->toBeTrue();
+});
+
+it('carries the window scaling and places a target by its fit, following changes until released', function (): void {
+    $surface = new LentSurface(SurfaceKind::METAL_LAYER, ['layer' => 1], fn (): array => [640, 480]);
+    $heard = [];
+    $surface->onScaling(function (ScaleFilter $filter, ScaleFit $fit) use (&$heard): void { $heard[] = [$filter, $fit]; });
+
+    $before = [$surface->scaling(), $surface->presentRect(320, 200)];
+    $surface->changeScaling(ScaleFilter::Nearest, ScaleFit::Letterbox);
+    $surface->changeScaling(ScaleFilter::Nearest, ScaleFit::Letterbox);
+    $after = $surface->presentRect(320, 200);
+    $surface->release();
+    $surface->changeScaling(ScaleFilter::Linear, ScaleFit::Stretch);
+
+    expect($before)->toEqual([[ScaleFilter::Linear, ScaleFit::Stretch], new Region(0, 0, 640, 480)])
+        ->and($after)->toEqual(new Region(0, 40, 640, 400))
+        ->and($heard)->toBe([[ScaleFilter::Nearest, ScaleFit::Letterbox]])
+        ->and($surface->scaling())->toBe([ScaleFilter::Nearest, ScaleFit::Letterbox]);
+});
+
+it('reads the window HDR state live, null where the window reports none', function (): void {
+    $now = null;
+    $surface = new LentSurface(SurfaceKind::METAL_LAYER, ['layer' => 1], fn (): array => [1, 1], hdr: function () use (&$now): ?Hdr {
+        return $now;
+    });
+    $plain = new LentSurface(SurfaceKind::METAL_LAYER, ['layer' => 1], fn (): array => [1, 1]);
+
+    $off = $surface->hdr();
+    $now = new Hdr(true, 2.0, 4.0);
+
+    expect($off)->toBeNull()
+        ->and($surface->hdr())->toBe($now)
+        ->and($plain->hdr())->toBeNull();
 });

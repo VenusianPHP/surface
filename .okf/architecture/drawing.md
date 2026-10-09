@@ -129,13 +129,22 @@ Measured (Mac, 320×240 RGBA8, 100 shapes + 1 image): 6.8 ms both extended · 31
 | `[COVER, first, rgba]` | quad where stencil ≠ 0, resets to 0 |
 | `[ELLIPSE, first, cx, cy, rx, ry, rgba]` | quad; coverage per pixel |
 | `[RING, first, cx, cy, rx, ry, stroke, rgba]` | quad; band r ± stroke / 2 |
-| `[UPLOAD, texture, Framebuffer]` | source texture from `toRgba8()` |
+| `[UPLOAD, texture, Framebuffer]` | source texture from `toRgba8()`; an `HdrImage` from `rgba16f()` on an HDR target |
 | `[IMAGE, first, texture, Affine, opacity, Filter]` | quad over placed corners; Affine maps target pixel centre → source |
 | `[RECTS, first, count, rgba]` | count / 6 quads, one a span |
 
 Lowering: `clear` → `CLEAR`, or `SCISSOR` + `SOLID` for a region · `path` → `STENCIL_FILL` + `COVER` (contour of n points = n − 2 triangles from its first point, cover = box floor/ceil) · `polyline` → `Stroker::outline()` then as path, non-zero · `ellipse` / `ring` → one quad a pixel past the shape · `image` → `UPLOAD` once a frame a source, `IMAGE` with the inverse placement · `spans` → `RECTS`. `SCISSOR` only when the clip changes.
 
 Output contracts (`Surface\Contracts\Drawing`): `OutputTarget` gains `pixelSize()` and `pixelFormat()` (RGBA8 for a window, wire format for a display) · `WindowOutput extends Pipeable`: `surfaces()`, `lend(kind, borrower)`, `lent()`, `reclaim()` · `SurfaceKind`: `METAL_LAYER`, `VULKAN_SURFACE`, `GL_CONTEXT`, `SDL_WINDOW`, `DMABUF`, each with `handle()` and `engines()` · `LentSurface`: kind, handles by name, live `size()`, `released()` · `SurfaceBorrower` (the engine): `framebuffer()`, `lendingHandles()`, `presentInto(LentSurface): bool`.
+
+Staged frames. Optional device interfaces, engine uses each when device implements it; four packages' devices without them behave as before.
+
+- `SwitchesVsync`: engine applies lent surface `vsync()` at adopt + every `onVsync()`; first of `VSync::fallbacks()` device lists (Mailbox/Adaptive/Off fall back to On). `vsync()` = applied mode, null offscreen / display / device keeps own. Device without On refused.
+- `TargetsFormats`: args `format` (`TargetFormat`) + `colorspace` (`ColorSpace`, default format's first). Rgba8 sRGB stays `target()`. Pair must be in `TargetFormat::colorSpaces()`; displays refused (panels read RGBA8); checked before device touched. HDR target: `readRgba8()` sRGB-clamped, implements `HdrReadback`; SDR colours land at lent `hdr()->sdrWhiteLevel`. `hdrSnapshot()` → `HdrImage`.
+- `QueuesFrames`: arg `frames_in_flight` 1-3, set after adopt, before target.
+- `ReportsPresents`: `submitted()`, `presents()` (`PresentTiming`: frame, presentedAt ns on hrtime clock, refreshInterval), `waitPresented(frame, timeoutNs)`.
+- Arg `resolution` [w, h], window output only: target fixed through resizes; resize marks whole target drawn. Device presents into `LentSurface::presentRect()` with lent filter, clears rest.
+- `DamageHistory`: devices `record()` target `damage()` per present (surface px, via placement; scaled = +1px each side); `since(age)` = union of last age presents (EGL buffer age; VK per image index); unknown/too old/resize/move = whole surface. `flipped()` for GL bottom-left.
 
 # Manager
 
