@@ -7,9 +7,11 @@ use Surface\Contracts\Windows\Primitives\HasEnabledState;
 use Surface\Contracts\Windows\Primitives\Placement;
 use Surface\Contracts\Windows\Primitives\PrimitiveRegistry;
 use Surface\Contracts\Windows\Primitives\TKPrimitive as PrimitiveContract;
+use Surface\Contracts\Windows\Menus\ContextMenu as ContextMenuContract;
 use Surface\Contracts\Windows\ToolkitWindow;
 use Surface\Contracts\Windows\WindowException;
 use Surface\NutsAndBolts\Color;
+use Surface\Windows\Menus\ContextMenu;
 use Voyager\NutsAndBolts\Str;
 
 /**
@@ -34,6 +36,8 @@ abstract class TKPrimitive implements PrimitiveContract
     protected bool $watching_size = false;
 
     protected ?Color $background = null;
+
+    protected ?ContextMenuContract $context_menu = null;
 
     protected bool $fill_horizontal = false;
 
@@ -175,6 +179,23 @@ abstract class TKPrimitive implements PrimitiveContract
     public function isWatchingSize(): bool
     {
         return $this->watching_size;
+    }
+
+    /**
+     * The driver reads the menu when the view is right-clicked; nothing is written to the native.
+     * @throws WindowException
+     */
+    public function setContextMenu(array|ContextMenuContract|null $menu): static
+    {
+        $this->live();
+        $this->context_menu = is_array($menu) ? ContextMenu::parse($menu) : $menu;
+
+        return $this;
+    }
+
+    public function contextMenu(): ?ContextMenuContract
+    {
+        return $this->context_menu;
     }
 
     public function setBackground(?Color $color): static

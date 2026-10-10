@@ -1,5 +1,11 @@
 # Log
 
+## 2026-10-09
+
+* `View\CanvasClicked`: a click on a canvas posts `view.clicked` with the point (HumanInput slice 28). [view mail](api/view-mail.md)
+* Context menus: `TKPrimitive::setContextMenu()` / `contextMenu()`, `ContextMenu`; a chosen item posts `MenuActivated` (HumanInput slice 27). [menu profiles](api/menu-profiles.md)
+* `View\RightClicked` and `WindowRightClicked`: right-click mail for toolkit windows (HumanInput slice 26). [view mail](api/view-mail.md), [mail](api/mail.md)
+
 ## 2026-10-08
 
 * Staged windows phase 5, staged frames: [drawing](architecture/drawing.md) gains vsync, HDR targets, pacing, fixed resolution and `DamageHistory` on GPU engines; [framebuffers](architecture/framebuffers.md) gains `HdrImage` and `HdrReadback`; [windows](architecture/windows.md) gains scaling and HDR on lent surfaces; [testing](runbooks/testing.md) names the staged GPU fakes.

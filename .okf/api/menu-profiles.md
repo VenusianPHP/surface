@@ -1,7 +1,7 @@
 ---
 type: Reference
 title: Menu profiles
-description: config/windows.php menus - folders, items, roles, toggles, hotkeys, ids.
+description: config/windows.php menus - folders, items, roles, toggles, hotkeys, ids; primitives' context menus.
 resource: src/Surface/Windows/Menus/
 tags: [surface, menus, config]
 status: draft
@@ -13,6 +13,9 @@ sources:
   - id: profile
     resource: src/Surface/Windows/Menus/MenuProfile.php
     title: MenuProfile
+  - id: context
+    resource: src/Surface/Windows/Menus/ContextMenu.php
+    title: ContextMenu
 ---
 
 # Overview
@@ -54,5 +57,20 @@ sources:
 
 macOS renames the first folder to the process name; About and Quit go there.
 
+# Context menus
+
+`$primitive->setContextMenu($nodes)` = menu toolkit opens where primitive right-clicked. Nodes = item schema above minus `role`, `toggle`, `hotkey` (each throws; empty list throws). Takes parsed `ContextMenu::parse($nodes)` too (one menu, many primitives); `null` = off. `contextMenu()` reads it. Ids default to label slug from the top (`Open` → `open`, `Share` › `Copy Link` → `share.copy-link`).[^context]
+
+Right click → `view.right-clicked` first, then menu of clicked primitive or nearest group above with one. Choice → `MenuActivated` (`menu.activated.<window>.<id>`); dismiss → nothing. Disabled → no mail, no menu. Primitive with menu shows only it (text input's own edit menu does not open). Bare window content has none.
+
+```php
+$image->setContextMenu([
+    ['id' => 'download', 'label' => 'Download'],
+    ['id' => 'open', 'label' => 'Open in a Window'],
+]);
+// mail: menu.activated.main.download
+```
+
 [^item]: MenuItem
 [^profile]: MenuProfile
+[^context]: ContextMenu

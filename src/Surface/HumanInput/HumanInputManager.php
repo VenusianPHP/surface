@@ -60,6 +60,9 @@ class HumanInputManager
     /** @var array<string, string> device id => name, as of the last poll */
     protected array $known = [];
 
+    /** @var array{array<string, GamePadContract>, array<string, GameControllerContract>} the pad source's last pads and controllers that listed without throwing */
+    protected array $source_listing = [[], []];
+
     protected readonly MergedKeyboard $keyboard;
 
     protected readonly MergedMouse $mouse;
@@ -279,7 +282,7 @@ class HumanInputManager
             }
         }
 
-        [$this->engines, $this->by_hand, $this->missing, $this->known] = [[], [], [], []];
+        [$this->engines, $this->by_hand, $this->missing, $this->known, $this->source_listing] = [[], [], [], [], [[], []]];
         $this->pads = null;
         $this->pads_missing = false;
         $this->pads_failure = null;
@@ -392,14 +395,15 @@ class HumanInputManager
     }
 
     /**
-     * The pad source's devices, then connected circuits, each replacing any device under
-     * its name.
+     * The pad source's devices (or $source, a listing of them), then connected circuits, each
+     * replacing any device under its name.
      *
+     * @param array<string, GamePadContract>|null $source
      * @return array<string, GamePadContract>
      */
-    protected function collect(bool $controllers): array
+    protected function collect(bool $controllers, ?array $source = null): array
     {
-        $devices = is_null($this->pads) ? [] : ($controllers ? $this->pads->gameControllers() : $this->pads->gamePads());
+        $devices = $source ?? (is_null($this->pads) ? [] : ($controllers ? $this->pads->gameControllers() : $this->pads->gamePads()));
 
         $circuits = array_filter($this->circuits, fn (ICInput $circuit): bool => $circuit->connected());
         $devices = array_diff_key($devices, $circuits);
@@ -413,11 +417,24 @@ class HumanInputManager
         return $devices;
     }
 
+    /**
+     * Mail the pads that came and went since the last poll. A pad source whose lists throw is
+     * reported by pad reads, not here: poll() goes on, and its last listing stands until the
+     * lists answer again, so a refusal mails no disconnect while circuits still mail theirs.
+     */
     protected function announce(): void
     {
+        try {
+            $this->source_listing = is_null($this->pads) ? [[], []] : [$this->pads->gamePads(), $this->pads->gameControllers()];
+        } catch (Throwable) {
+            // reported by pad reads; the last listing stands
+        }
+
+        $listed = $this->collect(false, $this->source_listing[0]) + $this->collect(true, $this->source_listing[1]);
+
         $now = [];
 
-        foreach ($this->collect(false) + $this->collect(true) as $id => $device) {
+        foreach ($listed as $id => $device) {
             $now[$id] = $device->name();
         }
 

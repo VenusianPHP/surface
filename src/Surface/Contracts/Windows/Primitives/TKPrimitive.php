@@ -2,6 +2,7 @@
 
 namespace Surface\Contracts\Windows\Primitives;
 
+use Surface\Contracts\Windows\Menus\ContextMenu;
 use Surface\Contracts\Windows\ToolkitWindow;
 use Surface\Contracts\Windows\WindowException;
 use Surface\NutsAndBolts\Color;
@@ -101,6 +102,17 @@ interface TKPrimitive
      * @return $this
      */
     public function disable(): static;
+
+    /**
+     * The menu the toolkit opens where this view is right-clicked: a menu's nodes in the menu
+     * profile's item format, a parsed menu (one shared by many views), or null to take it off.
+     * A chosen item posts MenuActivated with its id.
+     * @param array|ContextMenu|null $menu
+     * @return $this
+     */
+    public function setContextMenu(array|ContextMenu|null $menu): static;
+
+    public function contextMenu(): ?ContextMenu;
 
     /**
      * The current allocation, read from the toolkit.

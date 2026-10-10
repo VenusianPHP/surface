@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use Surface\Contracts\Windows\Mail\View\ButtonClicked;
+use Surface\Contracts\Windows\Mail\View\CanvasClicked;
 use Surface\Contracts\Windows\Mail\View\DateChanged;
 use Surface\Contracts\Windows\Mail\View\PrimitiveMail;
+use Surface\Contracts\Windows\Mail\View\RightClicked;
 use Surface\Contracts\Windows\Mail\View\RowSelected;
 use Surface\Contracts\Windows\Mail\View\SelectionChanged;
 use Surface\Contracts\Windows\Mail\View\TextChanged;
@@ -28,6 +30,8 @@ it('names each primitive mail view.<event>.<window>.<path>', function (Primitive
         ->and($mail->uuid())->toBe('u1');
 })->with([
     'clicked' => [new ButtonClicked('main', 'main.toolbar.save', 'u1'), 'view.clicked.main.main.toolbar.save'],
+    'canvas clicked' => [new CanvasClicked('main', 'main.toolbar.save', 'u1', 3.0, 4.5), 'view.clicked.main.main.toolbar.save'],
+    'right clicked' => [new RightClicked('main', 'main.toolbar.save', 'u1', 3.0, 4.5), 'view.right-clicked.main.main.toolbar.save'],
     'text changed' => [new TextChanged('main', 'main.toolbar.save', 'u1', 'ab'), 'view.text-changed.main.main.toolbar.save'],
     'text submitted' => [new TextSubmitted('main', 'main.toolbar.save', 'u1', 'ab'), 'view.text-submitted.main.main.toolbar.save'],
     'toggled' => [new Toggled('main', 'main.toolbar.save', 'u1', true), 'view.toggled.main.main.toolbar.save'],
@@ -63,4 +67,21 @@ it('carries each payload as given', function (): void {
         ->and((new TextSubmitted('main', 'i', 'u', 'x'))->value)->toBe('x')
         ->and([(new ViewResized('main', 'v', 'u', 3, 4))->width, (new ViewResized('main', 'v', 'u', 3, 4))->height])->toBe([3, 4])
         ->and((new VideoFailed('main', 'v', 'u', 'codec'))->reason)->toBe('codec');
+});
+
+it('carries a right click\'s point in the primitive and in the window\'s content', function (): void {
+    $on = new RightClicked('main', 'main.toolbar.save', 'u1', 3.0, 4.5);
+    $bare = new \Surface\Contracts\Windows\Mail\WindowRightClicked('main', 10.0, 20.0);
+
+    expect([$on->x, $on->y])->toBe([3.0, 4.5])
+        ->and($bare)->toBeInstanceOf(WindowMail::class)
+        ->and($bare->name())->toBe('window.right-clicked.main')
+        ->and([$bare->x, $bare->y])->toBe([10.0, 20.0]);
+});
+
+it('carries a canvas click\'s point in the canvas', function (): void {
+    $mail = new CanvasClicked('main', 'm.board', 'u1', 12.5, 40.0);
+
+    expect([$mail->window, $mail->path, $mail->uuid, $mail->x, $mail->y])->toBe(['main', 'm.board', 'u1', 12.5, 40.0])
+        ->and($mail)->toBeInstanceOf(PrimitiveMail::class);
 });

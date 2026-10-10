@@ -70,6 +70,9 @@ final class FakePadSource implements PadSource
 
     public ?Throwable $connect_failure = null;
 
+    /** Thrown from gamePads() and gameControllers() while set: a source that refuses on read. */
+    public ?Throwable $read_failure = null;
+
     /** @var array<string, GamePad> */
     public array $pads = [];
 
@@ -124,12 +127,20 @@ final class FakePadSource implements PadSource
     /** @return array<string, GamePad> */
     public function gamePads(): array
     {
+        if (! is_null($this->read_failure)) {
+            throw $this->read_failure;
+        }
+
         return $this->pads;
     }
 
     /** @return array<string, GameController> */
     public function gameControllers(): array
     {
+        if (! is_null($this->read_failure)) {
+            throw $this->read_failure;
+        }
+
         return $this->controllers;
     }
 }

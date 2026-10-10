@@ -9,7 +9,8 @@ use Surface\Contracts\Framebuffers\Framebuffer;
  * A rectangle of the layout whose pixels the application draws. It hands out
  * a framebuffer bound to it, and present() puts that framebuffer on screen,
  * stretched over the view, opaque. Draw into the framebuffer directly, or
- * hand it to a rendering engine. A GPU engine borrows a surface inside it instead (WindowOutput). Posts no mail of its own.
+ * hand it to a rendering engine. A GPU engine borrows a surface inside it instead (WindowOutput). A click
+ * on it posts CanvasClicked (view.clicked) with the point.
  */
 interface TKCanvas extends TKPrimitive, WindowOutput
 {

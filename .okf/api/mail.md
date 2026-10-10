@@ -20,6 +20,7 @@ All readonly, all `Voyager\Contracts\Signals\NamedSignal` (`name()` for Signals 
 |---|---|---|---|
 | `WindowClosed` | window | `window.closed.<window>` | window closed (button or `close()`), once |
 | `WindowFocused` | window | `window.focused.<window>` | window became active / key |
+| `WindowRightClicked` | window, x, y | `window.right-clicked.<window>` | right click on the window's bare content (no primitive under it); x, y in the content area |
 | `MenuActivated` | window, item | `menu.activated.<window>.<item>` | plain item chosen |
 | `MenuToggled` | window, item, on | `menu.toggled.<window>.<item>` | toggle chosen by the user; `on` = new state |
 | `QuitRequested` | ?window | `quit.requested` | Quit item chosen |

@@ -34,7 +34,7 @@ use Surface\Contracts\Windows\Primitives\TKVideo;
 use Surface\Contracts\Windows\ToolkitWindow;
 
 $methods = [
-    TKPrimitive::class => ['name', 'path', 'uuid', 'window', 'parent', 'placement', 'isRemoved', 'remove', 'setVisible', 'isVisible', 'show', 'hide', 'setEnabled', 'isEnabled', 'enable', 'disable', 'size', 'watchSize', 'isWatchingSize', 'setBackground', 'fill', 'align', 'minSize', 'moveBefore', 'moveAfter', 'moveTo'],
+    TKPrimitive::class => ['name', 'path', 'uuid', 'window', 'parent', 'placement', 'isRemoved', 'remove', 'setVisible', 'isVisible', 'show', 'hide', 'setEnabled', 'isEnabled', 'enable', 'disable', 'size', 'watchSize', 'isWatchingSize', 'setContextMenu', 'contextMenu', 'setBackground', 'fill', 'align', 'minSize', 'moveBefore', 'moveAfter', 'moveTo'],
     TKPrimitiveGroup::class => ['label', 'button', 'image', 'separator', 'spinner', 'progressBar', 'textInput', 'textArea', 'checkbox', 'toggle', 'toggleButton', 'slider', 'dropdown', 'datepicker', 'table', 'video', 'column', 'row', 'grid', 'fixed', 'scrollView', 'view', 'children', 'takePlacement'],
     TKColumn::class => ['spacing', 'setSpacing'],
     TKRow::class => ['spacing', 'setSpacing'],

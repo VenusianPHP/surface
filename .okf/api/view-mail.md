@@ -19,6 +19,8 @@ All readonly `NamedSignal` + `PrimitiveMail` (`window()`, `path()`, `uuid()`); b
 | Class | Extra fields | `name()` | From |
 |---|---|---|---|
 | `ButtonClicked` | — | `view.clicked.<window>.<path>` | `TKButton` |
+| `CanvasClicked` | x, y (where the press landed, points from the canvas's top-left) | `view.clicked.<window>.<path>` | canvas: primary press + release on it, not moved past the drag distance (a tap too); not Ctrl-click on macOS, not a hold past the long-press time on Linux (right clicks); none when it or an ancestor is disabled |
+| `RightClicked` | x, y (in the primitive) | `view.right-clicked.<window>.<path>` | any primitive: the innermost under a right click (secondary click, Ctrl-click on macOS, a primary press held still on Linux); none when it or an ancestor is disabled |
 | `TextChanged` | value | `view.text-changed.<window>.<path>` | `TKTextInput`, `TKTextArea` |
 | `TextSubmitted` | value | `view.text-submitted.<window>.<path>` | `TKTextInput` (return) |
 | `Toggled` | on | `view.toggled.<window>.<path>` | `TKCheckbox`, `TKToggle`, `TKToggleButton` |

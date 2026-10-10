@@ -319,3 +319,49 @@ it('destroys circuits, engines and then the pad source, rethrowing the first fai
         ->and($input->circuits())->toBe([])
         ->and($input->pads())->toBeNull();
 });
+
+it('keeps polling, and mails nothing, while the pad source refuses on read: pad reads report it', function (): void {
+    $mail = new ArrayObject();
+    $frame = inputFrame();
+    $source = new FakePadSource();
+    $source->controllers = ['gc-1' => new GameController($frame, 'gc-1', 'DualSense', [GamepadButton::NORTH], [GamepadAxis::LEFT_X])];
+    $input = inputOver([], 'os', $mail, $frame);
+    $input->extendPads('os', fn (): FakePadSource => $source);
+    $input->poll();
+    $source->read_failure = new HumanInputException('gamecontroller: refused');
+
+    $input->poll();
+
+    expect(fn () => $input->gameControllers())->toThrow(HumanInputException::class, 'gamecontroller: refused')
+        ->and(fn () => $input->gamePads())->toThrow(HumanInputException::class, 'gamecontroller: refused')
+        ->and($input->keyboard()->downKeys())->toBe([]);
+
+    $source->read_failure = null;
+    $input->poll();
+
+    expect(array_keys($input->gameControllers()))->toBe(['gc-1'])
+        ->and(array_map(fn (object $m): string => $m->name(), $mail->getArrayCopy()))->toBe(['input.gamepad.connected.gc-1']);
+});
+
+it('mails circuits that come and go while the pad source refuses on read, keeping its last listing', function (): void {
+    $mail = new ArrayObject();
+    $frame = inputFrame();
+    $source = new FakePadSource();
+    $source->controllers = ['gc-1' => new GameController($frame, 'gc-1', 'DualSense', [GamepadButton::NORTH], [GamepadAxis::LEFT_X])];
+    $input = inputOver([], 'os', $mail, $frame);
+    $input->extendPads('os', fn (): FakePadSource => $source);
+    $input->poll();
+    $source->read_failure = new HumanInputException('gamecontroller: refused');
+    $ic = new FakeButtonPad([GamepadButton::SOUTH]);
+
+    $input->attach($ic, 'p1');
+    $input->poll();
+    $input->detach('p1');
+    $input->poll();
+
+    expect(array_map(fn (object $m): string => $m->name(), $mail->getArrayCopy()))->toBe([
+        'input.gamepad.connected.gc-1',
+        'input.gamepad.connected.p1',
+        'input.gamepad.disconnected.p1',
+    ]);
+});
