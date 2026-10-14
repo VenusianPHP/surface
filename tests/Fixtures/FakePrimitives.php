@@ -18,6 +18,7 @@ use Surface\Contracts\Windows\Primitives\TKGrid as GridContract;
 use Surface\Contracts\Windows\Primitives\TKCanvas;
 use Surface\Contracts\Windows\Primitives\TKImage;
 use Surface\Contracts\Windows\Primitives\TKLabel as LabelContract;
+use Surface\Contracts\Windows\Primitives\TKLink as LinkContract;
 use Surface\Contracts\Windows\Primitives\TKPrimitive as PrimitiveContract;
 use Surface\Contracts\Windows\Primitives\TKPrimitiveGroup as GroupContract;
 use Surface\Contracts\Windows\Primitives\TKProgressBar;
@@ -61,6 +62,7 @@ use Surface\Windows\Primitives\TKColumn;
 use Surface\Windows\Primitives\TKFixed;
 use Surface\Windows\Primitives\TKGrid;
 use Surface\Windows\Primitives\TKLabel;
+use Surface\Windows\Primitives\TKLink;
 use Surface\Windows\Primitives\TKRow;
 use Surface\Windows\Primitives\TKScrollView;
 
@@ -133,6 +135,7 @@ final class FakePrimitiveFactory implements PrimitiveFactory
     }
 
     public function mintLabel(GroupContract $host, string $name, string $text): LabelContract { return new FakeLabel($name, ...[...$this->slot($host, $name, 'Label'), $text]); }
+    public function mintLink(GroupContract $host, string $name, string $text, string $url): LinkContract { return new FakeLink($name, ...[...$this->slot($host, $name, 'Link'), $text, $url]); }
 
     public function mintButton(GroupContract $host, string $name, string $label): ButtonContract { return new FakeButton($name, ...[...$this->slot($host, $name, 'Button'), $label]); }
 
@@ -281,6 +284,19 @@ final class FakeLabel extends TKLabel
     protected function applyFont(FontSpec $font): void { $this->log[] = "font:{$font->size}"; }
 
     protected function applyTextColor(?Color $color): void { $this->log[] = 'color:'.($color?->toHex() ?? 'none'); }
+}
+
+final class FakeLink extends TKLink
+{
+    use FakeNative;
+
+    protected function applyText(string $text): void { $this->log[] = "text:{$text}"; }
+
+    protected function applyUrl(string $url): void { $this->log[] = "url:{$url}"; }
+
+    protected function applyAlignment(TextAlignment $alignment): void { $this->log[] = "alignment:{$alignment->value}"; }
+
+    protected function applyFont(FontSpec $font): void { $this->log[] = "font:{$font->size}"; }
 }
 
 final class FakeButton extends TKButton

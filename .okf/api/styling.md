@@ -37,7 +37,7 @@ Used by `setBackground(?Color)` and `setTextColor(?Color)`; null restores toolki
 * `FontWeight`: `LIGHT`, `REGULAR`, `MEDIUM`, `SEMIBOLD`, `BOLD`, `BLACK`; `toCssWeight()` → 300/400/500/600/700/900. Drivers map to toolkit scale.
 * `TextAlignment`: `LEFT`, `CENTER`, `RIGHT`.
 
-Used by `setFont()` on label, button, text input, text area; `setAlignment()` on label.
+Used by `setFont()` on label, link, button, text input, text area; `setAlignment()` on label and link.
 
 # Per toolkit
 

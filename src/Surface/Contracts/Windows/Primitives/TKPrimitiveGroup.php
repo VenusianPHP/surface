@@ -21,6 +21,14 @@ interface TKPrimitiveGroup extends TKPrimitive
 
     /**
      * @param string $name
+     * @param string $text
+     * @param string $url with a scheme
+     * @return TKLink
+     */
+    public function link(string $name, string $text, string $url): TKLink;
+
+    /**
+     * @param string $name
      * @param string $label
      * @return TKButton
      */

@@ -30,7 +30,7 @@ sources:
 | `id` | string | optional; default = parent id + `.` + label slug (`App` → `app`, `Quit` → `app.quit`); carried in mail |
 | `items` | list | folder; non-empty |
 | `separator` | bool | `true` → separator, other keys ignored |
-| `role` | `about` \| `quit` (`MenuRole`) | system item; unknown role throws |
+| `role` | `about` \| `quit` \| `undo` \| `redo` \| `cut` \| `copy` \| `paste` \| `select-all` (`MenuRole`) | system item; unknown role throws; an edit role takes no `hotkey` (throws): each toolkit gives it the platform's standard keys |
 | `toggle` | bool | checkable; not with role or items |
 | `on` | bool | toggle's initial state |
 | `hotkey` | 1 char | toolkit adds its primary modifier (Command on macOS, Control on Linux) |
@@ -56,6 +56,8 @@ sources:
 ```
 
 macOS renames the first folder to the process name; About and Quit go there.
+
+Edit roles act on the focused text, or on a list for Select All: AppKit sends them to the first responder with the standard key equivalents; GTK and Qt run the focused widget's own action, and their text widgets keep their own keys. Surface's default `main` profile has an Edit folder; an app with its own profiles adds one to each profile its windows use.
 
 # Context menus
 

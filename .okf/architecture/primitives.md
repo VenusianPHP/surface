@@ -47,7 +47,7 @@ $main->view('toolbar.save');              // relative path from a container
 
 # Containers
 
-`TKPrimitiveGroup` holds every creation method (`label` … `video`, `column`, `row`, `grid`, `fixed`, `scrollView`), one signature on every container kind. `TKColumn`/`TKRow`/`TKGrid`/`TKFixed` extend `TKGroup`; `TKScrollView` extends `TKPrimitiveGroup`.[^contracts]
+`TKPrimitiveGroup` holds every creation method (`label`, `link` … `video`, `column`, `row`, `grid`, `fixed`, `scrollView`), one signature on every container kind. `TKColumn`/`TKRow`/`TKGrid`/`TKFixed` extend `TKGroup`; `TKScrollView` extends `TKPrimitiveGroup`.[^contracts]
 
 | Container | Placement | Extra |
 |---|---|---|
@@ -79,6 +79,7 @@ Every primitive: `setVisible`/`show`/`hide`, `setEnabled`/`enable`/`disable` (`H
 | Abstract | Ctor args | Hooks | Engine callback |
 |---|---|---|---|
 | `TKLabel` | text | `applyText`, `applyWrap`, `applyAlignment`, `applyFont`, `applyTextColor` | — |
+| `TKLink` | text, url | `applyText`, `applyUrl`, `applyAlignment`, `applyFont` | — |
 | `TKButton` | label | `applyLabel`, `applyFont`, `applyTextColor` | — (driver posts `ButtonClicked`) |
 | `TKImage` | ?file | `applyFile`, `applyScaling` | — |
 | `TKCanvas` | — | `nativeScale`, `applyPixels(rgba8, w, h, damage)`, `applyAddress(addr, w, h, stride, damage)` | — |
@@ -95,6 +96,8 @@ Every primitive: `setVisible`/`show`/`hide`, `setEnabled`/`enable`/`disable` (`H
 | `TKDatepicker` | ?date | `applyDate` (null = native default, `date()` stays null) | `nativeDateChanged(DateTimeImmutable)` |
 | `TKTable` | list<TableColumn>, rows | `applyRows(list<list<string>>)` then `applySelectedRow(?int)` | `nativeRowSelected(?int)` |
 | `TKVideo` | ?file | `applyFile`, `applyPlay`, `applyPause`, `applySeek`, `applyMuted`, `applyLoop`; reads `nativePosition()`, `nativeDuration()` | `nativeStateChanged(bool playing)` |
+
+A link's URL needs a scheme (WindowException otherwise, before the native exists or changes); the toolkit opens it on a click and nothing posts.
 
 * Guards (`WindowException`): NAN/INF in a progress fraction, slider range or value, or `seek()`; fraction outside 0..1, slider `min >= max`, dropdown index out of range / options not a list of strings, table row out of range / cell not scalar|null / column ids not unique, `seek()` < 0.
 * Dropdown: `selected` = -1 exactly when no options; `setOptions` keeps an in-range selection else 0.

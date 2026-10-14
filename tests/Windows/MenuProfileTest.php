@@ -61,3 +61,39 @@ it('rejects malformed nodes', function (array $nodes, string $message): void {
     'toggle with role' => [[['label' => 'App', 'items' => [['label' => 'X', 'role' => 'quit', 'toggle' => true]]]], 'cannot be a toggle'],
     'long hotkey' => [[['label' => 'App', 'items' => [['label' => 'X', 'hotkey' => 'qq']]]], 'one character'],
 ]);
+
+it('parses the edit roles, which post nothing of their own and take no hotkey', function (): void {
+    $profile = MenuProfile::parse('editing', [
+        ['label' => 'Edit', 'items' => [
+            ['role' => 'undo', 'label' => 'Undo'],
+            ['role' => 'redo', 'label' => 'Redo'],
+            ['separator' => true],
+            ['role' => 'cut', 'label' => 'Cut'],
+            ['role' => 'copy', 'label' => 'Copy'],
+            ['role' => 'paste', 'label' => 'Paste'],
+            ['role' => 'select-all', 'label' => 'Select All'],
+        ]],
+    ]);
+    $items = array_values(array_filter($profile->folders[0]->items, fn ($item): bool => ! $item->separator));
+
+    expect(array_map(fn ($item): string => $item->id, $items))->toBe(['edit.undo', 'edit.redo', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.select-all'])
+        ->and(array_map(fn ($item): MenuRole => $item->role, $items))->toBe([MenuRole::UNDO, MenuRole::REDO, MenuRole::CUT, MenuRole::COPY, MenuRole::PASTE, MenuRole::SELECT_ALL])
+        ->and(array_map(fn ($item): ?string => $item->hotkey, $items))->toBe([null, null, null, null, null, null])
+        ->and(array_map(fn (MenuRole $role): bool => $role->isEdit(), MenuRole::cases()))->toBe([false, false, true, true, true, true, true, true]);
+});
+
+it('refuses a hotkey on an edit role: its keys are the platform\'s', function (): void {
+    expect(fn () => MenuProfile::parse('editing', [
+        ['label' => 'Edit', 'items' => [['role' => 'copy', 'label' => 'Copy', 'hotkey' => 'c']]],
+    ]))->toThrow(WindowException::class, "Menu item 'Copy' is an edit role");
+});
+
+it('gives Surface\'s default main profile an Edit folder after the app folder', function (): void {
+    $config = require dirname(__DIR__, 2).'/config/windows.php';
+    $profile = MenuProfile::parse('main', $config['menus']['main']);
+    $edit = $profile->folders[1];
+
+    expect($edit->label)->toBe('Edit')
+        ->and(array_values(array_filter(array_map(fn ($item): ?MenuRole => $item->role, $edit->items))))
+        ->toBe([MenuRole::UNDO, MenuRole::REDO, MenuRole::CUT, MenuRole::COPY, MenuRole::PASTE, MenuRole::SELECT_ALL]);
+});

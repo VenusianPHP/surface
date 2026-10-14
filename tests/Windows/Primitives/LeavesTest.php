@@ -256,3 +256,18 @@ it('refuses every setter and native read once removed', function (Closure $creat
     'video play' => [fn ($h) => $h->video('x'), fn ($l) => $l->play()],
     'video position' => [fn ($h) => $h->video('x'), fn ($l) => $l->position()],
 ]);
+
+it('holds a link\'s text and URL and styles it, refusing a URL without a scheme', function (): void {
+    $link = leafHost()->link('docs', 'Read the docs', 'https://example.com/docs');
+    $link->setText('Docs')->setUrl('mailto:help@example.com')->setAlignment(TextAlignment::RIGHT)->setFont(new FontSpec(13.0));
+    $host = leafHost();
+
+    expect([$link->text(), $link->url()])->toBe(['Docs', 'mailto:help@example.com'])
+        ->and($link->log)->toBe(['text:Docs', 'url:mailto:help@example.com', 'alignment:right', 'font:13'])
+        ->and(fn () => $link->setUrl('example.com'))->toThrow(WindowException::class, "Link 'docs' needs a URL with a scheme, got 'example.com'.")
+        ->and($link->url())->toBe('mailto:help@example.com')
+        ->and($link->log)->toHaveCount(4)
+        ->and(fn () => $host->link('empty', 'x', ''))->toThrow(WindowException::class, 'needs a URL with a scheme')
+        ->and(fn () => $host->link('broken', 'x', 'http:///broken'))->toThrow(WindowException::class, 'needs a URL with a scheme')
+        ->and($host->children())->toBe([]);
+});

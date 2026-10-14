@@ -18,6 +18,15 @@ return [
                 ['separator' => true],
                 ['role' => 'quit', 'label' => 'Quit', 'hotkey' => 'q'],
             ]],
+            ['label' => 'Edit', 'items' => [
+                ['role' => 'undo', 'label' => 'Undo'],
+                ['role' => 'redo', 'label' => 'Redo'],
+                ['separator' => true],
+                ['role' => 'cut', 'label' => 'Cut'],
+                ['role' => 'copy', 'label' => 'Copy'],
+                ['role' => 'paste', 'label' => 'Paste'],
+                ['role' => 'select-all', 'label' => 'Select All'],
+            ]],
             ['label' => 'View', 'items' => [
                 ['id' => 'grid', 'label' => 'Show Grid', 'toggle' => true, 'on' => false],
                 ['id' => 'refresh', 'label' => 'Refresh', 'hotkey' => 'r'],

@@ -47,3 +47,7 @@ it('carries a context menu on a primitive, from nodes or a shared menu, and take
     $button->remove();
     expect(fn () => $button->setContextMenu([['label' => 'Open']]))->toThrow(WindowException::class);
 });
+
+it('refuses an edit role in a context menu, as it refuses every role', function (): void {
+    expect(fn () => ContextMenu::parse([['role' => 'copy', 'label' => 'Copy']]))->toThrow(WindowException::class);
+});

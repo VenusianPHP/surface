@@ -24,6 +24,15 @@ interface PrimitiveFactory
     /**
      * @param TKPrimitiveGroup $host
      * @param string $name
+     * @param string $text
+     * @param string $url
+     * @return TKLink
+     */
+    public function mintLink(TKPrimitiveGroup $host, string $name, string $text, string $url): TKLink;
+
+    /**
+     * @param TKPrimitiveGroup $host
+     * @param string $name
      * @param string $label
      * @return TKButton
      */

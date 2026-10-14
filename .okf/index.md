@@ -30,3 +30,4 @@ okf_version: "0.2"
 
 * [Composing an app](runbooks/composing-an-app.md) - Require Surface + a toolkit driver, publish configs, sketch mail, boot/shutdown pattern.
 * [Testing](runbooks/testing.md) - Pest suite with fakes in a workbench of path repos.
+* [Releasing](runbooks/releasing.md) - A vX.Y.Z tag runs the suite, then splits every component to venusian-surface with the same tag.

@@ -74,6 +74,9 @@ readonly class MenuItem
         if ($hotkey !== null && strlen((string) $hotkey) !== 1) {
             throw new WindowException("Menu item '{$label}' hotkey must be one character.");
         }
+        if ($hotkey !== null && $role?->isEdit()) {
+            throw new WindowException("Menu item '{$label}' is an edit role: its keys are the platform's standard ones, so it takes no hotkey.");
+        }
 
         return new self($id, $label, $role, false, $toggle, (bool) ($node['on'] ?? false), $hotkey, $children);
     }

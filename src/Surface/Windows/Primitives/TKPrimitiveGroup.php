@@ -17,6 +17,7 @@ use Surface\Contracts\Windows\Primitives\TKFixed;
 use Surface\Contracts\Windows\Primitives\TKGrid;
 use Surface\Contracts\Windows\Primitives\TKImage;
 use Surface\Contracts\Windows\Primitives\TKLabel;
+use Surface\Contracts\Windows\Primitives\TKLink;
 use Surface\Contracts\Windows\Primitives\TKPrimitive as Child;
 use Surface\Contracts\Windows\Primitives\TKPrimitiveGroup as PrimitiveContract;
 use Surface\Contracts\Windows\Primitives\TKProgressBar;
@@ -53,6 +54,11 @@ abstract class TKPrimitiveGroup extends TKPrimitive implements PrimitiveContract
     public function label(string $name, string $text): TKLabel
     {
         return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintLabel($this, $name, $text));
+    }
+
+    public function link(string $name, string $text, string $url): TKLink
+    {
+        return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintLink($this, $name, $text, $url));
     }
 
     public function button(string $name, string $label): TKButton

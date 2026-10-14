@@ -1,5 +1,14 @@
 # Log
 
+## 2026-10-14
+
+* Releasing: `split.yml` on a `v*` tag; new `tests.yml` (PHP 8.4/8.5, ext-gd) gates; `.github/split.sh` splits all eleven components to `venusian-surface` with the same tag. [releasing](runbooks/releasing.md)
+
+## 2026-10-10
+
+* `TKLink`: `link(name, text, url)`, a link the toolkit opens; URL needs a scheme; posts nothing (toolkit links). [primitives](architecture/primitives.md)
+* Edit menu roles: undo, redo, cut, copy, paste, select-all; no hotkey on them; Surface's default main profile has an Edit folder (HumanInput slice 29). [menu profiles](api/menu-profiles.md)
+
 ## 2026-10-09
 
 * `View\CanvasClicked`: a click on a canvas posts `view.clicked` with the point (HumanInput slice 28). [view mail](api/view-mail.md)
