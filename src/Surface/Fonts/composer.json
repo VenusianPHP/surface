@@ -2,6 +2,11 @@
     "name": "venusian-surface/fonts",
     "description": "Surface bitmap faces: the GFXFont registry, the classic 5x7, and make:font.",
     "license": "MIT",
+    "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.10.x/fonts",
+    "support": {
+        "issues": "https://github.com/VenusianPHP/surface/issues",
+        "source": "https://github.com/venusian-surface/fonts"
+    },
     "authors": [
         {
             "name": "Angel Gonzalez",

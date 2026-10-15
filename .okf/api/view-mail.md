@@ -29,6 +29,7 @@ All readonly `NamedSignal` + `PrimitiveMail` (`window()`, `path()`, `uuid()`); b
 | `DateChanged` | DateTimeImmutable date | `view.date-changed.<window>.<path>` | `TKDatepicker` |
 | `RowSelected` | ?int row, ?array cells (column id => text) | `view.row-selected.<window>.<path>` | `TKTable` (null = cleared) |
 | `ViewResized` | width, height | `view.resized.<window>.<path>` | any primitive after `watchSize()` |
+| `ViewScrolled` | position (ScrollPosition) | `view.scrolled.<window>.<path>` | `TKTextArea` while watched; latest-only |
 | `VideoPlaying` / `VideoPaused` / `VideoEnded` | — | `view.video-playing.<window>.<path>` etc. | `TKVideo` |
 | `VideoFailed` | reason | `view.video-failed.<window>.<path>` | `TKVideo` (bad file, codec) |
 

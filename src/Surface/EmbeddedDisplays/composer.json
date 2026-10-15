@@ -2,6 +2,11 @@
     "name": "venusian-surface/embedded-displays",
     "description": "Surface embedded displays: an IC display panel as a drawing output.",
     "license": "MIT",
+    "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.10.x/embedded-displays",
+    "support": {
+        "issues": "https://github.com/VenusianPHP/surface/issues",
+        "source": "https://github.com/venusian-surface/embedded-displays"
+    },
     "authors": [
         {
             "name": "Angel Gonzalez",

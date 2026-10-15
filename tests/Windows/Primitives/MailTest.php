@@ -18,8 +18,10 @@ use Surface\Contracts\Windows\Mail\View\VideoFailed;
 use Surface\Contracts\Windows\Mail\View\VideoPaused;
 use Surface\Contracts\Windows\Mail\View\VideoPlaying;
 use Surface\Contracts\Windows\Mail\View\ViewResized;
+use Surface\Contracts\Windows\Mail\View\ViewScrolled;
 use Surface\Contracts\Windows\Mail\WindowMail;
 use Surface\Contracts\Windows\Mail\WindowResized;
+use Surface\Contracts\Windows\Styling\ScrollPosition;
 use Voyager\Contracts\Signals\NamedSignal;
 
 it('names each primitive mail view.<event>.<window>.<path>', function (PrimitiveMail $mail, string $name): void {
@@ -40,6 +42,7 @@ it('names each primitive mail view.<event>.<window>.<path>', function (Primitive
     'date changed' => [new DateChanged('main', 'main.toolbar.save', 'u1', new DateTimeImmutable('2026-10-02')), 'view.date-changed.main.main.toolbar.save'],
     'row selected' => [new RowSelected('main', 'main.toolbar.save', 'u1', 0, ['title' => 'a']), 'view.row-selected.main.main.toolbar.save'],
     'resized' => [new ViewResized('main', 'main.toolbar.save', 'u1', 10, 20), 'view.resized.main.main.toolbar.save'],
+    'scrolled' => [new ViewScrolled('main', 'main.toolbar.save', 'u1', new ScrollPosition(0.0, 0.5, 1.0, 0.25)), 'view.scrolled.main.main.toolbar.save'],
     'video playing' => [new VideoPlaying('main', 'main.toolbar.save', 'u1'), 'view.video-playing.main.main.toolbar.save'],
     'video paused' => [new VideoPaused('main', 'main.toolbar.save', 'u1'), 'view.video-paused.main.main.toolbar.save'],
     'video ended' => [new VideoEnded('main', 'main.toolbar.save', 'u1'), 'view.video-ended.main.main.toolbar.save'],

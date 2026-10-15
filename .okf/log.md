@@ -2,6 +2,7 @@
 
 ## 2026-10-14
 
+* Text panes (compare-app toolkit C1): TKTextArea read-only, wrap, line backgrounds, range styles, line selection, scroll position and ViewScrolled; FontSpec monospace; TextLines for UTF-16 drivers. [primitives](architecture/primitives.md)
 * Releasing: `split.yml` on a `v*` tag; new `tests.yml` (PHP 8.4/8.5, ext-gd) gates; `.github/split.sh` splits all eleven components to `venusian-surface` with the same tag. [releasing](runbooks/releasing.md)
 
 ## 2026-10-10

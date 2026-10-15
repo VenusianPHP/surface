@@ -9,7 +9,7 @@
         "framebuffer"
     ],
     "license": "MIT",
-    "version": "0.10.0",
+    "version": "0.10.1",
     "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.10.x",
     "support": {
         "issues": "https://github.com/VenusianPHP/surface/issues",

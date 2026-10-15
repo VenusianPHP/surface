@@ -33,7 +33,9 @@ Used by `setBackground(?Color)` and `setTextColor(?Color)`; null restores toolki
 
 `Surface\Contracts\Windows\Styling`. Windows only by rule, never Drawing.[^styling]
 
-* `FontSpec(float $size, FontWeight $weight = REGULAR, ?string $family = null)`: size points, > 0 else `InvalidArgumentException`; family null = system font.
+* `FontSpec(float $size, FontWeight $weight = REGULAR, ?string $family = null, bool $monospace = false)`: size points, > 0 else `InvalidArgumentException`; family null = system font; `monospace` with no family = the OS's fixed-pitch face, a named family wins.
+* `TextRangeStyle(int $line, int $start, int $length, ?Color $foreground = null, ?Color $background = null)`: line, start and length in code points of that line; needs a colour; negatives throw `InvalidArgumentException`.
+* `ScrollPosition(float $x, float $y, float $width, float $height)`: the visible rect as content fractions 0..1; `of()` builds it from a toolkit's offsets and sizes, `offset()` turns a fraction back into an offset.
 * `FontWeight`: `LIGHT`, `REGULAR`, `MEDIUM`, `SEMIBOLD`, `BOLD`, `BLACK`; `toCssWeight()` → 300/400/500/600/700/900. Drivers map to toolkit scale.
 * `TextAlignment`: `LEFT`, `CENTER`, `RIGHT`.
 

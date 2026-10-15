@@ -87,7 +87,7 @@ it('edits a text area and records what the user typed without writing it back', 
     $area->nativeValueChanged('four');
 
     expect($area->value())->toBe('four')
-        ->and($area->log)->toBe(['value:three', 'font:9', 'color:#000000']);
+        ->and($area->log)->toBe(['value:three|0,0', 'font:9', 'color:#000000']);
 });
 
 it('checks a checkbox from code and records a native toggle', function (): void {

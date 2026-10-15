@@ -34,7 +34,9 @@ use Surface\Contracts\Windows\Primitives\TKToggle;
 use Surface\Contracts\Windows\Primitives\TKToggleButton;
 use Surface\Contracts\Windows\Primitives\TKVideo;
 use Surface\Contracts\Windows\Styling\FontSpec;
+use Surface\Contracts\Windows\Styling\ScrollPosition;
 use Surface\Contracts\Windows\Styling\TextAlignment;
+use Surface\Contracts\Windows\Styling\TextRangeStyle;
 use Surface\Contracts\Windows\ToolkitWindow;
 use Surface\Contracts\Windows\WindowException;
 use Surface\Contracts\Framebuffers\Region;
@@ -393,11 +395,40 @@ final class FakeTextArea extends TextAreaAbstract
 {
     use FakeNative;
 
-    protected function applyValue(string $value): void { $this->log[] = "value:{$value}"; }
+    /** @var array{int, int} what the native reports as selected */
+    public array $selection = [0, 0];
+
+    public ScrollPosition $position;
+
+    protected function applyValue(string $value): void { $this->log[] = "value:{$value}|".count($this->line_backgrounds).','.count($this->range_styles); }
 
     protected function applyFont(FontSpec $font): void { $this->log[] = "font:{$font->size}"; }
 
     protected function applyTextColor(?Color $color): void { $this->log[] = 'color:'.($color?->toHex() ?? 'none'); }
+
+    protected function applyReadOnly(bool $read_only): void { $this->log[] = 'readonly:'.(int) $read_only; }
+
+    protected function applyWrap(bool $wrap): void { $this->log[] = 'wrap:'.(int) $wrap; }
+
+    protected function applyLineBackgrounds(array $backgrounds): void
+    {
+        $this->log[] = 'lines:'.implode(',', array_map(fn (int $line, Color $color): string => "{$line}={$color->toHex()}", array_keys($backgrounds), $backgrounds));
+    }
+
+    protected function applyRangeStyles(array $styles): void
+    {
+        $this->log[] = 'ranges:'.implode(',', array_map(fn (TextRangeStyle $s): string => "{$s->line}:{$s->start}+{$s->length}", $styles));
+    }
+
+    protected function applySelectLines(int $first, int $last): void { $this->log[] = "select:{$first}-{$last}"; }
+
+    protected function applyScrollTo(float $x, float $y): void { $this->log[] = "scroll:{$x},{$y}"; }
+
+    protected function applyScrollToLine(int $line): void { $this->log[] = "line:{$line}"; }
+
+    protected function nativeSelectedLines(): array { return $this->selection; }
+
+    protected function nativeScrollPosition(): ScrollPosition { return $this->position ??= new ScrollPosition(0.0, 0.0, 1.0, 1.0); }
 }
 
 final class FakeCheckbox extends CheckboxAbstract

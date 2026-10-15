@@ -87,7 +87,7 @@ Every primitive: `setVisible`/`show`/`hide`, `setEnabled`/`enable`/`disable` (`H
 | `TKSpinner` | — | `applySpinning` (change-only) | — |
 | `TKProgressBar` | ?fraction (0..1, null = indeterminate) | `applyFraction` | — |
 | `TKTextInput` | value, ?placeholder, secret | `applyValue`, `applyPlaceholder`, `applyFont`, `applyTextColor` | `nativeValueChanged(string)` |
-| `TKTextArea` | value | `applyValue`, `applyFont`, `applyTextColor` | `nativeValueChanged(string)` |
+| `TKTextArea` | value (line endings normalised to "\n"), read-only, wrap, line backgrounds, range styles, selection, scroll position, scroll watching | `applyValue`, `applyFont`, `applyTextColor`, `applyReadOnly`, `applyWrap`, `applyLineBackgrounds`, `applyRangeStyles`, `applySelectLines`, `applyScrollTo`, `applyScrollToLine`; reads `nativeSelectedLines`, `nativeScrollPosition` | `nativeValueChanged(string)` |
 | `TKCheckbox` | label, checked | `applyLabel`, `applyChecked` | `nativeToggled(bool)` |
 | `TKToggle` | on | `applyOn` | `nativeToggled(bool)` |
 | `TKToggleButton` | label, pressed | `applyLabel`, `applyPressed` | `nativeToggled(bool)` |
