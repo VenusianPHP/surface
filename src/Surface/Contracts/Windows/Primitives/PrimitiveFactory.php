@@ -207,4 +207,19 @@ interface PrimitiveFactory
      * @return TKScrollView
      */
     public function mintScrollView(TKPrimitiveGroup $host, string $name): TKScrollView;
+
+    /**
+     * @param TKPrimitiveGroup $host
+     * @param string $name
+     * @param bool $horizontal
+     * @return TKSplitView
+     */
+    public function mintSplit(TKPrimitiveGroup $host, string $name, bool $horizontal): TKSplitView;
+
+    /**
+     * @param TKPrimitiveGroup $host
+     * @param string $name
+     * @return TKTabView
+     */
+    public function mintTabs(TKPrimitiveGroup $host, string $name): TKTabView;
 }

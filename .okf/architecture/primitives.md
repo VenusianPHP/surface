@@ -47,7 +47,7 @@ $main->view('toolbar.save');              // relative path from a container
 
 # Containers
 
-`TKPrimitiveGroup` holds every creation method (`label`, `link` … `video`, `column`, `row`, `grid`, `fixed`, `scrollView`), one signature on every container kind. `TKColumn`/`TKRow`/`TKGrid`/`TKFixed` extend `TKGroup`; `TKScrollView` extends `TKPrimitiveGroup`.[^contracts]
+`TKPrimitiveGroup` holds every creation method (`label`, `link` … `video`, `column`, `row`, `grid`, `fixed`, `scrollView`, `split`, `tabs`), one signature on every container kind. `TKColumn`/`TKRow`/`TKGrid`/`TKFixed` extend `TKGroup`; `TKScrollView` and `TKSplitView` extend `TKPrimitiveGroup`; `TKTabView` is a group in the abstracts only (its contract extends `TKPrimitive`).[^contracts]
 
 | Container | Placement | Extra |
 |---|---|---|
@@ -55,6 +55,8 @@ $main->view('toolbar.save');              // relative path from a container
 | `TKGrid` | `at(row, column, rowSpan = 1, columnSpan = 1)` before each creation (`Placement::cell`) | covered cell taken → `WindowException`; `spacing()`, `setSpacing()` |
 | `TKFixed` | `at(x, y, width, height)` before each creation (`Placement::frame`) | `move(child, x, y)`, `resize(child, w, h)`, `frameOf(child)` = current frame (creation frame, then every move/resize; recorded before `insertNative()`); only place pixels exist |
 | `TKScrollView` | one column/row/grid/fixed | leaf or second child → `WindowException`; `content()`, `setScrollbars(h, v)` |
+| `TKSplitView` | creation order; each child a pane | `split(name, horizontal = true)`; `positions()` / `setPositions(list<float>)`: one fraction per divider between *visible* panes, ascending in 0..1, else `WindowException`; read from the native, so it follows drags; a scroll view may hold one |
+| `TKTabView` | `addPage(name, title)` → the page's `TKColumn`; any other child call → `WindowException` | `pages()`, `title()` / `setTitle()`, `selected()` / `select()`; first page selected; removing a page's column removes its tab |
 
 Window content: `$window->column|row|grid|fixed(name)` once; second → `WindowException`. `HostsPrimitives` (trait for driver windows) implements content, registry, lookups; window supplies `factory()`, `mountContent()`, `size()`, and calls `removeContent()` from `close()` while its native lives.
 

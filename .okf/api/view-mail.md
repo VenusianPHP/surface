@@ -30,6 +30,8 @@ All readonly `NamedSignal` + `PrimitiveMail` (`window()`, `path()`, `uuid()`); b
 | `RowSelected` | ?int row, ?array cells (column id => text) | `view.row-selected.<window>.<path>` | `TKTable` (null = cleared) |
 | `ViewResized` | width, height | `view.resized.<window>.<path>` | any primitive after `watchSize()` |
 | `ViewScrolled` | position (ScrollPosition) | `view.scrolled.<window>.<path>` | `TKTextArea` while watched; latest-only |
+| `SplitMoved` | positions (list<float>) | `view.split-moved.<window>.<path>` | `TKSplitView`: once a user divider drag ends with positions changed; not window resizes or `setPositions()` |
+| `TabSelected` | page (name) | `view.tab-selected.<window>.<path>` | `TKTabView`: user tab switch; not `select()`, `addPage()` or removing a page |
 | `VideoPlaying` / `VideoPaused` / `VideoEnded` | — | `view.video-playing.<window>.<path>` etc. | `TKVideo` |
 | `VideoFailed` | reason | `view.video-failed.<window>.<path>` | `TKVideo` (bad file, codec) |
 

@@ -1,5 +1,9 @@
 # Log
 
+## 2026-10-16
+
+* Split and tabs (compare-app toolkit C2): `TKSplitView` (panes, divider positions as fractions of visible panes) and `TKTabView` (pages as columns, titles, selection); `SplitMoved`, `TabSelected`. [primitives](architecture/primitives.md), [view mail](api/view-mail.md)
+
 ## 2026-10-14
 
 * Text panes (compare-app toolkit C1): TKTextArea read-only, wrap, line backgrounds, range styles, line selection, scroll position and ViewScrolled; FontSpec monospace; TextLines for UTF-16 drivers. [primitives](architecture/primitives.md)

@@ -185,6 +185,19 @@ interface TKPrimitiveGroup extends TKPrimitive
     public function scrollView(string $name): TKScrollView;
 
     /**
+     * @param string $name
+     * @param bool $horizontal true: panes side by side
+     * @return TKSplitView
+     */
+    public function split(string $name, bool $horizontal = true): TKSplitView;
+
+    /**
+     * @param string $name
+     * @return TKTabView
+     */
+    public function tabs(string $name): TKTabView;
+
+    /**
      * Look a descendant up by dotted path relative to this container.
      * @param string $path
      * @return TKPrimitive|null

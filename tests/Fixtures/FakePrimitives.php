@@ -24,6 +24,8 @@ use Surface\Contracts\Windows\Primitives\TKPrimitiveGroup as GroupContract;
 use Surface\Contracts\Windows\Primitives\TKProgressBar;
 use Surface\Contracts\Windows\Primitives\TKRow as RowContract;
 use Surface\Contracts\Windows\Primitives\TKScrollView as ScrollContract;
+use Surface\Contracts\Windows\Primitives\TKSplitView as SplitContract;
+use Surface\Contracts\Windows\Primitives\TKTabView as TabsContract;
 use Surface\Contracts\Windows\Primitives\TKSeparator;
 use Surface\Contracts\Windows\Primitives\TKSlider;
 use Surface\Contracts\Windows\Primitives\TKSpinner;
@@ -67,6 +69,8 @@ use Surface\Windows\Primitives\TKLabel;
 use Surface\Windows\Primitives\TKLink;
 use Surface\Windows\Primitives\TKRow;
 use Surface\Windows\Primitives\TKScrollView;
+use Surface\Windows\Primitives\TKSplitView;
+use Surface\Windows\Primitives\TKTabView;
 
 /** A toolkit window with no toolkit: hosts primitives through the fake factory. */
 final class FakeHost implements ToolkitWindow
@@ -181,6 +185,10 @@ final class FakePrimitiveFactory implements PrimitiveFactory
 
     public function mintScrollView(GroupContract $host, string $name): ScrollContract { return new FakeScrollView($name, ...$this->slot($host, $name, 'ScrollView')); }
 
+    public function mintSplit(GroupContract $host, string $name, bool $horizontal): SplitContract { return new FakeSplitView($name, ...[...$this->slot($host, $name, 'SplitView'), $horizontal]); }
+
+    public function mintTabs(GroupContract $host, string $name): TabsContract { return new FakeTabView($name, ...$this->slot($host, $name, 'TabView')); }
+
     /** @return array{ToolkitWindow, ?GroupContract, Placement} */
     private function groupSlot(?GroupContract $host, string $name, string $kind): array
     {
@@ -271,6 +279,46 @@ final class FakeScrollView extends TKScrollView
     use FakeGroupNative;
 
     protected function applyScrollbars(bool $horizontal, bool $vertical): void { $this->log[] = 'scrollbars:'.(int) $horizontal.','.(int) $vertical; }
+}
+
+final class FakeSplitView extends TKSplitView
+{
+    use FakeGroupNative;
+
+    /** @var list<float> */
+    public array $native_positions = [];
+
+    protected function nativePositions(): array { return $this->native_positions; }
+
+    protected function applyPositions(array $positions): void
+    {
+        $this->native_positions = $positions;
+        $this->log[] = 'positions:'.implode(',', $positions);
+    }
+}
+
+final class FakeTabView extends TKTabView
+{
+    // FakeNative, not FakeGroupNative: that trait's insertNative would replace the abstract's, which records the title.
+    use FakeNative;
+
+    public ?string $native_selected = null;
+
+    protected function insertPage(ColumnContract $page, string $title): void
+    {
+        $this->native_selected ??= $page->name();
+        $this->log[] = "page:{$page->name()}={$title}";
+    }
+
+    protected function applyTitle(ColumnContract $page, string $title): void { $this->log[] = "title:{$page->name()}={$title}"; }
+
+    protected function applySelect(ColumnContract $page): void
+    {
+        $this->native_selected = $page->name();
+        $this->log[] = "select:{$page->name()}";
+    }
+
+    protected function nativeSelected(): ?string { return $this->native_selected; }
 }
 
 final class FakeLabel extends TKLabel

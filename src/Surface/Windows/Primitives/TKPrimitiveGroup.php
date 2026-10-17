@@ -25,8 +25,10 @@ use Surface\Contracts\Windows\Primitives\TKRow;
 use Surface\Contracts\Windows\Primitives\TKScrollView;
 use Surface\Contracts\Windows\Primitives\TKSeparator;
 use Surface\Contracts\Windows\Primitives\TKSlider;
+use Surface\Contracts\Windows\Primitives\TKSplitView;
 use Surface\Contracts\Windows\Primitives\TKSpinner;
 use Surface\Contracts\Windows\Primitives\TKTable;
+use Surface\Contracts\Windows\Primitives\TKTabView;
 use Surface\Contracts\Windows\Primitives\TKTextArea;
 use Surface\Contracts\Windows\Primitives\TKTextInput;
 use Surface\Contracts\Windows\Primitives\TKToggle;
@@ -164,6 +166,16 @@ abstract class TKPrimitiveGroup extends TKPrimitive implements PrimitiveContract
     public function scrollView(string $name): TKScrollView
     {
         return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintScrollView($this, $name));
+    }
+
+    public function split(string $name, bool $horizontal = true): TKSplitView
+    {
+        return $this->create($name, true, fn (PrimitiveFactory $factory) => $factory->mintSplit($this, $name, $horizontal));
+    }
+
+    public function tabs(string $name): TKTabView
+    {
+        return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintTabs($this, $name));
     }
 
     public function view(string $path): ?Child

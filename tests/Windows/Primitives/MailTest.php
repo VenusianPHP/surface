@@ -9,6 +9,8 @@ use Surface\Contracts\Windows\Mail\View\PrimitiveMail;
 use Surface\Contracts\Windows\Mail\View\RightClicked;
 use Surface\Contracts\Windows\Mail\View\RowSelected;
 use Surface\Contracts\Windows\Mail\View\SelectionChanged;
+use Surface\Contracts\Windows\Mail\View\SplitMoved;
+use Surface\Contracts\Windows\Mail\View\TabSelected;
 use Surface\Contracts\Windows\Mail\View\TextChanged;
 use Surface\Contracts\Windows\Mail\View\TextSubmitted;
 use Surface\Contracts\Windows\Mail\View\Toggled;
@@ -47,6 +49,8 @@ it('names each primitive mail view.<event>.<window>.<path>', function (Primitive
     'video paused' => [new VideoPaused('main', 'main.toolbar.save', 'u1'), 'view.video-paused.main.main.toolbar.save'],
     'video ended' => [new VideoEnded('main', 'main.toolbar.save', 'u1'), 'view.video-ended.main.main.toolbar.save'],
     'video failed' => [new VideoFailed('main', 'main.toolbar.save', 'u1', 'no such file'), 'view.video-failed.main.main.toolbar.save'],
+    'split moved' => [new SplitMoved('main', 'main.toolbar.save', 'u1', [0.5]), 'view.split-moved.main.main.toolbar.save'],
+    'tab selected' => [new TabSelected('main', 'main.toolbar.save', 'u1', 'two'), 'view.tab-selected.main.main.toolbar.save'],
 ]);
 
 it('names the window resize window.resized.<window> and carries the size', function (): void {
@@ -69,7 +73,9 @@ it('carries each payload as given', function (): void {
         ->and((new ValueChanged('main', 's', 'u', 2.5))->value)->toBe(2.5)
         ->and((new TextSubmitted('main', 'i', 'u', 'x'))->value)->toBe('x')
         ->and([(new ViewResized('main', 'v', 'u', 3, 4))->width, (new ViewResized('main', 'v', 'u', 3, 4))->height])->toBe([3, 4])
-        ->and((new VideoFailed('main', 'v', 'u', 'codec'))->reason)->toBe('codec');
+        ->and((new VideoFailed('main', 'v', 'u', 'codec'))->reason)->toBe('codec')
+        ->and((new SplitMoved('main', 's', 'u', [0.25, 0.6]))->positions)->toBe([0.25, 0.6])
+        ->and((new TabSelected('main', 't', 'u', 'two'))->page)->toBe('two');
 });
 
 it('carries a right click\'s point in the primitive and in the window\'s content', function (): void {
