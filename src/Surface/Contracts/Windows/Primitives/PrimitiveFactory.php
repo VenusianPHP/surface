@@ -161,6 +161,15 @@ interface PrimitiveFactory
     /**
      * @param TKPrimitiveGroup $host
      * @param string $name
+     * @param list<TableColumn> $columns
+     * @param list<TreeNode> $nodes
+     * @return TKTree
+     */
+    public function mintTree(TKPrimitiveGroup $host, string $name, array $columns, array $nodes): TKTree;
+
+    /**
+     * @param TKPrimitiveGroup $host
+     * @param string $name
      * @param string|null $file
      * @return TKVideo
      * @throws WindowException When the engine has no media runtime.

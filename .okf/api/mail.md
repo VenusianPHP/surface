@@ -21,10 +21,13 @@ All readonly, all `Voyager\Contracts\Signals\NamedSignal` (`name()` for Signals 
 | `WindowClosed` | window | `window.closed.<window>` | window closed (button or `close()`), once |
 | `WindowFocused` | window | `window.focused.<window>` | window became active / key |
 | `WindowRightClicked` | window, x, y | `window.right-clicked.<window>` | right click on the window's bare content (no primitive under it); x, y in the content area |
+| `WindowKeyPressed` | window, `Key` key, character, `Modifiers` modifiers, repeat | `window.key.<window>` | a key press no focused native, menu accelerator, default/cancel button or Tab move took; key is physical, character the layout's text (`''` for none) |
 | `MenuActivated` | window, item | `menu.activated.<window>.<item>` | plain item chosen |
 | `MenuToggled` | window, item, on | `menu.toggled.<window>.<item>` | toggle chosen by the user; `on` = new state |
 | `QuitRequested` | ?window | `quit.requested` | Quit item chosen |
 | `WindowResized` | window, width, height | `window.resized.<window>` | content area resized; via `postLatest`, one per pump, last size |
+| `Services\AlertAnswered` | id, button | `dialog.alert.<id>` | alert answered: button index; Esc and the alert's close give its cancel index; `-1` when the parent closed first |
+| `Services\FilesChosen` | id, paths | `dialog.files.<id>` | file panel answered: absolute paths; `[]` when cancelled, dismissed or the parent closed first |
 
 * Default bar items (macOS, no window) post `window` = `''`; Quit posts `window` = `null`.
 * `setToggle()` from code posts nothing.

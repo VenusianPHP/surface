@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Surface\Contracts\Windows\Menus\MenuRole;
 use Surface\Contracts\Windows\WindowException;
+use Surface\Windows\Menus\Accelerator;
 use Surface\Windows\Menus\MenuItem;
 use Surface\Windows\Menus\MenuProfile;
 
@@ -18,7 +19,7 @@ function sampleProfile(): MenuProfile
         ['label' => 'View Options', 'items' => [
             ['id' => 'grid', 'label' => 'Show Grid', 'toggle' => true, 'on' => true],
             ['label' => 'Zoom', 'items' => [
-                ['label' => 'Zoom In', 'hotkey' => '+'],
+                ['label' => 'Zoom In', 'hotkey' => '='],
             ]],
         ]],
     ]);
@@ -33,7 +34,7 @@ it('parses folders, roles, separators, toggles and nested folders', function ():
         ->and($profile->folders[0]->items[0]->role)->toBe(MenuRole::ABOUT)
         ->and($profile->folders[0]->items[1]->separator)->toBeTrue()
         ->and($profile->folders[0]->items[2]->role)->toBe(MenuRole::QUIT)
-        ->and($profile->folders[0]->items[2]->hotkey)->toBe('q')
+        ->and($profile->folders[0]->items[2]->keys)->toEqual(Accelerator::hotkey('q'))
         ->and($profile->folders[1]->items[0]->toggle)->toBeTrue()
         ->and($profile->folders[1]->items[0]->on)->toBeTrue();
 });
@@ -78,7 +79,7 @@ it('parses the edit roles, which post nothing of their own and take no hotkey', 
 
     expect(array_map(fn ($item): string => $item->id, $items))->toBe(['edit.undo', 'edit.redo', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.select-all'])
         ->and(array_map(fn ($item): MenuRole => $item->role, $items))->toBe([MenuRole::UNDO, MenuRole::REDO, MenuRole::CUT, MenuRole::COPY, MenuRole::PASTE, MenuRole::SELECT_ALL])
-        ->and(array_map(fn ($item): ?string => $item->hotkey, $items))->toBe([null, null, null, null, null, null])
+        ->and(array_map(fn ($item): ?Accelerator => $item->keys, $items))->toBe([null, null, null, null, null, null])
         ->and(array_map(fn (MenuRole $role): bool => $role->isEdit(), MenuRole::cases()))->toBe([false, false, true, true, true, true, true, true]);
 });
 
@@ -96,4 +97,61 @@ it('gives Surface\'s default main profile an Edit folder after the app folder', 
     expect($edit->label)->toBe('Edit')
         ->and(array_values(array_filter(array_map(fn ($item): ?MenuRole => $item->role, $edit->items))))
         ->toBe([MenuRole::UNDO, MenuRole::REDO, MenuRole::CUT, MenuRole::COPY, MenuRole::PASTE, MenuRole::SELECT_ALL]);
+});
+
+it('parses enabled and keys on nodes', function (): void {
+    $profile = MenuProfile::parse('main', [
+        ['label' => 'App', 'items' => [['role' => 'quit', 'label' => 'Quit']]],
+        ['label' => 'View', 'items' => [
+            ['id' => 'view.refresh', 'label' => 'Refresh', 'keys' => 'Primary+Shift+F5'],
+            ['id' => 'view.locked', 'label' => 'Locked', 'enabled' => false, 'items' => [['label' => 'Item']]],
+        ]],
+    ]);
+    $nodes = $profile->nodes();
+
+    expect($nodes['view.refresh']->keys)->toEqual(Accelerator::parse('Primary+Shift+F5'))
+        ->and($nodes['view.refresh']->enabled)->toBeTrue()
+        ->and($nodes['view.locked']->enabled)->toBeFalse()
+        ->and(array_keys($nodes))->toBe(['app', 'app.quit', 'view', 'view.refresh', 'view.locked', 'view.locked.item']);
+});
+
+it('refuses the node rules of menu enabled state and accelerators', function (array $nodes, string $message): void {
+    expect(fn () => MenuProfile::parse('bad', $nodes))->toThrow(WindowException::class, $message);
+})->with([
+    'hotkey and keys' => [[['label' => 'App', 'items' => [['label' => 'Save', 'hotkey' => 's', 'keys' => 'Primary+S']]]], "'Save'"],
+    'keys on a folder' => [[['label' => 'App', 'items' => [['label' => 'More', 'keys' => 'Primary+M', 'items' => [['label' => 'X']]]]]], "'More'"],
+    'hotkey on a folder' => [[['label' => 'App', 'items' => [['label' => 'More', 'hotkey' => 'm', 'items' => [['label' => 'X']]]]]], "'More'"],
+    'keys on an edit role' => [[['label' => 'Edit', 'items' => [['role' => 'copy', 'label' => 'Copy', 'keys' => 'Primary+C']]]], "'Copy'"],
+    'enabled on an edit role' => [[['label' => 'Edit', 'items' => [['role' => 'copy', 'label' => 'Copy', 'enabled' => true]]]], "'Copy'"],
+    'enabled on a folder with an edit role, at depth two' => [[
+        ['label' => 'App', 'items' => [['label' => 'X']]],
+        ['label' => 'Tools', 'enabled' => false, 'items' => [['label' => 'Text', 'items' => [['role' => 'paste', 'label' => 'Paste']]]]],
+    ], "'Tools'"],
+    'enabled on the first folder' => [[['label' => 'App', 'enabled' => false, 'items' => [['label' => 'X']]]], "'App'"],
+    'two nodes with one id' => [[['label' => 'App', 'items' => [['id' => 'same', 'label' => 'X'], ['id' => 'same', 'label' => 'Y', 'items' => [['label' => 'Z']]]]]], "'same'"],
+    'one accelerator on two items' => [[['label' => 'App', 'items' => [['label' => 'Reload', 'keys' => 'Primary+R'], ['label' => 'Refresh', 'hotkey' => 'r']]]], "'Refresh'"],
+    'the accelerator of an edit role' => [[['label' => 'Edit', 'items' => [['role' => 'copy', 'label' => 'Copy'], ['label' => 'Clone', 'keys' => 'Primary+C']]]], "'Clone'"],
+    'Primary and Ctrl, the same keys on other platforms' => [[['label' => 'App', 'items' => [['label' => 'Cut Line', 'keys' => 'Primary+X'], ['label' => 'Cross', 'keys' => 'Ctrl+X']]]], "'Cross'"],
+    'an accelerator that does not parse' => [[['label' => 'App', 'items' => [['label' => 'Go', 'keys' => 'Primary+INSERT']]]], "'Go'"],
+]);
+
+it('refuses node values of the wrong type and keys on a separator', function (array $nodes, string $message): void {
+    expect(fn () => MenuProfile::parse('bad', $nodes))->toThrow(WindowException::class, $message);
+})->with([
+    'enabled as a string' => [[['label' => 'App', 'items' => [['label' => 'Go', 'enabled' => 'false']]]], "'Go'"],
+    'enabled as null' => [[['label' => 'App', 'items' => [['label' => 'Go', 'enabled' => null]]]], "'Go'"],
+    'keys as an int' => [[['label' => 'App', 'items' => [['label' => 'Go', 'keys' => 5]]]], "'Go'"],
+    'separator with enabled' => [[['label' => 'App', 'items' => [['label' => 'Go'], ['separator' => true, 'enabled' => false]]]], 'separator'],
+    'separator with keys' => [[['label' => 'App', 'items' => [['label' => 'Go'], ['separator' => true, 'keys' => 'Primary+S']]]], 'separator'],
+]);
+
+it('takes an Accelerator for keys, as it takes a MenuRole for role', function (): void {
+    $profile = MenuProfile::parse('main', [['label' => 'App', 'items' => [['label' => 'Go', 'keys' => Accelerator::parse('Primary+G')]]]]);
+
+    expect($profile->nodes()['app.go']->keys)->toEqual(Accelerator::parse('Primary+G'));
+});
+
+it('names the profile and both labels when two nodes have one id', function (): void {
+    expect(fn () => MenuProfile::parse('editor', [['label' => 'App', 'items' => [['id' => 'same', 'label' => 'First'], ['id' => 'same', 'label' => 'Second']]]]))
+        ->toThrow(WindowException::class, "Menu profile 'editor': nodes 'First' and 'Second' have the same id 'same'.");
 });

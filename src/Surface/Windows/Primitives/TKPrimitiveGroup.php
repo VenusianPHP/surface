@@ -28,6 +28,7 @@ use Surface\Contracts\Windows\Primitives\TKSlider;
 use Surface\Contracts\Windows\Primitives\TKSplitView;
 use Surface\Contracts\Windows\Primitives\TKSpinner;
 use Surface\Contracts\Windows\Primitives\TKTable;
+use Surface\Contracts\Windows\Primitives\TKTree;
 use Surface\Contracts\Windows\Primitives\TKTabView;
 use Surface\Contracts\Windows\Primitives\TKTextArea;
 use Surface\Contracts\Windows\Primitives\TKTextInput;
@@ -136,6 +137,11 @@ abstract class TKPrimitiveGroup extends TKPrimitive implements PrimitiveContract
     public function table(string $name, array $columns, array $rows = []): TKTable
     {
         return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintTable($this, $name, $columns, $rows));
+    }
+
+    public function tree(string $name, array $columns, array $nodes = []): TKTree
+    {
+        return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintTree($this, $name, $columns, $nodes));
     }
 
     public function video(string $name, ?string $file = null): TKVideo

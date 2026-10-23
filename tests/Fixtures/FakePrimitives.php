@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Surface\Contracts\Drawing\SurfaceKind;
 use Surface\Contracts\Windows\Primitives\Align;
 use Surface\Contracts\Windows\Primitives\PrimitiveFactory;
+use Surface\Contracts\Windows\Primitives\ButtonRole;
 use Surface\Contracts\Windows\Primitives\TKButton as ButtonContract;
 use Surface\Contracts\Windows\Primitives\TKCheckbox;
 use Surface\Contracts\Windows\Primitives\TKColumn as ColumnContract;
@@ -30,6 +31,8 @@ use Surface\Contracts\Windows\Primitives\TKSeparator;
 use Surface\Contracts\Windows\Primitives\TKSlider;
 use Surface\Contracts\Windows\Primitives\TKSpinner;
 use Surface\Contracts\Windows\Primitives\TKTable;
+use Surface\Contracts\Windows\Primitives\TKTree;
+use Surface\Contracts\Windows\Primitives\TreeNode;
 use Surface\Contracts\Windows\Primitives\TKTextArea;
 use Surface\Contracts\Windows\Primitives\TKTextInput;
 use Surface\Contracts\Windows\Primitives\TKToggle;
@@ -57,6 +60,7 @@ use Surface\Windows\Primitives\TKSeparator as SeparatorAbstract;
 use Surface\Windows\Primitives\TKSlider as SliderAbstract;
 use Surface\Windows\Primitives\TKSpinner as SpinnerAbstract;
 use Surface\Windows\Primitives\TKTable as TableAbstract;
+use Surface\Windows\Primitives\TKTree as TreeAbstract;
 use Surface\Windows\Primitives\TKTextArea as TextAreaAbstract;
 use Surface\Windows\Primitives\TKTextInput as TextInputAbstract;
 use Surface\Windows\Primitives\TKToggle as ToggleAbstract;
@@ -116,6 +120,34 @@ final class FakeHost implements ToolkitWindow
     public function setMenuBar(string $profile): static { return $this; }
 
     public function setToggle(string $item, bool $on): static { return $this; }
+
+    public function setItemEnabled(string $item, bool $enabled): static { throw new WindowException("Window '{$this->name}' has no menu bar."); }
+
+    public function isItemEnabled(string $item): bool { throw new WindowException("Window '{$this->name}' has no menu bar."); }
+
+    private bool $confirming = false;
+
+    public function parent(): ?ToolkitWindow { return null; }
+
+    public function confirmClose(bool $on = true): static
+    {
+        $this->confirming = $on;
+
+        return $this;
+    }
+
+    public function isConfirmingClose(): bool { return $this->confirming; }
+
+    public ?\Surface\Contracts\Windows\Primitives\TKPrimitive $initial_focus = null;
+
+    public function focused(): ?\Surface\Contracts\Windows\Primitives\TKPrimitive { return null; }
+
+    public function setInitialFocus(?\Surface\Contracts\Windows\Primitives\TKPrimitive $primitive): static
+    {
+        $this->initial_focus = $primitive;
+
+        return $this;
+    }
 }
 
 /** Mints the fake concretes; every kind the fake engine lacks throws, as a driver's would. */
@@ -173,6 +205,8 @@ final class FakePrimitiveFactory implements PrimitiveFactory
 
     public function mintTable(GroupContract $host, string $name, array $columns, array $rows): TKTable { return new FakeTable($name, ...[...$this->slot($host, $name, 'Table'), $columns, $rows]); }
 
+    public function mintTree(GroupContract $host, string $name, array $columns, array $nodes): TKTree { return (new FakeTree($name, ...[...$this->slot($host, $name, 'Tree'), $columns, $nodes]))->built(); }
+
     public function mintVideo(GroupContract $host, string $name, ?string $file): TKVideo { return new FakeVideo($name, ...[...$this->slot($host, $name, 'Video'), $file]); }
 
     public function mintColumn(?GroupContract $host, string $name, int $spacing, int $padding): ColumnContract { return new FakeColumn($name, ...[...$this->groupSlot($host, $name, 'Column'), $spacing, $padding]); }
@@ -228,6 +262,22 @@ trait FakeNative
     protected function applyWatchSize(bool $on): void { $this->log[] = 'watch:'.(int) $on; }
 
     protected function nativeSize(): array { return [10, 10]; }
+
+    /** Whether the fake native takes focus when asked. */
+    public bool $takes_focus = true;
+
+    /** Whether the fake native holds focus. */
+    public bool $native_focus = false;
+
+    protected function applyFocus(): bool
+    {
+        $this->log[] = 'focus';
+        $this->native_focus = $this->native_focus || $this->takes_focus;
+
+        return $this->takes_focus;
+    }
+
+    protected function nativeHasFocus(): bool { return $this->native_focus; }
 }
 
 /** Container hooks shared by every fake group. */
@@ -358,6 +408,8 @@ final class FakeButton extends TKButton
     protected function applyFont(FontSpec $font): void { $this->log[] = "font:{$font->size}"; }
 
     protected function applyTextColor(?Color $color): void { $this->log[] = 'color:'.($color?->toHex() ?? 'none'); }
+
+    protected function applyRole(?ButtonRole $role): void { $this->log[] = 'role:'.($role->value ?? 'none'); }
 }
 
 final class FakeImage extends ImageAbstract
@@ -388,6 +440,8 @@ final class FakeCanvas extends CanvasAbstract
     public array $lends = [];
 
     public function surfaces(): array { return $this->lends; }
+
+    protected function applyFocusable(bool $on, bool $takesTab): void { $this->log[] = 'focusable:'.(int) $on.','.(int) $takesTab; }
 
     protected function makeSurface(SurfaceKind $kind, array $handles): array
     {
@@ -539,6 +593,51 @@ final class FakeTable extends TableAbstract
     protected function applyRows(array $cells): void { $this->log[] = 'rows:'.count($cells); }
 
     protected function applySelectedRow(?int $row): void { $this->log[] = 'selected:'.($row ?? 'none'); }
+}
+
+final class FakeTree extends TreeAbstract
+{
+    use FakeNative;
+
+    public ?string $native_selected = null;
+
+    /** Drivers call reload() last in their constructor; the fake does it once minted. */
+    public function built(): static
+    {
+        $this->reload();
+
+        return $this;
+    }
+
+    public function engineNode(string $id): TreeNode { return $this->node($id); }
+
+    /** @return list<string> */
+    public function engineChildIds(?string $id): array { return $this->childIds($id); }
+
+    /** @return list<int> */
+    public function enginePathOf(string $id): array { return $this->pathOf($id); }
+
+    /** @return list<string> */
+    public function engineCellTexts(TreeNode $node): array { return $this->cellTexts($node); }
+
+    /** @return list<Color|null> */
+    public function engineCellColors(TreeNode $node): array { return $this->cellColors($node); }
+
+    protected function applyNodes(array $nodes): void
+    {
+        $this->native_selected = null;
+        $this->log[] = 'nodes:'.count($nodes);
+    }
+
+    protected function applyExpanded(string $id, bool $expanded): void { $this->log[] = "expanded:{$id}=".(int) $expanded; }
+
+    protected function applySelected(?string $id): void
+    {
+        $this->native_selected = $id;
+        $this->log[] = 'selected:'.($id ?? 'none');
+    }
+
+    protected function nativeSelected(): ?string { return $this->native_selected; }
 }
 
 final class FakeVideo extends VideoAbstract

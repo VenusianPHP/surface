@@ -55,7 +55,7 @@ interface ToolkitWindow extends OSWindow
     /**
      * @param string $profile
      * @return $this
-     * @throws WindowException When no profile is registered under that name.
+     * @throws WindowException When no profile is registered under that name, or the window is a child.
      */
     public function setMenuBar(string $profile): static;
 
@@ -67,6 +67,70 @@ interface ToolkitWindow extends OSWindow
      * @return $this
      */
     public function setToggle(string $item, bool $on): static;
+
+    /**
+     * Set the state of a node in this window's menu bar. A node that is not enabled, or that is
+     * below a disabled folder, shows as disabled; such an item posts nothing and its accelerator
+     * does nothing. The menu is not rebuilt. Posts nothing.
+     *
+     * @param string $item the id of an item or a folder
+     * @param bool $enabled
+     * @return $this
+     * @throws WindowException When the window has no menu bar, no node has the id, or the node
+     *                         cannot take a state (an edit role, a folder that holds an edit role,
+     *                         the first folder).
+     */
+    public function setItemEnabled(string $item, bool $enabled): static;
+
+    /**
+     * The state of the node, from the profile or from setItemEnabled(). The folders above the
+     * node do not change the value.
+     *
+     * @param string $item
+     * @return bool
+     * @throws WindowException When the window has no menu bar, no node has the id, or the node
+     *                         takes no state (an edit role, a folder that holds one, the first folder).
+     */
+    public function isItemEnabled(string $item): bool;
+
+    /**
+     * The window this child is modal to; null for a top-level window.
+     *
+     * @return ToolkitWindow|null
+     */
+    public function parent(): ?ToolkitWindow;
+
+    /**
+     * While on, the user's close (the title-bar button; Alt+F4 on Linux; Esc in a child with no
+     * cancel button) posts WindowCloseRequested and the window stays open. close() always
+     * closes. Posts nothing.
+     *
+     * @param bool $on
+     * @return $this
+     */
+    public function confirmClose(bool $on = true): static;
+
+    /**
+     * @return bool
+     */
+    public function isConfirmingClose(): bool;
+
+    /**
+     * The primitive whose native holds keyboard focus; null when none does, or when the holder
+     * is a native Surface did not make.
+     */
+    public function focused(): ?TKPrimitive;
+
+    /**
+     * The primitive that takes focus on each present(); null takes it off. Posts nothing.
+     * Key precedence while the window is key: a menu accelerator, then the Return and Esc of a
+     * default or cancel button, then Tab and Shift-Tab moving focus (unless a focused canvas
+     * takes Tab), then the focused native. A key that passes them all posts WindowKeyPressed.
+     *
+     * @return $this
+     */
+    public function setInitialFocus(?TKPrimitive $primitive): static;
+
     /**
      * Declare the window's one content container as a column. Every other primitive is
      * created on a container.

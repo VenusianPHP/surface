@@ -26,6 +26,22 @@ function menus(): array
     ];
 }
 
+it('gives the driver the parent of a child', function (): void {
+    $manager = new ToolkitWindowManager(toolkitsReturning(new FakeWindowDriver()), menus(), 'main');
+    $main = $manager->open('main', 640, 480);
+
+    expect($manager->open('child', 300, 120, null, $main)->parent())->toBe($main);
+});
+
+it('gives the services of the driver', function (): void {
+    $driver = new FakeWindowDriver();
+    $manager = new ToolkitWindowManager(toolkitsReturning($driver), menus(), 'main');
+
+    expect($manager->dialogs())->toBe($driver->dialogs())
+        ->and($manager->clipboard())->toBe($driver->clipboard())
+        ->and($manager->desktop())->toBe($driver->desktop());
+});
+
 it('parses every configured profile up front', function (): void {
     $manager = new ToolkitWindowManager(toolkitsReturning(new FakeWindowDriver()), menus(), 'main');
 
@@ -64,4 +80,22 @@ it('refuses a toolkit driver that does not open windows', function (): void {
     $manager = new ToolkitWindowManager(toolkitsReturning(new stdClass()), [], null);
 
     expect(fn () => $manager->open('x', 1, 1))->toThrow(WindowException::class, 'does not open windows');
+});
+
+it('gives the driver the default profile, then sets and reads a state of the default bar', function (): void {
+    $driver = new FakeWindowDriver();
+    $manager = new ToolkitWindowManager(toolkitsReturning($driver), menus(), 'editor');
+
+    $manager->setItemEnabled('file.save', false);
+
+    expect($driver->default_menu)->toBe($manager->profile('editor'))
+        ->and($driver->isItemEnabled('file.save'))->toBeFalse()
+        ->and($manager->isItemEnabled('file.save'))->toBeFalse();
+});
+
+it('refuses a default bar state when no default menu is configured', function (): void {
+    $manager = new ToolkitWindowManager(toolkitsReturning(new FakeWindowDriver()), menus(), null);
+
+    expect(fn () => $manager->setItemEnabled('file.save', false))->toThrow(WindowException::class, 'default menu')
+        ->and(fn () => $manager->isItemEnabled('file.save'))->toThrow(WindowException::class, 'default menu');
 });

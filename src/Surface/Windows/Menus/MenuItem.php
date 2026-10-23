@@ -9,8 +9,9 @@ readonly class MenuItem
 {
     /**
      * @param string $id stable identity: the mail carries it; defaults to the label path slug
-     * @param string|null $hotkey one character; each toolkit adds its primary modifier
+     * @param Accelerator|null $keys the accelerator, from `keys` or `hotkey`
      * @param list<MenuItem> $items children when this is a folder
+     * @param bool $enabled the start state, from `enabled`
      */
     private function __construct(
         public string $id,
@@ -19,8 +20,9 @@ readonly class MenuItem
         public bool $separator,
         public bool $toggle,
         public bool $on,
-        public ?string $hotkey,
+        public ?Accelerator $keys,
         public array $items,
+        public bool $enabled = true,
     ) {}
 
     public function isFolder(): bool
@@ -37,6 +39,11 @@ readonly class MenuItem
     public static function fromArray(array $node, string $path): self
     {
         if ($node['separator'] ?? false) {
+            $other = array_diff(array_keys($node), ['separator']);
+            if ($other !== []) {
+                throw new WindowException("A menu separator takes no other keys: '".implode("', '", $other)."'.");
+            }
+
             return new self('', '', null, true, false, false, null, []);
         }
 
@@ -70,15 +77,70 @@ readonly class MenuItem
             throw new WindowException("Menu item '{$label}' cannot be a toggle and a role or folder.");
         }
 
-        $hotkey = $node['hotkey'] ?? null;
-        if ($hotkey !== null && strlen((string) $hotkey) !== 1) {
-            throw new WindowException("Menu item '{$label}' hotkey must be one character.");
+        if (isset($node['hotkey']) && isset($node['keys'])) {
+            throw new WindowException("Menu item '{$label}' has hotkey and keys: give one of them.");
         }
-        if ($hotkey !== null && $role?->isEdit()) {
-            throw new WindowException("Menu item '{$label}' is an edit role: its keys are the platform's standard ones, so it takes no hotkey.");
+        if ((isset($node['hotkey']) || isset($node['keys'])) && $children !== []) {
+            throw new WindowException("Menu folder '{$label}' cannot have an accelerator.");
+        }
+        if (array_key_exists('enabled', $node) && ! is_bool($node['enabled'])) {
+            throw new WindowException("Menu item '{$label}' enabled must be true or false.");
+        }
+        if (array_key_exists('enabled', $node) && array_any($children, fn (MenuItem $child): bool => $child->holdsEditRole())) {
+            throw new WindowException("Menu folder '{$label}' holds an edit role, so it takes no enabled: a disabled folder would stop the edit keys on AppKit.");
+        }
+        if ($role?->isEdit() && (isset($node['hotkey']) || isset($node['keys']) || array_key_exists('enabled', $node))) {
+            throw new WindowException("Menu item '{$label}' is an edit role: the toolkit sets its keys and its state, so it takes no hotkey, keys or enabled.");
         }
 
-        return new self($id, $label, $role, false, $toggle, (bool) ($node['on'] ?? false), $hotkey, $children);
+        try {
+            $keys = match (true) {
+                ($node['keys'] ?? null) instanceof Accelerator => $node['keys'],
+                isset($node['keys']) && is_string($node['keys']) => Accelerator::parse($node['keys']),
+                isset($node['keys']) => throw new WindowException('keys must be a string or an Accelerator.'),
+                isset($node['hotkey']) => Accelerator::hotkey((string) $node['hotkey']),
+                default => null,
+            };
+        } catch (WindowException $e) {
+            throw new WindowException("Menu item '{$label}': {$e->getMessage()}", 0, $e);
+        }
+
+        return new self($id, $label, $role, false, $toggle, (bool) ($node['on'] ?? false), $keys, $children, (bool) ($node['enabled'] ?? true));
+    }
+
+    /**
+     * Whether this node or a node below it is an edit role.
+     */
+    public function holdsEditRole(): bool
+    {
+        return $this->role?->isEdit() === true || array_any($this->items, fn (MenuItem $item): bool => $item->holdsEditRole());
+    }
+
+    /**
+     * The nodes and every node below them, by id, in tree order. Separators are not nodes.
+     *
+     * @param list<MenuItem> $items
+     * @return array<string, MenuItem>
+     * @throws WindowException when two nodes have one id
+     */
+    public static function nodesOf(array $items): array
+    {
+        $out = [];
+        $walk = function (array $items) use (&$walk, &$out): void {
+            foreach ($items as $item) {
+                if ($item->separator) {
+                    continue;
+                }
+                if (isset($out[$item->id])) {
+                    throw new WindowException("nodes '{$out[$item->id]->label}' and '{$item->label}' have the same id '{$item->id}'.");
+                }
+                $out[$item->id] = $item;
+                $walk($item->items);
+            }
+        };
+        $walk($items);
+
+        return $out;
     }
 
     private static function slug(string $path, string $label): string

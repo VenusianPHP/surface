@@ -21,7 +21,7 @@ okf_version: "0.2"
 # API
 
 * [Window mail](api/mail.md) - Mail native callbacks post: window closed/focused/resized, menu activated/toggled, quit requested.
-* [View mail](api/view-mail.md) - Mail primitive natives post: clicks, text, toggles, values, selections, dates, rows, resizes, video state.
+* [View mail](api/view-mail.md) - Mail primitive natives post: clicks, canvas pointer and wheel, text, toggles, values, selections, dates, rows, resizes, video state.
 * [Styling](api/styling.md) - Color (nuts-and-bolts) and the Windows typography values FontSpec, FontWeight, TextAlignment.
 * [Menu profiles](api/menu-profiles.md) - config/windows.php menus: folders, items, roles, toggles, hotkeys, ids.
 * [Config](api/config.md) - config/bridge.php, config/windows.php, config/framebuffers.php, config/rasterize.php, config/images.php, config/drawing.php and config/embedded-displays.php keys.

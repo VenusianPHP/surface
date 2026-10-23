@@ -2,13 +2,22 @@
 
 declare(strict_types=1);
 
+use Surface\Contracts\HumanInput\Modifiers;
+use Surface\Contracts\HumanInput\MouseButton;
 use Surface\Contracts\Windows\Mail\View\ButtonClicked;
 use Surface\Contracts\Windows\Mail\View\CanvasClicked;
+use Surface\Contracts\Windows\Mail\View\CanvasDragged;
+use Surface\Contracts\Windows\Mail\View\CanvasPressed;
+use Surface\Contracts\Windows\Mail\View\CanvasReleased;
+use Surface\Contracts\Windows\Mail\View\CanvasWheeled;
 use Surface\Contracts\Windows\Mail\View\DateChanged;
 use Surface\Contracts\Windows\Mail\View\PrimitiveMail;
 use Surface\Contracts\Windows\Mail\View\RightClicked;
 use Surface\Contracts\Windows\Mail\View\RowSelected;
 use Surface\Contracts\Windows\Mail\View\SelectionChanged;
+use Surface\Contracts\Windows\Mail\View\NodeActivated;
+use Surface\Contracts\Windows\Mail\View\NodeExpanded;
+use Surface\Contracts\Windows\Mail\View\NodeSelected;
 use Surface\Contracts\Windows\Mail\View\SplitMoved;
 use Surface\Contracts\Windows\Mail\View\TabSelected;
 use Surface\Contracts\Windows\Mail\View\TextChanged;
@@ -35,6 +44,10 @@ it('names each primitive mail view.<event>.<window>.<path>', function (Primitive
 })->with([
     'clicked' => [new ButtonClicked('main', 'main.toolbar.save', 'u1'), 'view.clicked.main.main.toolbar.save'],
     'canvas clicked' => [new CanvasClicked('main', 'main.toolbar.save', 'u1', 3.0, 4.5), 'view.clicked.main.main.toolbar.save'],
+    'canvas pressed' => [new CanvasPressed('main', 'main.toolbar.save', 'u1', 3.0, 4.5, MouseButton::LEFT, 1, new Modifiers()), 'view.pressed.main.main.toolbar.save'],
+    'canvas dragged' => [new CanvasDragged('main', 'main.toolbar.save', 'u1', 3.0, 4.5, MouseButton::LEFT, new Modifiers()), 'view.dragged.main.main.toolbar.save'],
+    'canvas released' => [new CanvasReleased('main', 'main.toolbar.save', 'u1', 3.0, 4.5, MouseButton::LEFT, new Modifiers()), 'view.released.main.main.toolbar.save'],
+    'canvas wheeled' => [new CanvasWheeled('main', 'main.toolbar.save', 'u1', 0.0, 1.0, false, new Modifiers()), 'view.wheeled.main.main.toolbar.save'],
     'right clicked' => [new RightClicked('main', 'main.toolbar.save', 'u1', 3.0, 4.5), 'view.right-clicked.main.main.toolbar.save'],
     'text changed' => [new TextChanged('main', 'main.toolbar.save', 'u1', 'ab'), 'view.text-changed.main.main.toolbar.save'],
     'text submitted' => [new TextSubmitted('main', 'main.toolbar.save', 'u1', 'ab'), 'view.text-submitted.main.main.toolbar.save'],
@@ -51,6 +64,9 @@ it('names each primitive mail view.<event>.<window>.<path>', function (Primitive
     'video failed' => [new VideoFailed('main', 'main.toolbar.save', 'u1', 'no such file'), 'view.video-failed.main.main.toolbar.save'],
     'split moved' => [new SplitMoved('main', 'main.toolbar.save', 'u1', [0.5]), 'view.split-moved.main.main.toolbar.save'],
     'tab selected' => [new TabSelected('main', 'main.toolbar.save', 'u1', 'two'), 'view.tab-selected.main.main.toolbar.save'],
+    'node selected' => [new NodeSelected('main', 'main.toolbar.save', 'u1', null), 'view.node-selected.main.main.toolbar.save'],
+    'node activated' => [new NodeActivated('main', 'main.toolbar.save', 'u1', 'a'), 'view.node-activated.main.main.toolbar.save'],
+    'node expanded' => [new NodeExpanded('main', 'main.toolbar.save', 'u1', 'a', true), 'view.node-expanded.main.main.toolbar.save'],
 ]);
 
 it('names the window resize window.resized.<window> and carries the size', function (): void {
@@ -75,7 +91,10 @@ it('carries each payload as given', function (): void {
         ->and([(new ViewResized('main', 'v', 'u', 3, 4))->width, (new ViewResized('main', 'v', 'u', 3, 4))->height])->toBe([3, 4])
         ->and((new VideoFailed('main', 'v', 'u', 'codec'))->reason)->toBe('codec')
         ->and((new SplitMoved('main', 's', 'u', [0.25, 0.6]))->positions)->toBe([0.25, 0.6])
-        ->and((new TabSelected('main', 't', 'u', 'two'))->page)->toBe('two');
+        ->and((new TabSelected('main', 't', 'u', 'two'))->page)->toBe('two')
+        ->and((new NodeSelected('main', 't', 'u', 'a'))->id)->toBe('a')
+        ->and((new NodeActivated('main', 't', 'u', 'b'))->id)->toBe('b')
+        ->and([(new NodeExpanded('main', 't', 'u', 'c', false))->id, (new NodeExpanded('main', 't', 'u', 'c', false))->expanded])->toBe(['c', false]);
 });
 
 it('carries a right click\'s point in the primitive and in the window\'s content', function (): void {
@@ -93,4 +112,27 @@ it('carries a canvas click\'s point in the canvas', function (): void {
 
     expect([$mail->window, $mail->path, $mail->uuid, $mail->x, $mail->y])->toBe(['main', 'm.board', 'u1', 12.5, 40.0])
         ->and($mail)->toBeInstanceOf(PrimitiveMail::class);
+});
+
+it('carries a press, a drag, a release and a wheel with their button, clicks and modifiers', function (): void {
+    $held = new Modifiers(shift: true, meta: true);
+    $pressed = new CanvasPressed('main', 'm.board', 'u1', 3.0, 4.5, MouseButton::RIGHT, 3, $held);
+    $dragged = new CanvasDragged('main', 'm.board', 'u1', -2.0, 61.5, MouseButton::LEFT, $held);
+    $released = new CanvasReleased('main', 'm.board', 'u1', 12.5, 40.0, MouseButton::MIDDLE, new Modifiers());
+    $wheeled = new CanvasWheeled('main', 'm.board', 'u1', -0.5, 1.0, true, $held);
+
+    expect([$pressed->x, $pressed->y])->toBe([3.0, 4.5])
+        ->and($pressed->button)->toBe(MouseButton::RIGHT)
+        ->and($pressed->clicks)->toBe(3)
+        ->and($pressed->modifiers)->toBe($held)
+        ->and([$dragged->x, $dragged->y])->toBe([-2.0, 61.5])            // a drag out of the canvas
+        ->and($dragged->button)->toBe(MouseButton::LEFT)
+        ->and($dragged->modifiers)->toBe($held)
+        ->and([$released->x, $released->y])->toBe([12.5, 40.0])
+        ->and($released->button)->toBe(MouseButton::MIDDLE)
+        ->and($released->modifiers)->toEqual(new Modifiers())
+        ->and([$wheeled->dx, $wheeled->dy])->toBe([-0.5, 1.0])
+        ->and($wheeled->precise)->toBeTrue()
+        ->and($wheeled->modifiers)->toBe($held)
+        ->and((new CanvasWheeled('main', 'm.board', 'u1', 0.0, 1.0, false, new Modifiers()))->precise)->toBeFalse();
 });

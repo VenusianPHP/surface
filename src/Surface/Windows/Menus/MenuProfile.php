@@ -7,6 +7,16 @@ use Surface\Contracts\Windows\Menus\MenuProfile as MenuProfileContract;
 
 readonly class MenuProfile implements MenuProfileContract
 {
+    /** The standard accelerator of each edit role. */
+    public const array EDIT_KEYS = [
+        'undo' => 'Primary+Z',
+        'redo' => 'Primary+Shift+Z',
+        'cut' => 'Primary+X',
+        'copy' => 'Primary+C',
+        'paste' => 'Primary+V',
+        'select-all' => 'Primary+A',
+    ];
+
     /**
      * @param string $name
      * @param list<MenuItem> $folders top-level bar entries, every one a folder
@@ -25,6 +35,11 @@ readonly class MenuProfile implements MenuProfileContract
     public static function parse(string $name, array $nodes): self
     {
         $folders = [];
+        if (is_array($nodes[array_key_first($nodes) ?? 0] ?? null) && array_key_exists('enabled', $nodes[array_key_first($nodes)]))
+        {
+            $label = $nodes[array_key_first($nodes)]['label'] ?? '';
+            throw new WindowException("Menu profile '{$name}': the first folder '{$label}' takes no enabled: on macOS it is the application menu.");
+        }
         foreach ($nodes as $node)
         {
             $folder = MenuItem::fromArray($node, '');
@@ -35,7 +50,55 @@ readonly class MenuProfile implements MenuProfileContract
             $folders[] = $folder;
         }
 
-        return new self($name, $folders);
+        try
+        {
+            MenuItem::nodesOf($folders);
+        }
+        catch (WindowException $e)
+        {
+            throw new WindowException("Menu profile '{$name}': {$e->getMessage()}", 0, $e);
+        }
+        $profile = new self($name, $folders);
+        $profile->guardAccelerators();
+
+        return $profile;
+    }
+
+    /**
+     * Every item and every folder, by id, in tree order. Separators are not nodes.
+     *
+     * @return array<string, MenuItem>
+     */
+    public function nodes(): array
+    {
+        return MenuItem::nodesOf($this->folders);
+    }
+
+    /**
+     * Two nodes with one id, or two items with the same accelerator on macOS or on other platforms,
+     * throw. Each edit role holds its standard accelerator.
+     *
+     * @throws WindowException
+     */
+    private function guardAccelerators(): void
+    {
+        $taken = [];
+        foreach ($this->nodes() as $item)
+        {
+            $keys = $item->keys ?? (is_null($item->role) || ! $item->role->isEdit() ? null : Accelerator::parse(self::EDIT_KEYS[$item->role->value]));
+            if (is_null($keys))
+            {
+                continue;
+            }
+            foreach ($taken as [$label, $other])
+            {
+                if ($keys->sameAs($other, true) || $keys->sameAs($other, false))
+                {
+                    throw new WindowException("Menu profile '{$this->name}': item '{$item->label}' has the same accelerator as '{$label}'.");
+                }
+            }
+            $taken[] = [$item->label, $keys];
+        }
     }
 
     /**

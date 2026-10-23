@@ -2,7 +2,10 @@
 
 namespace Surface\Contracts\Windows\Mail;
 
-/** The user asked to close a window opened with confirm_close; it stays open until close(). */
+/**
+ * The user asked to close a window that confirms close: a staged window opened with
+ * confirm_close, or a toolkit window after confirmClose(). It stays open until close().
+ */
 readonly class WindowCloseRequested extends WindowEventOccurred implements WindowMail
 {
 

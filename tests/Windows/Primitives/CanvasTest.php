@@ -185,6 +185,22 @@ it('starts over with a new framebuffer: it is shown even with nothing drawn', fu
         ->and($canvas->pixels[1][1])->toBe(3);
 });
 
+it('watches the pointer only once asked, and not at all once removed', function (): void {
+    $canvas = canvas();
+
+    expect($canvas->isWatchingPointer())->toBeFalse()
+        ->and($canvas->watchPointer())->toBe($canvas)
+        ->and($canvas->isWatchingPointer())->toBeTrue()
+        ->and($canvas->watchPointer(false))->toBe($canvas)
+        ->and($canvas->isWatchingPointer())->toBeFalse();
+
+    $canvas->watchPointer();
+    $canvas->remove();
+
+    expect(fn () => $canvas->watchPointer())->toThrow(WindowException::class, 'was removed')
+        ->and($canvas->isWatchingPointer())->toBeTrue();                 // nothing was written to a native to undo
+});
+
 it('refuses everything once removed', function (): void {
     $canvas = canvas();
     $canvas->framebuffer('full', 2, 2);

@@ -142,6 +142,14 @@ interface TKPrimitiveGroup extends TKPrimitive
 
     /**
      * @param string $name
+     * @param list<TableColumn> $columns the first holds the expander
+     * @param list<TreeNode> $nodes
+     * @return TKTree
+     */
+    public function tree(string $name, array $columns, array $nodes = []): TKTree;
+
+    /**
+     * @param string $name
      * @param string|null $file media file
      * @return TKVideo
      * @throws WindowException When the engine has no media runtime.

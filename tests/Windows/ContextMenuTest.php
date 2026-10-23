@@ -51,3 +51,16 @@ it('carries a context menu on a primitive, from nodes or a shared menu, and take
 it('refuses an edit role in a context menu, as it refuses every role', function (): void {
     expect(fn () => ContextMenu::parse([['role' => 'copy', 'label' => 'Copy']]))->toThrow(WindowException::class);
 });
+
+it('parses enabled in a context menu and refuses keys, ids used two times', function (): void {
+    $menu = ContextMenu::parse([
+        ['label' => 'Share', 'enabled' => false, 'items' => [['label' => 'Copy Link']]],
+        ['label' => 'Open'],
+    ]);
+
+    expect($menu->nodes()['share']->enabled)->toBeFalse()
+        ->and($menu->nodes()['open']->enabled)->toBeTrue()
+        ->and(array_keys($menu->nodes()))->toBe(['share', 'share.copy-link', 'open'])
+        ->and(fn () => ContextMenu::parse([['label' => 'Save', 'keys' => 'Primary+S']]))->toThrow(WindowException::class, "'Save'")
+        ->and(fn () => ContextMenu::parse([['id' => 'x', 'label' => 'A'], ['id' => 'x', 'label' => 'B']]))->toThrow(WindowException::class, "'x'");
+});

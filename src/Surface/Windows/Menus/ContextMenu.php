@@ -7,7 +7,7 @@ use Surface\Contracts\Windows\WindowException;
 
 /**
  * A context menu's items, in a menu profile's item format: labels, ids, separators and
- * submenus. No toggles, roles or hotkeys: About and Quit live in the bar, and a context menu
+ * submenus. No toggles, roles or accelerators: About and Quit live in the bar, and a context menu
  * has no accelerator table.
  */
 readonly class ContextMenu implements ContextMenuContract
@@ -32,8 +32,22 @@ readonly class ContextMenu implements ContextMenuContract
 
         $items = array_map(fn (array $node): MenuItem => MenuItem::fromArray($node, ''), array_values($nodes));
         self::guard($items);
+        try {
+            MenuItem::nodesOf($items);
+        } catch (WindowException $e) {
+            throw new WindowException("Context menu: {$e->getMessage()}", 0, $e);
+        }
 
         return new self($items);
+    }
+
+    /**
+     * Every item and every folder, by id, in tree order. Separators are not nodes.
+     * @return array<string, MenuItem>
+     */
+    public function nodes(): array
+    {
+        return MenuItem::nodesOf($this->items);
     }
 
     /**
@@ -64,8 +78,8 @@ readonly class ContextMenu implements ContextMenuContract
     private static function guard(array $items): void
     {
         foreach ($items as $item) {
-            if ($item->toggle || ! is_null($item->role) || ! is_null($item->hotkey)) {
-                throw new WindowException("Context menu item '{$item->label}' cannot be a toggle, a role or carry a hotkey.");
+            if ($item->toggle || ! is_null($item->role) || ! is_null($item->keys)) {
+                throw new WindowException("Context menu item '{$item->label}' cannot be a toggle, a role or carry an accelerator.");
             }
             self::guard($item->items);
         }

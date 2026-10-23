@@ -32,4 +32,18 @@ interface TKButton extends TKPrimitive
      * @return $this
      */
     public function setTextColor(?Color $color): static;
+
+    /**
+     * Give the button a role, or remove its role. The window's previous holder of the role loses
+     * it; a button holds one role at most. Posts nothing.
+     *
+     * @param ButtonRole|null $role
+     * @return $this
+     */
+    public function setRole(?ButtonRole $role): static;
+
+    /**
+     * @return ButtonRole|null
+     */
+    public function role(): ?ButtonRole;
 }

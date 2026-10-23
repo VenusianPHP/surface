@@ -160,6 +160,35 @@ abstract class TKPrimitive implements PrimitiveContract
         return $this->live()->storeEnabled($enabled);
     }
 
+    /**
+     * @throws WindowException When removed, not shown, or the native takes no focus.
+     */
+    public function focus(): static
+    {
+        $this->live();
+        // Shown and enabled means through every container too: a toolkit gives focus to a widget
+        // under a hidden or disabled container, which the user then cannot see or use.
+        $shown = $this->isVisible();
+        $enabled = $this->isEnabled();
+        for ($at = $this->parent(); ! is_null($at); $at = $at->parent()) {
+            $shown = $shown && $at->isVisible();
+            $enabled = $enabled && $at->isEnabled();
+        }
+        if (! $shown) {
+            throw new WindowException("'{$this->path()}' cannot take focus: it is not shown.");
+        }
+        if (! $enabled || ! $this->applyFocus()) {
+            throw new WindowException("'{$this->path()}' cannot take focus.");
+        }
+
+        return $this;
+    }
+
+    public function hasFocus(): bool
+    {
+        return $this->live()->nativeHasFocus();
+    }
+
     public function size(): array
     {
         return $this->live()->nativeSize();
@@ -347,4 +376,13 @@ abstract class TKPrimitive implements PrimitiveContract
      * @return array{int, int} the current allocation, from the toolkit
      */
     abstract protected function nativeSize(): array;
+
+    /**
+     * Move keyboard focus to the native's focus target, posting nothing.
+     * @return bool Whether the native took focus.
+     */
+    abstract protected function applyFocus(): bool;
+
+    /** The native's focus target holds keyboard focus. */
+    abstract protected function nativeHasFocus(): bool;
 }

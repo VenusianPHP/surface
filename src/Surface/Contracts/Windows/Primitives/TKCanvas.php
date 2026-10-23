@@ -10,7 +10,8 @@ use Surface\Contracts\Framebuffers\Framebuffer;
  * a framebuffer bound to it, and present() puts that framebuffer on screen,
  * stretched over the view, opaque. Draw into the framebuffer directly, or
  * hand it to a rendering engine. A GPU engine borrows a surface inside it instead (WindowOutput). A click
- * on it posts CanvasClicked (view.clicked) with the point.
+ * on it posts CanvasClicked (view.clicked) with the point; watchPointer() adds the presses, drags,
+ * releases and wheels behind it.
  */
 interface TKCanvas extends TKPrimitive, WindowOutput
 {
@@ -48,4 +49,46 @@ interface TKCanvas extends TKPrimitive, WindowOutput
      * @throws \Surface\Contracts\Windows\WindowException When no framebuffer is bound.
      */
     public function present(): static;
+
+    /**
+     * Watch the pointer over this canvas, or stop watching. While watching it posts CanvasPressed,
+     * CanvasDragged, CanvasReleased (view.pressed, view.dragged, view.released) and CanvasWheeled
+     * (view.wheeled), in points from its top-left as CanvasClicked's. CanvasClicked and the
+     * right-click and hold rules post as they do otherwise, watching or not: a sketch that wants
+     * only clicks never watches.
+     *
+     * Press rules. One press at a time per window: the first button down on a watching, enabled
+     * canvas owns the press, and other buttons' presses and releases post nothing until it ends.
+     * CanvasDragged posts on each move while that button is held, only when the point changed, and
+     * goes on outside the canvas and the window through the toolkit's implicit capture. Every
+     * CanvasPressed is followed by exactly one CanvasReleased: at the owning button's release, or,
+     * when the toolkit ends the press without one (a context menu opens, GTK's grab breaks, a touch
+     * is cancelled), at once, at the last point posted. Ending a press from code — watchPointer(false),
+     * disabling the canvas or a group above it, removing it, closing the window — drops it silently:
+     * no mail comes from code, here as everywhere. A touch the toolkit emulates a pointer with is
+     * the left button, and clicks counts presses of the same button on the same canvas within the
+     * toolkit's double-click time and distance, so a triple click is 3 on every toolkit.
+     *
+     * Wheel rules. A wheel over a watching, enabled canvas is the canvas's: posted and not passed
+     * on, so an enclosing scroll view does not scroll. Not watching, it passes as it does otherwise.
+     *
+     * @throws \Surface\Contracts\Windows\WindowException Once removed.
+     */
+    public function watchPointer(bool $on = true): static;
+
+    /** Whether the pointer is being watched; false until watchPointer() is called. */
+    public function isWatchingPointer(): bool;
+
+    /**
+     * Let the canvas take keyboard focus by click and by Tab, as a native control does. With
+     * $takesTab, Tab and Shift-Tab reach the focused canvas instead of moving focus (an editor
+     * pane); without it they move focus on. A canvas that is not focusable never takes Tab.
+     * Default off: a canvas takes no focus.
+     * @throws \Surface\Contracts\Windows\WindowException Once removed.
+     */
+    public function setFocusable(bool $on = true, bool $takesTab = false): static;
+
+    public function isFocusable(): bool;
+
+    public function takesTab(): bool;
 }

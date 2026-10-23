@@ -104,6 +104,20 @@ interface TKPrimitive
     public function disable(): static;
 
     /**
+     * The native takes keyboard focus. Posts nothing: FocusGained and FocusLost come only from
+     * the user's own focus changes.
+     * @return $this
+     * @throws \Surface\Contracts\Windows\WindowException When the view or a container above it is hidden
+     *         ("not shown"), or disabled, or the native takes no focus.
+     */
+    public function focus(): static;
+
+    /**
+     * The native holds keyboard focus.
+     */
+    public function hasFocus(): bool;
+
+    /**
      * The menu the toolkit opens where this view is right-clicked: a menu's nodes in the menu
      * profile's item format, a parsed menu (one shared by many views), or null to take it off.
      * A chosen item posts MenuActivated with its id.

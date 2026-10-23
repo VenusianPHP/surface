@@ -27,9 +27,13 @@ sources:
 
 # ToolkitWindow
 
-`name()`, `title()`, `setTitle()`, `present()` (show + focus), `isOpen()`, `close()`, `setMenuBar(profile)`, `setToggle(item, on)`, `isToggled(item)`.
+`name()`, `title()`, `setTitle()`, `present()` (show + focus), `isOpen()`, `close()`, `setMenuBar(profile)`, `setToggle(item, on)`, `isToggled(item)`, `parent()`, `confirmClose(on)`, `isConfirmingClose()`, `focused()` (the primitive holding keyboard focus, or null), `setInitialFocus(?primitive)` (focused on each `present()`, posting nothing).
 
-* Close: notify-after, no veto. User close button and `close()` take one path: `WindowClosed` once, driver forgets the name, later calls throw `WindowException` ("closed").
+* Key precedence while the window is key: a menu accelerator, then the Return/Esc of a default or cancel button, then Tab/Shift-Tab moving focus (unless a focused canvas takes Tab), then the focused native. A key that passes them all posts `WindowKeyPressed`.
+
+* Close: user close button and `close()` take one path: `WindowClosed` once, driver forgets the name, later calls throw `WindowException` ("closed"). After `confirmClose()`, the user's close posts `WindowCloseRequested` and the window stays open; `close()` always closes.
+* Child: `open(…, parent: $window)` makes a child, modal to the parent (AppKit sheet, GTK transient modal in the parent's window group, Qt window-modal sheet/dialog). No menu bar; one child per parent; no child of a child (`Surface\Windows\ChildWindows` holds the rules for every driver). Closing the parent closes the child first. On macOS, while a child is key, the default bar shows with every item except the edit roles disabled.
+* Button roles: `TKButton::setRole(ButtonRole::DEFAULT|CANCEL|null)`, one holder per role per window. Return/keypad Enter clicks the default, Esc the cancel, wherever the focus is; Return in a focused text area inserts a line; Esc in a child with no cancel button is the user's close.
 * Focus: `WindowFocused` on becoming active/key.
 * Names unique among open windows; reopening after close allowed.
 
@@ -37,7 +41,9 @@ Primitives ([toolkit primitives](/architecture/primitives.md)): `column|row|grid
 
 # ToolkitWindowDriver
 
-`open(name, w, h, ?MenuProfile)`, `has`, `get`, `all`, `closeAll`, `setDefaultMenuBar(?MenuProfile)`. Implemented by each jovian toolkit driver alongside its bridge driver.
+`open(name, w, h, ?MenuProfile, ?ToolkitWindow parent)`, `has`, `get`, `all`, `closeAll`, `setDefaultMenuBar(?MenuProfile)`. Implemented by each jovian toolkit driver alongside its bridge driver.
+
+Services: `dialogs()`, `clipboard()`, `desktop()`. `Dialogs` (`alert`, `openFiles`, `saveFile`) returns a request id; the answer is [mail](/api/mail.md) carrying it. Drivers extend `Surface\Windows\Services\ToolkitDialogs`, which holds the ids and the parent rules: one modal per parent (a dialog or a child), so a parent with an open dialog refuses a child, another dialog and the user's close; the parent's `close()` answers its open dialog first (`-1` / `[]`); one answer per id. `Desktop::open()` throws `InvalidArgumentException` when nothing is at the path.
 
 Menu bar placement is the driver's: macOS one app-wide bar (active window's bar, else the default bar), Linux a bar inside each window (no default bar shown).
 
@@ -47,6 +53,7 @@ Container `toolkit-windows`. Holds parsed [menu profiles](/api/menu-profiles.md)
 
 * `open(name, w, h, ?profileName)`: sets the configured default bar on the driver, then opens. Drivers treat the same profile instance as a no-op.
 * `get`, `all`, `closeAll`, `profile(name)` (unknown → `WindowException`).
+* `dialogs()`, `clipboard()`, `desktop()`: the driver's.
 
 # StagedWindow
 
