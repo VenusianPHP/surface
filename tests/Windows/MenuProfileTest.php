@@ -155,3 +155,55 @@ it('names the profile and both labels when two nodes have one id', function (): 
     expect(fn () => MenuProfile::parse('editor', [['label' => 'App', 'items' => [['id' => 'same', 'label' => 'First'], ['id' => 'same', 'label' => 'Second']]]]))
         ->toThrow(WindowException::class, "Menu profile 'editor': nodes 'First' and 'Second' have the same id 'same'.");
 });
+
+/** A bar with a radio group 'ignore-case' in View, 'none' on. */
+function radioNodes(array $none = [], array $unimportant = []): array
+{
+    return [
+        ['label' => 'App', 'items' => [['role' => 'quit', 'label' => 'Quit', 'hotkey' => 'q']]],
+        ['label' => 'View', 'items' => [
+            ['id' => 'case.none', 'label' => 'None', 'radio' => 'ignore-case', 'on' => true, ...$none],
+            ['id' => 'case.unimportant', 'label' => 'Unimportant', 'radio' => 'ignore-case', ...$unimportant],
+            ['id' => 'case.all', 'label' => 'All', 'radio' => 'ignore-case'],
+        ]],
+    ];
+}
+
+it('parses radio items with their group, the one on, hotkeys and enabled', function (): void {
+    $profile = MenuProfile::parse('main', radioNodes(['hotkey' => '1'], ['enabled' => false]));
+    $none = $profile->items()['case.none'];
+
+    expect($none->radio())->toBe('ignore-case')
+        ->and($none->isOn())->toBeTrue()
+        ->and($none->toggle)->toBeFalse()
+        ->and($none->keys)->not->toBeNull()
+        ->and($profile->items()['case.unimportant']->enabled)->toBeFalse()
+        ->and($profile->items()['case.all']->isOn())->toBeFalse()
+        ->and($profile->radios())->toBe(['ignore-case' => 'case.none'])
+        ->and($profile->radioItems('ignore-case'))->toBe(['case.none', 'case.unimportant', 'case.all'])
+        ->and($profile->items()['case.all']->radio())->toBe('ignore-case');
+});
+
+it('refuses a radio with an empty group, one that is also a toggle, a role or a folder, and on for a plain item', function (): void {
+    expect(fn () => MenuItem::fromArray(['id' => 'r', 'label' => 'R', 'radio' => ''], ''))->toThrow(WindowException::class, "Menu item 'r': a radio group name must be a non-empty string.")
+        ->and(fn () => MenuItem::fromArray(['id' => 'r', 'label' => 'R', 'radio' => 7], ''))->toThrow(WindowException::class, "Menu item 'r': a radio group name must be a non-empty string.")
+        ->and(fn () => MenuItem::fromArray(['id' => 'r', 'label' => 'R', 'radio' => 'g', 'toggle' => true], ''))->toThrow(WindowException::class, "Menu item 'r' cannot be a radio and a toggle, a role or a folder.")
+        ->and(fn () => MenuItem::fromArray(['id' => 'r', 'label' => 'R', 'radio' => 'g', 'role' => 'quit'], ''))->toThrow(WindowException::class, "Menu item 'r' cannot be a radio and a toggle, a role or a folder.")
+        ->and(fn () => MenuItem::fromArray(['id' => 'r', 'label' => 'R', 'radio' => 'g', 'items' => [['label' => 'A']]], ''))->toThrow(WindowException::class, "Menu item 'r' cannot be a radio and a toggle, a role or a folder.")
+        ->and(fn () => MenuItem::fromArray(['id' => 'p', 'label' => 'P', 'on' => true], ''))->toThrow(WindowException::class, "Menu item 'p': 'on' needs a toggle or a radio.");
+});
+
+it('refuses a radio group split over folders, with no item or two items on, or named as an item', function (): void {
+    $split = [
+        ['label' => 'App', 'items' => [['label' => 'About']]],
+        ['label' => 'A', 'items' => [['id' => 'pick.a', 'label' => 'A', 'radio' => 'g', 'on' => true]]],
+        ['label' => 'B', 'items' => [['id' => 'pick.b', 'label' => 'B', 'radio' => 'g']]],
+    ];
+
+    expect(fn () => MenuProfile::parse('main', $split))->toThrow(WindowException::class, "Radio group 'g' must sit in one folder.")
+        ->and(fn () => MenuProfile::parse('main', radioNodes(['on' => false])))->toThrow(WindowException::class, "Radio group 'ignore-case' needs exactly one item on.")
+        ->and(fn () => MenuProfile::parse('main', radioNodes([], ['on' => true])))->toThrow(WindowException::class, "Radio group 'ignore-case' needs exactly one item on.");
+    $named = radioNodes();
+    $named[1]['items'] = array_map(fn (array $node): array => [...$node, 'radio' => 'case.all'], $named[1]['items']);
+    expect(fn () => MenuProfile::parse('main', $named))->toThrow(WindowException::class, "Radio group 'case.all' is also an item id.");
+});

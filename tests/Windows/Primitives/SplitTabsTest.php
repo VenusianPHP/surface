@@ -80,3 +80,20 @@ it('takes children only through addPage, and refuses a second page of the same n
         ->and($tabs->title('one'))->toBe('One')
         ->and(fn () => $tabs->label('x', 'y'))->toThrow(WindowException::class, 'addPage()');
 });
+
+it('inserts a page before the one at an index, appends without one, and refuses an index past the end', function (): void {
+    $tabs = (new FakeHost('main'))->column('root')->tabs('tabs');
+    $tabs->addPage('one', 'One');
+    $tabs->addPage('two', 'Two');
+
+    $tabs->addPage('first', 'First', 0);
+    $tabs->addPage('last', 'Last');
+    $tabs->addPage('middle', 'Middle', 2);
+
+    expect($tabs->pages())->toBe(['first', 'one', 'middle', 'two', 'last'])
+        ->and($tabs->log)->toContain('page:first@0')
+        ->and($tabs->log)->toContain('page:last@end')
+        ->and(fn () => $tabs->addPage('far', 'Far', 6))->toThrow(WindowException::class, 'Tab index 6 is out of range (0..5).')
+        ->and(fn () => $tabs->addPage('neg', 'Neg', -1))->toThrow(WindowException::class, 'Tab index -1 is out of range (0..5).')
+        ->and($tabs->pages())->toBe(['first', 'one', 'middle', 'two', 'last']);
+});

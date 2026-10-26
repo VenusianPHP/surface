@@ -14,6 +14,8 @@ use Surface\NutsAndBolts\Color;
  */
 abstract class TKButton extends TKPrimitive implements PrimitiveContract
 {
+    use ShowsButtonImage;
+
     protected ?FontSpec $font = null;
 
     protected ?Color $text_color = null;

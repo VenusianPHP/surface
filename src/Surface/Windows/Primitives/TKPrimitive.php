@@ -227,6 +227,49 @@ abstract class TKPrimitive implements PrimitiveContract
         return $this->context_menu;
     }
 
+    public function popupMenu(array|ContextMenuContract $menu, float $x, float $y): static
+    {
+        $this->live();
+        $menu = is_array($menu) ? ContextMenu::parse($menu) : $menu;
+        $shown = $this->isVisible();
+        for ($at = $this->parent(); ! is_null($at); $at = $at->parent()) {
+            $shown = $shown && $at->isVisible();
+        }
+        if (! $shown || ! $this->applyPopupMenu($menu, $x, $y)) {
+            throw new WindowException("'{$this->path()}' cannot open a menu: it is not shown.");
+        }
+
+        return $this;
+    }
+
+    /**
+     * Engine callback: the user flipped a toggle of the stored context menu; the menu keeps it.
+     *
+     * @param string $item
+     * @param bool $on
+     * @return void
+     */
+    public function nativeContextToggled(string $item, bool $on): void
+    {
+        if ($this->context_menu instanceof ContextMenu) {
+            $this->context_menu = $this->context_menu->withToggle($item, $on);
+        }
+    }
+
+    /**
+     * Engine callback: the user chose a radio item of the stored context menu; the menu keeps it.
+     *
+     * @param string $group
+     * @param string $item
+     * @return void
+     */
+    public function nativeContextRadio(string $group, string $item): void
+    {
+        if ($this->context_menu instanceof ContextMenu) {
+            $this->context_menu = $this->context_menu->withRadio($group, $item);
+        }
+    }
+
     public function setBackground(?Color $color): static
     {
         $this->live();
@@ -385,4 +428,15 @@ abstract class TKPrimitive implements PrimitiveContract
 
     /** The native's focus target holds keyboard focus. */
     abstract protected function nativeHasFocus(): bool;
+
+    /**
+     * Open $menu at ($x, $y) in the view; false, opening nothing, when the native is not on screen
+     * (its window is not shown).
+     *
+     * @param ContextMenuContract $menu
+     * @param float $x
+     * @param float $y
+     * @return bool
+     */
+    abstract protected function applyPopupMenu(ContextMenuContract $menu, float $x, float $y): bool;
 }

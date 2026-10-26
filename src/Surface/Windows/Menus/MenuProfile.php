@@ -53,6 +53,7 @@ readonly class MenuProfile implements MenuProfileContract
         try
         {
             MenuItem::nodesOf($folders);
+            MenuItem::radioGroupsOf($folders);
         }
         catch (WindowException $e)
         {
@@ -127,6 +128,27 @@ readonly class MenuProfile implements MenuProfileContract
         $walk($this->folders);
 
         return $out;
+    }
+
+    /**
+     * The radio groups and the item each starts on: group → item id.
+     *
+     * @return array<string, string>
+     */
+    public function radios(): array
+    {
+        return Radios::onOf($this->items(), MenuItem::radioGroupsOf($this->folders));
+    }
+
+    /**
+     * A radio group's item ids, in tree order.
+     *
+     * @return list<string>
+     * @throws WindowException When no radio group has the name.
+     */
+    public function radioItems(string $group): array
+    {
+        return MenuItem::radioGroupsOf($this->folders)[$group] ?? throw new WindowException("No radio group '{$group}' in the menu bar.");
     }
 
     /**

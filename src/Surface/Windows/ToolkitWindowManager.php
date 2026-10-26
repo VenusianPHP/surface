@@ -68,6 +68,42 @@ class ToolkitWindowManager
         return $this->defaultBarDriver()->isItemEnabled($item);
     }
 
+    /** @throws WindowException When config/windows.php names no default menu, and as the driver. */
+    public function setToggle(string $item, bool $on): void
+    {
+        $this->defaultBarDriver()->setToggle($item, $on);
+    }
+
+    /** @throws WindowException When config/windows.php names no default menu, and as the driver. */
+    public function isToggled(string $item): bool
+    {
+        return $this->defaultBarDriver()->isToggled($item);
+    }
+
+    /** @throws WindowException When config/windows.php names no default menu, and as the driver. */
+    public function setRadio(string $group, string $item): void
+    {
+        $this->defaultBarDriver()->setRadio($group, $item);
+    }
+
+    /** @throws WindowException When config/windows.php names no default menu, and as the driver. */
+    public function radio(string $group): string
+    {
+        return $this->defaultBarDriver()->radio($group);
+    }
+
+    /** @throws WindowException When config/windows.php names no default menu, and as the driver. */
+    public function setItemLabel(string $item, string $label): void
+    {
+        $this->defaultBarDriver()->setItemLabel($item, $label);
+    }
+
+    /** @throws WindowException When config/windows.php names no default menu, and as the driver. */
+    public function itemLabel(string $item): string
+    {
+        return $this->defaultBarDriver()->itemLabel($item);
+    }
+
     public function dialogs(): Dialogs { return $this->driver()->dialogs(); }
 
     public function clipboard(): Clipboard { return $this->driver()->clipboard(); }

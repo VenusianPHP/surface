@@ -12,6 +12,7 @@ readonly class MenuItem
      * @param Accelerator|null $keys the accelerator, from `keys` or `hotkey`
      * @param list<MenuItem> $items children when this is a folder
      * @param bool $enabled the start state, from `enabled`
+     * @param string|null $group the radio group, from `radio`
      */
     private function __construct(
         public string $id,
@@ -23,7 +24,36 @@ readonly class MenuItem
         public ?Accelerator $keys,
         public array $items,
         public bool $enabled = true,
+        public ?string $group = null,
     ) {}
+
+    /** The radio group this item is one of; null for any other node. */
+    public function radio(): ?string
+    {
+        return $this->group;
+    }
+
+    /** A toggle or radio item's state. */
+    public function isOn(): bool
+    {
+        return $this->on;
+    }
+
+    /** A copy with the toggle or radio state $on. */
+    public function withOn(bool $on): self
+    {
+        return new self($this->id, $this->label, $this->role, $this->separator, $this->toggle, $on, $this->keys, $this->items, $this->enabled, $this->group);
+    }
+
+    /**
+     * A copy with $items as the children.
+     *
+     * @param list<MenuItem> $items
+     */
+    public function withItems(array $items): self
+    {
+        return new self($this->id, $this->label, $this->role, $this->separator, $this->toggle, $this->on, $this->keys, $items, $this->enabled, $this->group);
+    }
 
     public function isFolder(): bool
     {
@@ -73,8 +103,21 @@ readonly class MenuItem
         }
 
         $toggle = (bool) ($node['toggle'] ?? false);
+        $group = null;
+        if (array_key_exists('radio', $node)) {
+            if (! is_string($node['radio']) || $node['radio'] === '') {
+                throw new WindowException("Menu item '{$id}': a radio group name must be a non-empty string.");
+            }
+            $group = $node['radio'];
+            if ($toggle || $role !== null || $children !== []) {
+                throw new WindowException("Menu item '{$id}' cannot be a radio and a toggle, a role or a folder.");
+            }
+        }
         if ($toggle && ($role !== null || $children !== [])) {
             throw new WindowException("Menu item '{$label}' cannot be a toggle and a role or folder.");
+        }
+        if (array_key_exists('on', $node) && ! $toggle && is_null($group)) {
+            throw new WindowException("Menu item '{$id}': 'on' needs a toggle or a radio.");
         }
 
         if (isset($node['hotkey']) && isset($node['keys'])) {
@@ -105,7 +148,7 @@ readonly class MenuItem
             throw new WindowException("Menu item '{$label}': {$e->getMessage()}", 0, $e);
         }
 
-        return new self($id, $label, $role, false, $toggle, (bool) ($node['on'] ?? false), $keys, $children, (bool) ($node['enabled'] ?? true));
+        return new self($id, $label, $role, false, $toggle, (bool) ($node['on'] ?? false), $keys, $children, (bool) ($node['enabled'] ?? true), $group);
     }
 
     /**
@@ -141,6 +184,51 @@ readonly class MenuItem
         $walk($items);
 
         return $out;
+    }
+
+    /**
+     * The radio groups of one menu: group → its item ids, in tree order. Each group sits in one
+     * folder (or at the top of a context menu), has exactly one item on, and is not an item id.
+     *
+     * @param list<MenuItem> $items
+     * @return array<string, list<string>>
+     * @throws WindowException
+     */
+    public static function radioGroupsOf(array $items): array
+    {
+        $groups = [];
+        $folders = [];
+        $on = [];
+        $walk = function (array $items, string $folder) use (&$walk, &$groups, &$folders, &$on): void {
+            foreach ($items as $item) {
+                if ($item->separator) {
+                    continue;
+                }
+                $walk($item->items, $item->id);
+                $group = $item->group;
+                if (is_null($group)) {
+                    continue;
+                }
+                if (($folders[$group] ?? $folder) !== $folder) {
+                    throw new WindowException("Radio group '{$group}' must sit in one folder.");
+                }
+                $folders[$group] = $folder;
+                $groups[$group][] = $item->id;
+                $on[$group] = ($on[$group] ?? 0) + (int) $item->on;
+            }
+        };
+        $walk($items, '');
+        $ids = self::nodesOf($items);
+        foreach ($groups as $group => $members) {
+            if ($on[$group] !== 1) {
+                throw new WindowException("Radio group '{$group}' needs exactly one item on.");
+            }
+            if (isset($ids[$group])) {
+                throw new WindowException("Radio group '{$group}' is also an item id.");
+            }
+        }
+
+        return $groups;
     }
 
     private static function slug(string $path, string $label): string

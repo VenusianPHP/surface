@@ -56,6 +56,7 @@ Layers, each usable alone: Framebuffers (pixels) · Rasterize (shapes → spans)
 * Identical frame: nothing drawn, `damage()` `[]` (no ring present, no panel send).
 * Whole: first frame, after `invalidate()`, paged framebuffer. Frame without leading clear: all drawn, damage = its boxes.
 * `keepsFrame(fb)`: `preservesContentsOnPresent()`, or a ring (every engine repairs a ring before drawing). False → whole drawn, diff still reported.
+* Scroll: `canScroll()` = `keepsFrame`. `scroll(region, dx, dy)` between frames (open frame or `canScroll()` false → `DrawingException`) runs `Framebuffer::scroll()` and queues the clipped region for the next `end()`: a frame without leading clear damages its boxes + the region; a clearing frame damages what changed + the region (the region no longer holds the last frame) and is scissored to that.
 * `invalidate()`: framebuffer written outside the engine.
 * Text spans run top to bottom: trimming halves to the first row.
 

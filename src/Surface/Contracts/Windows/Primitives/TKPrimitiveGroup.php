@@ -3,6 +3,7 @@
 namespace Surface\Contracts\Windows\Primitives;
 
 use DateTimeImmutable;
+use Surface\Contracts\Windows\Menus\ContextMenu;
 use Surface\Contracts\Windows\WindowException;
 
 /**
@@ -119,11 +120,34 @@ interface TKPrimitiveGroup extends TKPrimitive
 
     /**
      * @param string $name
+     * @param bool $vertical
+     * @return TKScrollBar
+     */
+    public function scrollBar(string $name, bool $vertical = true): TKScrollBar;
+
+    /**
+     * @param string $name
      * @param list<string> $options
      * @param int $selected
      * @return TKDropdown
      */
     public function dropdown(string $name, array $options, int $selected = 0): TKDropdown;
+
+    /**
+     * @param string $name
+     * @param string $value
+     * @param list<string> $options
+     * @return TKComboBox
+     */
+    public function comboBox(string $name, string $value = '', array $options = []): TKComboBox;
+
+    /**
+     * @param string $name
+     * @param string $label
+     * @param array|ContextMenu $menu nodes as a context menu takes them
+     * @return TKMenuButton
+     */
+    public function menuButton(string $name, string $label, array|ContextMenu $menu): TKMenuButton;
 
     /**
      * @param string $name

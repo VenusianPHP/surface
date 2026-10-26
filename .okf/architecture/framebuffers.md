@@ -95,6 +95,8 @@ Integers throughout; `FbBuffer::paintSpans()` does the same in C. Fixtures 36–
 
 `writeRgba8(string $rgba8, int $width, int $height, int $x = 0, int $y = 0)` on every kind: a block of RGBA8 pixels, top-left at (x, y), each replacing the pixel there through the mapper. No blend. Off-surface part dropped. Bytes ≠ width × height × 4 throw, nothing written. Dirty/ring: written rect is damage; ring writes the back; paged takes surface coordinates, keeps current-page rows. `blitFrom()` = `writeRgba8()` of the source's RGBA8. How [Images](images.md) hands decoded pixels over.
 
+`scroll(Region $region, int $dx, int $dy)`: the region, clipped to the surface, moves its pixels by (dx, dy); what moves past its edge is dropped, outside it nothing changes, the exposed strip keeps its old pixels. One RGBA8 read of the part that stays inside, one write at the moved origin (the read is a copy, overlap safe). Damage = the whole clipped region (dirty, GL through its shadow). Ring scrolls the back. `HdrImage` throws read-only; paged throws (one page held at a time).
+
 # Words
 
 mono 0/1 (1 = white) · grey 0..max (2/4/8 bits, no palette) · packed index = palette code · planar = ink mask (0 = paper) · RGB packed at depth, `0xRRGGBBAA` at 32. `ChannelOrder` (RGB/BGR, RGBA/BGRA/ARGB/ABGR) changes bytes, never the word. `FormatSpec::rgba8()`, `bgra8()`.

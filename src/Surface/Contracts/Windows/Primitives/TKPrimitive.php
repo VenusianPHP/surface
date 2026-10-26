@@ -120,13 +120,25 @@ interface TKPrimitive
     /**
      * The menu the toolkit opens where this view is right-clicked: a menu's nodes in the menu
      * profile's item format, a parsed menu (one shared by many views), or null to take it off.
-     * A chosen item posts MenuActivated with its id.
+     * A chosen item posts MenuActivated with its id, a toggle MenuToggled, a radio item
+     * MenuRadioChosen. The menu keeps the user's toggle and radio choices: the next open shows them.
      * @param array|ContextMenu|null $menu
      * @return $this
      */
     public function setContextMenu(array|ContextMenu|null $menu): static;
 
+    /** The menu set, with the user's toggle and radio choices since. */
     public function contextMenu(): ?ContextMenu;
+
+    /**
+     * Open a menu now at ($x, $y), points from the view's top-left (as RightClicked gives them).
+     * An owned canvas press ends first, as for a right click. Choices post mail and are not kept:
+     * pass the menu each time. On AppKit the call returns when the menu closes; on GTK and Qt at once.
+     * @param array|ContextMenu $menu
+     * @return $this
+     * @throws WindowException When removed, or not shown: hidden, under a hidden group, or in a window not shown.
+     */
+    public function popupMenu(array|ContextMenu $menu, float $x, float $y): static;
 
     /**
      * The current allocation, read from the toolkit.

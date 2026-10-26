@@ -69,6 +69,20 @@ interface RenderingEngine
     public function invalidate(): static;
 
     /**
+     * Whether scroll() can move the framebuffer's pixels: it keeps its frame between frames.
+     */
+    public function canScroll(): bool;
+
+    /**
+     * Between frames, move the pixels of $region by ($dx, $dy) as Framebuffer::scroll() does,
+     * and add the region to the next end()'s damage. The next frame then draws what the scroll
+     * exposed and what changed; one that does not clear draws only that.
+     *
+     * @throws DrawingException While canScroll() is false, or inside an open frame.
+     */
+    public function scroll(Region $region, int $dx, int $dy): static;
+
+    /**
      * begin(), $draw($this), end(). If $draw throws, the frame is dropped: nothing is drawn and the last frame stays the one replay() repeats.
      *
      * @param  callable(RenderingEngine): void  $draw

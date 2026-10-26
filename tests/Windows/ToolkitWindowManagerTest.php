@@ -23,6 +23,14 @@ function menus(): array
     return [
         'main' => [['label' => 'App', 'items' => [['role' => 'quit', 'label' => 'Quit']]]],
         'editor' => [['label' => 'File', 'items' => [['label' => 'Save', 'hotkey' => 's']]]],
+        'tools' => [
+            ['label' => 'File', 'items' => [['label' => 'Save']]],
+            ['label' => 'View', 'items' => [
+                ['id' => 'view.grid', 'label' => 'Grid', 'toggle' => true],
+                ['id' => 'zoom.100', 'label' => '100%', 'radio' => 'zoom', 'on' => true],
+                ['id' => 'zoom.200', 'label' => '200%', 'radio' => 'zoom'],
+            ]],
+        ],
     ];
 }
 
@@ -98,4 +106,20 @@ it('refuses a default bar state when no default menu is configured', function ()
 
     expect(fn () => $manager->setItemEnabled('file.save', false))->toThrow(WindowException::class, 'default menu')
         ->and(fn () => $manager->isItemEnabled('file.save'))->toThrow(WindowException::class, 'default menu');
+});
+
+it('sets and reads toggles, radios and labels of the default bar through the driver', function (): void {
+    $driver = new FakeWindowDriver();
+    $manager = new ToolkitWindowManager(toolkitsReturning($driver), menus(), 'tools');
+
+    $manager->setToggle('view.grid', true);
+    $manager->setRadio('zoom', 'zoom.200');
+    $manager->setItemLabel('file.save', 'Save All');
+
+    expect($manager->isToggled('view.grid'))->toBeTrue()
+        ->and($driver->isToggled('view.grid'))->toBeTrue()
+        ->and($manager->radio('zoom'))->toBe('zoom.200')
+        ->and($driver->radio('zoom'))->toBe('zoom.200')
+        ->and($manager->itemLabel('file.save'))->toBe('Save All')
+        ->and($driver->itemLabel('file.save'))->toBe('Save All');
 });

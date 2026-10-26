@@ -24,9 +24,8 @@ it('parses items, separators and submenus, with ids from the label path', functi
         ->and(array_keys($menu->items()))->toBe(['download', 'open', 'share.copy-link']);
 });
 
-it('refuses an empty menu, toggles, roles and hotkeys, nested ones too', function (): void {
+it('refuses an empty menu, roles and hotkeys, nested ones too', function (): void {
     expect(fn () => ContextMenu::parse([]))->toThrow(WindowException::class, 'at least one item')
-        ->and(fn () => ContextMenu::parse([['label' => 'Grid', 'toggle' => true]]))->toThrow(WindowException::class, "'Grid'")
         ->and(fn () => ContextMenu::parse([['label' => 'Quit', 'role' => 'quit']]))->toThrow(WindowException::class, "'Quit'")
         ->and(fn () => ContextMenu::parse([['label' => 'More', 'items' => [['label' => 'Save', 'hotkey' => 's']]]]))->toThrow(WindowException::class, "'Save'");
 });
@@ -63,4 +62,33 @@ it('parses enabled in a context menu and refuses keys, ids used two times', func
         ->and(array_keys($menu->nodes()))->toBe(['share', 'share.copy-link', 'open'])
         ->and(fn () => ContextMenu::parse([['label' => 'Save', 'keys' => 'Primary+S']]))->toThrow(WindowException::class, "'Save'")
         ->and(fn () => ContextMenu::parse([['id' => 'x', 'label' => 'A'], ['id' => 'x', 'label' => 'B']]))->toThrow(WindowException::class, "'x'");
+});
+
+it('takes toggles and radios, and keeps the user\'s choices in copies', function (): void {
+    $menu = ContextMenu::parse([
+        ['id' => 'wrap', 'label' => 'Wrap', 'toggle' => true],
+        ['separator' => true],
+        ['id' => 'case.none', 'label' => 'None', 'radio' => 'case', 'on' => true],
+        ['id' => 'case.all', 'label' => 'All', 'radio' => 'case'],
+    ]);
+
+    $wrapped = $menu->withToggle('wrap', true);
+    $all = $wrapped->withRadio('case', 'case.all');
+
+    expect($menu->items()['wrap']->isOn())->toBeFalse()
+        ->and($menu->radios())->toBe(['case' => 'case.none'])
+        ->and($wrapped->items()['wrap']->isOn())->toBeTrue()
+        ->and($wrapped)->not->toBe($menu)
+        ->and($all->radios())->toBe(['case' => 'case.all'])
+        ->and($all->items()['case.none']->isOn())->toBeFalse()
+        ->and($all->items()['wrap']->isOn())->toBeTrue()
+        ->and($wrapped->radios())->toBe(['case' => 'case.none'])
+        ->and(fn () => $menu->withToggle('case.all', true))->toThrow(WindowException::class, "No toggle item 'case.all' in the menu.")
+        ->and(fn () => $menu->withRadio('case', 'wrap'))->toThrow(WindowException::class, "'wrap' is not in radio group 'case'.")
+        ->and(fn () => $menu->withRadio('nope', 'wrap'))->toThrow(WindowException::class, "No radio group 'nope' in the menu.");
+});
+
+it('refuses keys on a radio in a context menu', function (): void {
+    expect(fn () => ContextMenu::parse([['id' => 'a', 'label' => 'A', 'radio' => 'g', 'on' => true, 'keys' => 'Primary+1']]))
+        ->toThrow(WindowException::class, 'cannot be a role or carry an accelerator');
 });

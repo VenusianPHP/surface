@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Surface\Contracts\Windows\Mail\MenuActivated;
+use Surface\Contracts\Windows\Mail\MenuRadioChosen;
 use Surface\Contracts\Windows\Mail\MenuToggled;
 use Surface\Contracts\Windows\Mail\QuitRequested;
 use Surface\Contracts\Windows\Mail\WindowClosed;
@@ -18,6 +19,7 @@ it('names each mail so listeners can match it by name', function (object $mail, 
     'focused' => [new WindowFocused('main'), 'window.focused.main'],
     'activated' => [new MenuActivated('main', 'view.refresh'), 'menu.activated.main.view.refresh'],
     'toggled' => [new MenuToggled('main', 'grid', true), 'menu.toggled.main.grid'],
+    'radio chosen' => [new MenuRadioChosen('main', 'ignore-case', 'case.all'), 'menu.radio.main.ignore-case'],
     'quit' => [new QuitRequested('main'), 'quit.requested'],
     'focus lost' => [new \Surface\Contracts\Windows\Mail\WindowFocusLost('main'), 'window.focus-lost.main'],
     'occluded' => [new \Surface\Contracts\Windows\Mail\WindowOccluded('main'), 'window.occluded.main'],

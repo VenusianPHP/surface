@@ -56,7 +56,7 @@ $main->view('toolbar.save');              // relative path from a container
 | `TKFixed` | `at(x, y, width, height)` before each creation (`Placement::frame`) | `move(child, x, y)`, `resize(child, w, h)`, `frameOf(child)` = current frame (creation frame, then every move/resize; recorded before `insertNative()`); only place pixels exist |
 | `TKScrollView` | one column/row/grid/fixed | leaf or second child → `WindowException`; `content()`, `setScrollbars(h, v)` |
 | `TKSplitView` | creation order; each child a pane | `split(name, horizontal = true)`; `positions()` / `setPositions(list<float>)`: one fraction per divider between *visible* panes, ascending in 0..1, else `WindowException`; read from the native, so it follows drags; a scroll view may hold one |
-| `TKTabView` | `addPage(name, title)` → the page's `TKColumn`; any other child call → `WindowException` | `pages()`, `title()` / `setTitle()`, `selected()` / `select()`; first page selected; removing a page's column removes its tab |
+| `TKTabView` | `addPage(name, title, ?index)` → the page's `TKColumn`, before the page at `index` (null appends; outside 0..count throws); any other child call → `WindowException` | `pages()`, `title()` / `setTitle()`, `selected()` / `select()`; first page selected; removing a page's column removes its tab |
 
 Window content: `$window->column|row|grid|fixed(name)` once; second → `WindowException`. `HostsPrimitives` (trait for driver windows) implements content, registry, lookups; window supplies `factory()`, `mountContent()`, `size()`, and calls `removeContent()` from `close()` while its native lives.
 
@@ -82,7 +82,7 @@ Every primitive: `setVisible`/`show`/`hide`, `setEnabled`/`enable`/`disable` (`H
 |---|---|---|---|
 | `TKLabel` | text | `applyText`, `applyWrap`, `applyAlignment`, `applyFont`, `applyTextColor` | — |
 | `TKLink` | text, url | `applyText`, `applyUrl`, `applyAlignment`, `applyFont` | — |
-| `TKButton` | label | `applyLabel`, `applyFont`, `applyTextColor`, `applyRole` | — (driver posts `ButtonClicked`) |
+| `TKButton` | label | `applyLabel`, `applyFont`, `applyTextColor`, `applyRole`, `applyImage(?fb, position, scale)`, `applyBordered` (change-only) | — (driver posts `ButtonClicked`) |
 | `TKImage` | ?file | `applyFile`, `applyScaling` | — |
 | `TKCanvas` | — | `nativeScale`, `applyPixels(rgba8, w, h, damage)`, `applyAddress(addr, w, h, stride, damage)` | — |
 | `TKSeparator` | horizontal | — (`isHorizontal()`) | — |
@@ -92,9 +92,12 @@ Every primitive: `setVisible`/`show`/`hide`, `setEnabled`/`enable`/`disable` (`H
 | `TKTextArea` | value (line endings normalised to "\n"), read-only, wrap, line backgrounds, range styles, selection, scroll position, scroll watching | `applyValue`, `applyFont`, `applyTextColor`, `applyReadOnly`, `applyWrap`, `applyLineBackgrounds`, `applyRangeStyles`, `applySelectLines`, `applyScrollTo`, `applyScrollToLine`; reads `nativeSelectedLines`, `nativeScrollPosition` | `nativeValueChanged(string)` |
 | `TKCheckbox` | label, checked | `applyLabel`, `applyChecked` | `nativeToggled(bool)` |
 | `TKToggle` | on | `applyOn` | `nativeToggled(bool)` |
-| `TKToggleButton` | label, pressed | `applyLabel`, `applyPressed` | `nativeToggled(bool)` |
+| `TKToggleButton` | label, pressed | `applyLabel`, `applyPressed`, `applyImage`, `applyBordered` | `nativeToggled(bool)` |
 | `TKSlider` | min, max, value | `applyValue` (clamped), `applyRange` | `nativeValueChanged(float)` |
+| `TKScrollBar` | vertical, maximum, page, step (1), value (0..max(0, maximum − page), clamped on every write) | `applyRange(maximum, page, value)` (value already clamped), `applyStep`, `applyValue` | `nativeMoved(int)` (clamped; driver posts `ScrollChanged`) |
 | `TKDropdown` | list<string> options, selected | `applyOptions` then `applySelected` | `nativeSelected(int)` |
+| `TKComboBox` | value, list<string> options | `applyValue` (hides the completion list), `applyOptions`, `applyCompletions(list) → bool` (false = field unfocused, list dropped) | `nativeEdited(string)`, `nativeChose(string)`, `nativeHidden()` |
+| `TKMenuButton` | label, ContextMenu | `applyLabel`, `applyImage(?fb, scale)`, `applyMenu`, `applyBordered` (change-only) | — (driver posts `MenuActivated`) |
 | `TKDatepicker` | ?date | `applyDate` (null = native default, `date()` stays null) | `nativeDateChanged(DateTimeImmutable)` |
 | `TKTable` | list<TableColumn>, rows | `applyRows(list<list<string>>)` then `applySelectedRow(?int)` | `nativeRowSelected(?int)` |
 | `TKTree` | list<TableColumn>, list<TreeNode> | `applyNodes`, `applyExpanded(id, bool)` (ancestors all expanded), `applySelected(?id)`, `nativeSelected()` | `nativeNodeExpanded(id, bool)` → changed |
@@ -104,6 +107,8 @@ A link's URL needs a scheme (WindowException otherwise, before the native exists
 
 * Guards (`WindowException`): NAN/INF in a progress fraction, slider range or value, or `seek()`; fraction outside 0..1, slider `min >= max`, dropdown index out of range / options not a list of strings, table row out of range / cell not scalar|null / column ids not unique, `seek()` < 0.
 * Dropdown: `selected` = -1 exactly when no options; `setOptions` keeps an in-range selection else 0.
+* Combo: a hidden completion list is cleared (`completions()` = []); hide = Esc, focus loss, a choice, `setValue`, `setCompletions([])`. SelectionChanged index = position in options, -1 for a completion.
+* Button images (`HasButtonImage`, trait `ShowsButtonImage`): RGBA8 framebuffer shown at width / scale × height / scale points; scale must be > 0; `ImagePosition` LEADING, ABOVE, ONLY.
 * Table: rows normalised to every column in column order, missing key `''`; `setRows`/`clearRows` clear selection; `appendRow` keeps it; every reload re-applies the selection.
 * Tree: ids unique across the forest (`WindowException`, nothing changed). Expansion recorded in Surface, nodes with children only; kept while an ancestor is collapsed, re-applied by `reopen()` when it opens. `expand()` on a leaf = no-op. `setNodes` keeps expansion and selection for ids still present; a kept selection now under a collapsed node opens its ancestors, as `selectNode()` does. Selection read from the native.
 * Video: `isPlaying()` = engine's last report, not the last call.
@@ -137,7 +142,7 @@ $view->present();                                        // on screen
 
 Focus: every primitive has `focus()` (throws `WindowException` when removed, hidden or disabled itself or through a container, or when the native declines; the native is not asked in those cases) and `hasFocus()`, through the abstract hooks `applyFocus(): bool` and `nativeHasFocus()`; the driver focuses the native's focus target (the inner view of a scroll-wrapped native). A canvas takes no focus until `setFocusable(bool $on = true, bool $takesTab = false)`; `takesTab` is false whenever focusable is, and a change reaches the driver's `applyFocusable($on, $takesTab)` once. `FocusGained` / `FocusLost` post only for the user's focus changes.
 
-Pointer: `watchPointer(bool $on = true)` / `isWatchingPointer()`. Off by default; the flag lives in the abstract and nothing is written to the native (as a context menu is not) — the window's pointer source reads it. `watchPointer()` throws `WindowException` once the canvas is removed. While watching, the canvas posts `CanvasPressed`, `CanvasDragged`, `CanvasReleased` and `CanvasWheeled` ([view mail](/api/view-mail.md)) in points from its top-left, as `CanvasClicked`'s. `CanvasClicked` and the right-click rules post either way, so a sketch that wants only clicks never watches.
+Pointer: `watchPointer(bool $on = true)` / `isWatchingPointer()`. Off by default; the flag lives in the abstract and nothing is written to the native (as a context menu is not) — the window's pointer source reads it. `watchPointer()` throws `WindowException` once the canvas is removed. While watching, the canvas posts `CanvasPressed`, `CanvasDragged`, `CanvasReleased` and `CanvasWheeled` ([view mail](/api/view-mail.md)) in points from its top-left, as `CanvasClicked`'s. `CanvasClicked` and the right-click rules post either way, so a sketch that wants only clicks never watches. Watching also posts hover: `CanvasMoved` with no button held, `CanvasEntered` / `CanvasLeft` at the edge (none during an owned press; a press released outside posts `CanvasLeft` after `CanvasReleased`); `CanvasWheeled` carries a `ScrollPhase`.
 
 * One press at a time per window: the first button down on a watching, enabled canvas owns it; other buttons' presses and releases post nothing until it ends. `CanvasDragged` posts per move while that button is held, only when the point changed, and goes on outside the canvas and the window (implicit capture).
 * Exactly one `CanvasReleased` per `CanvasPressed`: at the owning button's release, or at once at the last point posted when the toolkit ends the press without one (a context menu opens, GTK's grab breaks, a touch is cancelled). A press ended from code — `watchPointer(false)`, the canvas or a group above it disabled, `remove()`, the window closed — drops silently, as no mail comes from code.

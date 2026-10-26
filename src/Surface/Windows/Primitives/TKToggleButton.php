@@ -11,6 +11,8 @@ use Surface\Contracts\Windows\ToolkitWindow;
  */
 abstract class TKToggleButton extends TKPrimitive implements PrimitiveContract
 {
+    use ShowsButtonImage;
+
     public function __construct(
         string $name,
         ToolkitWindow $window,

@@ -63,4 +63,6 @@ final class Rgba8Source implements Framebuffer
     public function blitFrom(Framebuffer $source, int $offset_x = 0, int $offset_y = 0): Framebuffer { throw new LogicException('read-only source'); }
 
     public function writeRgba8(string $rgba8, int $width, int $height, int $x = 0, int $y = 0): static { throw new LogicException('read-only source'); }
+
+    public function scroll(Region $region, int $dx, int $dy): void { throw new LogicException('read-only source'); }
 }

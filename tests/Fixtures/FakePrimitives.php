@@ -28,6 +28,7 @@ use Surface\Contracts\Windows\Primitives\TKScrollView as ScrollContract;
 use Surface\Contracts\Windows\Primitives\TKSplitView as SplitContract;
 use Surface\Contracts\Windows\Primitives\TKTabView as TabsContract;
 use Surface\Contracts\Windows\Primitives\TKSeparator;
+use Surface\Contracts\Windows\Primitives\TKScrollBar;
 use Surface\Contracts\Windows\Primitives\TKSlider;
 use Surface\Contracts\Windows\Primitives\TKSpinner;
 use Surface\Contracts\Windows\Primitives\TKTable;
@@ -50,6 +51,13 @@ use Surface\Windows\Primitives\HostsPrimitives;
 use Surface\Contracts\Windows\Primitives\Placement;
 use Surface\Contracts\Windows\Primitives\ImageScaling;
 use Surface\Windows\Primitives\TKButton;
+use Surface\Contracts\Framebuffers\Framebuffer;
+use Surface\Contracts\Windows\Menus\ContextMenu as ContextMenuContract;
+use Surface\Contracts\Windows\Primitives\ImagePosition;
+use Surface\Contracts\Windows\Primitives\TKComboBox;
+use Surface\Contracts\Windows\Primitives\TKMenuButton;
+use Surface\Windows\Primitives\TKComboBox as ComboBoxAbstract;
+use Surface\Windows\Primitives\TKMenuButton as MenuButtonAbstract;
 use Surface\Windows\Primitives\TKCheckbox as CheckboxAbstract;
 use Surface\Windows\Primitives\TKDatepicker as DatepickerAbstract;
 use Surface\Windows\Primitives\TKDropdown as DropdownAbstract;
@@ -57,6 +65,7 @@ use Surface\Windows\Primitives\TKCanvas as CanvasAbstract;
 use Surface\Windows\Primitives\TKImage as ImageAbstract;
 use Surface\Windows\Primitives\TKProgressBar as ProgressBarAbstract;
 use Surface\Windows\Primitives\TKSeparator as SeparatorAbstract;
+use Surface\Windows\Primitives\TKScrollBar as ScrollBarAbstract;
 use Surface\Windows\Primitives\TKSlider as SliderAbstract;
 use Surface\Windows\Primitives\TKSpinner as SpinnerAbstract;
 use Surface\Windows\Primitives\TKTable as TableAbstract;
@@ -124,6 +133,14 @@ final class FakeHost implements ToolkitWindow
     public function setItemEnabled(string $item, bool $enabled): static { throw new WindowException("Window '{$this->name}' has no menu bar."); }
 
     public function isItemEnabled(string $item): bool { throw new WindowException("Window '{$this->name}' has no menu bar."); }
+
+    public function setRadio(string $group, string $item): static { throw new WindowException("Window '{$this->name}' has no menu bar."); }
+
+    public function radio(string $group): string { throw new WindowException("Window '{$this->name}' has no menu bar."); }
+
+    public function setItemLabel(string $item, string $label): static { throw new WindowException("Window '{$this->name}' has no menu bar."); }
+
+    public function itemLabel(string $item): string { throw new WindowException("Window '{$this->name}' has no menu bar."); }
 
     private bool $confirming = false;
 
@@ -197,9 +214,15 @@ final class FakePrimitiveFactory implements PrimitiveFactory
 
     public function mintToggleButton(GroupContract $host, string $name, string $label, bool $pressed): TKToggleButton { return new FakeToggleButton($name, ...[...$this->slot($host, $name, 'ToggleButton'), $label, $pressed]); }
 
+    public function mintScrollBar(GroupContract $host, string $name, bool $vertical): TKScrollBar { return new FakeScrollBar($name, ...[...$this->slot($host, $name, 'ScrollBar'), $vertical]); }
+
     public function mintSlider(GroupContract $host, string $name, float $min, float $max, float $value): TKSlider { return new FakeSlider($name, ...[...$this->slot($host, $name, 'Slider'), $min, $max, $value]); }
 
     public function mintDropdown(GroupContract $host, string $name, array $options, int $selected): TKDropdown { return new FakeDropdown($name, ...[...$this->slot($host, $name, 'Dropdown'), $options, $selected]); }
+
+    public function mintComboBox(GroupContract $host, string $name, string $value, array $options): TKComboBox { return new FakeComboBox($name, ...[...$this->slot($host, $name, 'ComboBox'), $value, $options]); }
+
+    public function mintMenuButton(GroupContract $host, string $name, string $label, ContextMenuContract $menu): TKMenuButton { return new FakeMenuButton($name, ...[...$this->slot($host, $name, 'MenuButton'), $label, $menu]); }
 
     public function mintDatepicker(GroupContract $host, string $name, ?DateTimeImmutable $date): TKDatepicker { return new FakeDatepicker($name, ...[...$this->slot($host, $name, 'Datepicker'), $date]); }
 
@@ -265,6 +288,19 @@ trait FakeNative
 
     /** Whether the fake native takes focus when asked. */
     public bool $takes_focus = true;
+
+    /** Whether the toolkit has the native on screen: a popup menu opens only then. */
+    public bool $native_shown = true;
+
+    protected function applyPopupMenu(\Surface\Contracts\Windows\Menus\ContextMenu $menu, float $x, float $y): bool
+    {
+        if ($this->native_shown) {
+            $ids = $menu instanceof \Surface\Windows\Menus\ContextMenu ? array_keys($menu->items()) : [];
+            $this->log[] = 'popup:'.implode('|', $ids)."@{$x},{$y}";
+        }
+
+        return $this->native_shown;
+    }
 
     /** Whether the fake native holds focus. */
     public bool $native_focus = false;
@@ -354,10 +390,11 @@ final class FakeTabView extends TKTabView
 
     public ?string $native_selected = null;
 
-    protected function insertPage(ColumnContract $page, string $title): void
+    protected function insertPage(ColumnContract $page, string $title, ?int $index): void
     {
         $this->native_selected ??= $page->name();
         $this->log[] = "page:{$page->name()}={$title}";
+        $this->log[] = "page:{$page->name()}@".($index ?? 'end');
     }
 
     protected function applyTitle(ColumnContract $page, string $title): void { $this->log[] = "title:{$page->name()}={$title}"; }
@@ -399,9 +436,22 @@ final class FakeLink extends TKLink
     protected function applyFont(FontSpec $font): void { $this->log[] = "font:{$font->size}"; }
 }
 
+/** Image hooks shared by the fake push and toggle buttons. */
+trait FakeButtonImage
+{
+    protected function applyImage(?Framebuffer $image, ImagePosition $position, float $scale): void
+    {
+        $size = is_null($image) ? 'none' : "{$image->viewportWidth()}x{$image->viewportHeight()}";
+        $this->log[] = "image:{$size},{$position->value},{$scale}";
+    }
+
+    protected function applyBordered(bool $on): void { $this->log[] = 'bordered:'.(int) $on; }
+}
+
 final class FakeButton extends TKButton
 {
     use FakeNative;
+    use FakeButtonImage;
 
     protected function applyLabel(string $label): void { $this->log[] = "label:{$label}"; }
 
@@ -552,6 +602,7 @@ final class FakeToggle extends ToggleAbstract
 final class FakeToggleButton extends ToggleButtonAbstract
 {
     use FakeNative;
+    use FakeButtonImage;
 
     protected function applyLabel(string $label): void { $this->log[] = "label:{$label}"; }
 
@@ -567,6 +618,17 @@ final class FakeSlider extends SliderAbstract
     protected function applyRange(float $min, float $max): void { $this->log[] = "range:{$min},{$max}"; }
 }
 
+final class FakeScrollBar extends ScrollBarAbstract
+{
+    use FakeNative;
+
+    protected function applyRange(int $maximum, int $page, int $value): void { $this->log[] = "range:{$maximum},{$page},{$value}"; }
+
+    protected function applyStep(int $line): void { $this->log[] = "step:{$line}"; }
+
+    protected function applyValue(int $value): void { $this->log[] = "value:{$value}"; }
+}
+
 final class FakeDropdown extends DropdownAbstract
 {
     use FakeNative;
@@ -574,6 +636,42 @@ final class FakeDropdown extends DropdownAbstract
     protected function applyOptions(array $options): void { $this->log[] = 'options:'.implode('|', $options); }
 
     protected function applySelected(int $index): void { $this->log[] = "selected:{$index}"; }
+}
+
+final class FakeComboBox extends ComboBoxAbstract
+{
+    use FakeNative;
+
+    /** Whether the fake field holds focus, so completions show. */
+    public bool $field_focus = false;
+
+    protected function applyValue(string $value): void { $this->log[] = "value:{$value}"; }
+
+    protected function applyOptions(array $options): void { $this->log[] = 'options:'.implode('|', $options); }
+
+    protected function applyCompletions(array $completions): bool
+    {
+        $this->log[] = 'completions:'.implode('|', $completions);
+
+        return $this->field_focus;
+    }
+}
+
+final class FakeMenuButton extends MenuButtonAbstract
+{
+    use FakeNative;
+
+    protected function applyLabel(string $label): void { $this->log[] = "label:{$label}"; }
+
+    protected function applyImage(?Framebuffer $image, float $scale): void
+    {
+        $size = is_null($image) ? 'none' : "{$image->viewportWidth()}x{$image->viewportHeight()}";
+        $this->log[] = "image:{$size},{$scale}";
+    }
+
+    protected function applyMenu(ContextMenuContract $menu): void { $this->log[] = 'menu:'.implode('|', array_keys($menu->items())); }
+
+    protected function applyBordered(bool $on): void { $this->log[] = 'bordered:'.(int) $on; }
 }
 
 final class FakeDatepicker extends DatepickerAbstract

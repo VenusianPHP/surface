@@ -5,7 +5,7 @@ namespace Surface\Contracts\Windows\Primitives;
 /**
  * A button that stays pressed. Posts Toggled.
  */
-interface TKToggleButton extends TKPrimitive
+interface TKToggleButton extends TKPrimitive, HasButtonImage
 {
     /**
      * @return string

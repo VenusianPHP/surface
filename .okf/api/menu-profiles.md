@@ -38,12 +38,13 @@ sources:
 | `separator` | bool | `true` → separator, other keys ignored |
 | `role` | `about` \| `quit` \| `undo` \| `redo` \| `cut` \| `copy` \| `paste` \| `select-all` (`MenuRole`) | system item; unknown role throws; an edit role takes no `hotkey`, `keys` or `enabled` (throws): the toolkit sets its keys and state |
 | `toggle` | bool | checkable; not with role or items |
-| `on` | bool | toggle's initial state |
+| `radio` | non-empty string | radio group name; not with `toggle`, `role` or `items`; takes `hotkey`, `keys` (bar only), `enabled`; a group sits in one folder, has exactly one item `on`, and is not an item id |
+| `on` | bool | a toggle's or radio item's initial state; on any other node it throws |
 | `keys` | string | accelerator, e.g. `Primary+Shift+F5`; items only; see Accelerators |
 | `hotkey` | 1 char | = `keys` `Primary+<char>`; a character a key types without Shift, or an upper-case letter; not with `keys` |
 | `enabled` | bool | start state, default `true`; items and folders; not on the first folder or a folder holding an edit role |
 
-`MenuProfile::items()` = leaf items by id; `nodes()` = items and folders by id, tree order; `toggles()` = initial toggle states.[^item]
+`MenuProfile::items()` = leaf items by id; `nodes()` = items and folders by id, tree order; `toggles()` = initial toggle states; `radios()` = group → the item starting on; `radioItems(group)` = its ids.[^item]
 
 # Accelerators
 
@@ -52,6 +53,10 @@ sources:
 # Enabled state
 
 `$window->setItemEnabled($id, false)` / `isItemEnabled($id)`; the default bar: `ToolkitWindowManager::setItemEnabled()` (gives the driver the default profile first). No rebuild, no mail. A node is effectively enabled when it and every folder above it are enabled; the rest show disabled, post nothing, and their accelerators do nothing. `isItemEnabled()` = own state; it throws, as `setItemEnabled()` does, for an edit role, a folder holding one and the first folder (the toolkit owns those). `MenuStates` holds both for drivers and fakes; `changes()` = the states that differ from the profile, which a bar built later replays.[^states] `enabled` must be a bool; `keys` a string or an `Accelerator`; a separator takes no other key. A new profile (`setMenuBar`, another default) starts from its own states.
+
+# Radios and labels
+
+`$window->setRadio($group, $item)` / `radio($group)`; `setItemLabel($id, $label)` / `itemLabel($id)` for any node but a separator, folders too. The window's bar only; posts nothing. The user's choice of another item posts `MenuRadioChosen(window, group, item)`; the item already on posts nothing. Default bar: `ToolkitWindowManager::setToggle()`, `isToggled()`, `setRadio()`, `radio()`, `setItemLabel()`, `itemLabel()` as for enabled. `MenuStates` keeps all four kinds; `toggleChanges()`, `radioChanges()`, `labelChanges()` (and `changes()` for enabled) = what a rebuilt bar replays. The same id or group in a bar and a context menu posts the same mail.
 
 # Examples
 
@@ -77,7 +82,7 @@ Edit roles act on the focused text, or on a list for Select All: AppKit sends th
 
 # Context menus
 
-`$primitive->setContextMenu($nodes)` = menu toolkit opens where primitive right-clicked. Nodes = item schema above minus `role`, `toggle`, `hotkey`, `keys` (each throws; empty list throws); `enabled` is valid. Takes parsed `ContextMenu::parse($nodes)` too (one menu, many primitives); `null` = off. `contextMenu()` reads it. Ids default to label slug from the top (`Open` → `open`, `Share` › `Copy Link` → `share.copy-link`).[^context]
+`$primitive->setContextMenu($nodes)` = menu toolkit opens where primitive right-clicked. Nodes = item schema above minus `role`, `hotkey`, `keys` (each throws; empty list throws); `enabled`, toggles and radios are valid. The menu keeps the user's toggle and radio choices: `contextMenu()` returns it with them (`withToggle()` / `withRadio()` copies; `nativeContextToggled()` / `nativeContextRadio()` from the driver); a menu button's menu too. `popupMenu($nodes, $x, $y)` opens a menu now at a point in the primitive (points from its top-left); throws when removed or not shown; its choices post mail and are not kept. Takes parsed `ContextMenu::parse($nodes)` too (one menu, many primitives); `null` = off. `contextMenu()` reads it. Ids default to label slug from the top (`Open` → `open`, `Share` › `Copy Link` → `share.copy-link`).[^context]
 
 Right click → `view.right-clicked` first, then menu of clicked primitive or nearest group above with one. Choice → `MenuActivated` (`menu.activated.<window>.<id>`); dismiss → nothing. Disabled → no mail, no menu. Primitive with menu shows only it (text input's own edit menu does not open). Bare window content has none.
 

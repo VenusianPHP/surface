@@ -2,6 +2,8 @@
 
 namespace Surface\Contracts\Windows\Primitives;
 
+use Surface\Contracts\Windows\WindowException;
+
 /**
  * Pages, one column each, behind titled tabs. Removing a page's column removes its tab; the first page
  * added is selected.
@@ -9,11 +11,15 @@ namespace Surface\Contracts\Windows\Primitives;
 interface TKTabView extends TKPrimitive
 {
     /**
+     * A page before the one at $index; null appends. Posts no TabSelected. pages() follows the tabs.
+     *
      * @param string $name
      * @param string $title
+     * @param int|null $index
      * @return TKColumn the page's content
+     * @throws WindowException When the index is outside 0..count.
      */
-    public function addPage(string $name, string $title): TKColumn;
+    public function addPage(string $name, string $title, ?int $index = null): TKColumn;
 
     /**
      * @return list<string> page names, in order

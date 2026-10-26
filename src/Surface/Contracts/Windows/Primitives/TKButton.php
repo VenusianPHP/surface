@@ -8,7 +8,7 @@ use Surface\NutsAndBolts\Color;
 /**
  * A push button. Posts ButtonClicked.
  */
-interface TKButton extends TKPrimitive
+interface TKButton extends TKPrimitive, HasButtonImage
 {
     /**
      * @return string

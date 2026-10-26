@@ -12,7 +12,11 @@ use Surface\Contracts\Windows\Primitives\TKCanvas;
 use Surface\Contracts\Windows\Primitives\TKCheckbox;
 use Surface\Contracts\Windows\Primitives\TKColumn;
 use Surface\Contracts\Windows\Primitives\TKDatepicker;
+use Surface\Contracts\Windows\Menus\ContextMenu as ContextMenuContract;
+use Surface\Contracts\Windows\Primitives\TKComboBox;
 use Surface\Contracts\Windows\Primitives\TKDropdown;
+use Surface\Contracts\Windows\Primitives\TKMenuButton;
+use Surface\Windows\Menus\ContextMenu;
 use Surface\Contracts\Windows\Primitives\TKFixed;
 use Surface\Contracts\Windows\Primitives\TKGrid;
 use Surface\Contracts\Windows\Primitives\TKImage;
@@ -24,6 +28,7 @@ use Surface\Contracts\Windows\Primitives\TKProgressBar;
 use Surface\Contracts\Windows\Primitives\TKRow;
 use Surface\Contracts\Windows\Primitives\TKScrollView;
 use Surface\Contracts\Windows\Primitives\TKSeparator;
+use Surface\Contracts\Windows\Primitives\TKScrollBar;
 use Surface\Contracts\Windows\Primitives\TKSlider;
 use Surface\Contracts\Windows\Primitives\TKSplitView;
 use Surface\Contracts\Windows\Primitives\TKSpinner;
@@ -124,9 +129,26 @@ abstract class TKPrimitiveGroup extends TKPrimitive implements PrimitiveContract
         return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintSlider($this, $name, $min, $max, $value));
     }
 
+    public function scrollBar(string $name, bool $vertical = true): TKScrollBar
+    {
+        return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintScrollBar($this, $name, $vertical));
+    }
+
     public function dropdown(string $name, array $options, int $selected = 0): TKDropdown
     {
         return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintDropdown($this, $name, $options, $selected));
+    }
+
+    public function comboBox(string $name, string $value = '', array $options = []): TKComboBox
+    {
+        return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintComboBox($this, $name, $value, $options));
+    }
+
+    public function menuButton(string $name, string $label, array|ContextMenuContract $menu): TKMenuButton
+    {
+        $menu = is_array($menu) ? ContextMenu::parse($menu) : $menu;
+
+        return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintMenuButton($this, $name, $label, $menu));
     }
 
     public function datepicker(string $name, ?DateTimeImmutable $date = null): TKDatepicker

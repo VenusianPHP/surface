@@ -120,3 +120,56 @@ it('gives the states that differ from the profile, for a bar built later', funct
 
     expect($states->changes())->toBe(['view.refresh' => false, 'view.off' => true]);
 });
+
+function stateful(): MenuProfile
+{
+    return MenuProfile::parse('main', [
+        ['label' => 'App', 'items' => [['label' => 'About']]],
+        ['id' => 'view', 'label' => 'View', 'items' => [
+            ['id' => 'grid', 'label' => 'Grid', 'toggle' => true],
+            ['id' => 'case.none', 'label' => 'None', 'radio' => 'case', 'on' => true],
+            ['id' => 'case.all', 'label' => 'All', 'radio' => 'case'],
+            ['separator' => true],
+            ['id' => 'refresh', 'label' => 'Refresh'],
+        ]],
+    ]);
+}
+
+it('keeps toggles, radios and labels, and reports what differs from the profile', function (): void {
+    $states = new MenuStates(stateful());
+
+    expect($states->toggle('grid'))->toBeFalse()
+        ->and($states->radio('case'))->toBe('case.none')
+        ->and($states->label('view'))->toBe('View')
+        ->and($states->toggleChanges())->toBe([])
+        ->and($states->radioChanges())->toBe([])
+        ->and($states->labelChanges())->toBe([]);
+
+    $states->setToggle('grid', true);
+    $states->setRadio('case', 'case.all');
+    $states->setLabel('refresh', 'Refresh Now');
+    $states->setLabel('view', 'Look');
+    $states->set('refresh', false);
+
+    expect($states->toggle('grid'))->toBeTrue()
+        ->and($states->radio('case'))->toBe('case.all')
+        ->and($states->label('refresh'))->toBe('Refresh Now')
+        ->and($states->toggleChanges())->toBe(['grid' => true])
+        ->and($states->radioChanges())->toBe(['case' => 'case.all'])
+        ->and($states->labelChanges())->toBe(['view' => 'Look', 'refresh' => 'Refresh Now'])
+        ->and($states->changes())->toBe(['refresh' => false]);
+
+    $states->setRadio('case', 'case.none');
+    expect($states->radioChanges())->toBe([]);
+});
+
+it('refuses a toggle, a radio group, a radio item or a label it does not have', function (): void {
+    $states = new MenuStates(stateful());
+
+    expect(fn () => $states->setToggle('refresh', true))->toThrow(WindowException::class, "No toggle item 'refresh' in the menu.")
+        ->and(fn () => $states->toggle('nope'))->toThrow(WindowException::class, "No toggle item 'nope' in the menu.")
+        ->and(fn () => $states->setRadio('nope', 'case.all'))->toThrow(WindowException::class, "No radio group 'nope' in the menu bar.")
+        ->and(fn () => $states->radio('nope'))->toThrow(WindowException::class, "No radio group 'nope' in the menu bar.")
+        ->and(fn () => $states->setRadio('case', 'grid'))->toThrow(WindowException::class, "'grid' is not in radio group 'case'.")
+        ->and(fn () => $states->setLabel('nope', 'x'))->toThrow(WindowException::class, "No menu node has the id 'nope'.");
+});

@@ -71,6 +71,28 @@ interface ToolkitWindowDriver extends WindowDriver
      */
     public function isItemEnabled(string $item): bool;
 
+    /**
+     * The default bar's toggles, radios and labels, kept and shown as setItemEnabled()'s states are.
+     *
+     * @throws WindowException When no default profile is set, and as ToolkitWindow::setToggle().
+     */
+    public function setToggle(string $item, bool $on): void;
+
+    /** @throws WindowException When no default profile is set, and as ToolkitWindow::isToggled(). */
+    public function isToggled(string $item): bool;
+
+    /** @throws WindowException When no default profile is set, and as ToolkitWindow::setRadio(). */
+    public function setRadio(string $group, string $item): void;
+
+    /** @throws WindowException When no default profile is set, and as ToolkitWindow::radio(). */
+    public function radio(string $group): string;
+
+    /** @throws WindowException When no default profile is set, and as ToolkitWindow::setItemLabel(). */
+    public function setItemLabel(string $item, string $label): void;
+
+    /** @throws WindowException When no default profile is set, and as ToolkitWindow::itemLabel(). */
+    public function itemLabel(string $item): string;
+
     /** Alerts and file panels; answers come back as mail through the driver's session. */
     public function dialogs(): Dialogs;
 

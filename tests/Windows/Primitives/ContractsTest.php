@@ -22,6 +22,7 @@ use Surface\Contracts\Windows\Primitives\TKPrimitive;
 use Surface\Contracts\Windows\Primitives\TKPrimitiveGroup;
 use Surface\Contracts\Windows\Primitives\TKProgressBar;
 use Surface\Contracts\Windows\Primitives\TKRow;
+use Surface\Contracts\Windows\Primitives\TKScrollBar;
 use Surface\Contracts\Windows\Primitives\TKScrollView;
 use Surface\Contracts\Windows\Primitives\TKSeparator;
 use Surface\Contracts\Windows\Primitives\TKSlider;
@@ -39,7 +40,7 @@ use Surface\Contracts\Windows\ToolkitWindow;
 
 $methods = [
     TKPrimitive::class => ['name', 'path', 'uuid', 'window', 'parent', 'placement', 'isRemoved', 'remove', 'setVisible', 'isVisible', 'show', 'hide', 'setEnabled', 'isEnabled', 'enable', 'disable', 'size', 'watchSize', 'isWatchingSize', 'setContextMenu', 'contextMenu', 'setBackground', 'fill', 'align', 'minSize', 'moveBefore', 'moveAfter', 'moveTo'],
-    TKPrimitiveGroup::class => ['label', 'link', 'button', 'image', 'separator', 'spinner', 'progressBar', 'textInput', 'textArea', 'checkbox', 'toggle', 'toggleButton', 'slider', 'dropdown', 'datepicker', 'table', 'tree', 'video', 'column', 'row', 'grid', 'fixed', 'scrollView', 'split', 'tabs', 'view', 'children', 'takePlacement'],
+    TKPrimitiveGroup::class => ['label', 'link', 'button', 'image', 'separator', 'spinner', 'progressBar', 'textInput', 'textArea', 'checkbox', 'toggle', 'toggleButton', 'slider', 'scrollBar', 'dropdown', 'datepicker', 'table', 'tree', 'video', 'column', 'row', 'grid', 'fixed', 'scrollView', 'split', 'tabs', 'view', 'children', 'takePlacement'],
     TKColumn::class => ['spacing', 'setSpacing'],
     TKRow::class => ['spacing', 'setSpacing'],
     TKGrid::class => ['at', 'spacing', 'setSpacing'],
@@ -60,12 +61,13 @@ $methods = [
     TKToggle::class => ['isOn', 'setOn'],
     TKToggleButton::class => ['label', 'setLabel', 'isPressed', 'setPressed'],
     TKSlider::class => ['value', 'setValue', 'min', 'max', 'setRange'],
+    TKScrollBar::class => ['setRange', 'setStep', 'setValue', 'value'],
     TKDropdown::class => ['options', 'setOptions', 'selected', 'select', 'selectedOption'],
     TKDatepicker::class => ['date', 'setDate'],
     TKTable::class => ['columns', 'rows', 'setRows', 'appendRow', 'clearRows', 'selectedRow', 'selectRow'],
     TKTree::class => ['columns', 'setNodes', 'nodes', 'expand', 'isExpanded', 'selectedNode', 'selectNode'],
     TKVideo::class => ['file', 'setFile', 'play', 'pause', 'seek', 'position', 'duration', 'isPlaying', 'setMuted', 'isMuted', 'setLoop', 'isLooping'],
-    PrimitiveFactory::class => ['mintLabel', 'mintLink', 'mintButton', 'mintImage', 'mintSeparator', 'mintSpinner', 'mintProgressBar', 'mintTextInput', 'mintTextArea', 'mintCheckbox', 'mintToggle', 'mintToggleButton', 'mintSlider', 'mintDropdown', 'mintDatepicker', 'mintTable', 'mintTree', 'mintVideo', 'mintColumn', 'mintRow', 'mintGrid', 'mintFixed', 'mintScrollView', 'mintSplit', 'mintTabs'],
+    PrimitiveFactory::class => ['mintLabel', 'mintLink', 'mintButton', 'mintImage', 'mintSeparator', 'mintSpinner', 'mintProgressBar', 'mintTextInput', 'mintTextArea', 'mintCheckbox', 'mintToggle', 'mintToggleButton', 'mintSlider', 'mintScrollBar', 'mintDropdown', 'mintComboBox', 'mintMenuButton', 'mintDatepicker', 'mintTable', 'mintTree', 'mintVideo', 'mintColumn', 'mintRow', 'mintGrid', 'mintFixed', 'mintScrollView', 'mintSplit', 'mintTabs'],
     ToolkitWindow::class => ['column', 'row', 'grid', 'fixed', 'content', 'view', 'uuid', 'size', 'registry', 'factory', 'forgetContent'],
 ];
 

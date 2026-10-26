@@ -66,6 +66,14 @@ interface Framebuffer
     public function writeRgba8(string $rgba8, int $width, int $height, int $x = 0, int $y = 0): static;
 
     /**
+     * Move the pixels of $region, clipped to the surface, by ($dx, $dy): pixels that move past
+     * the region's edge are dropped, pixels outside it do not change, and the exposed strip keeps
+     * its old pixels until drawn. Damage, where tracked, is the whole clipped region. A read-only
+     * framebuffer throws as for any write; a paged one, holding one page at a time, throws.
+     */
+    public function scroll(Region $region, int $dx, int $dy): void;
+
+    /**
      * Raw host bytes (optional layer).
      */
     public function dump(?int $layer = null): string;

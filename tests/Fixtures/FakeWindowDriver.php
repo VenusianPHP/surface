@@ -148,6 +148,18 @@ final class FakeWindowDriver implements ToolkitWindowDriver
 
     public function isItemEnabled(string $item): bool { return $this->defaultStates()->isEnabled($item); }
 
+    public function setToggle(string $item, bool $on): void { $this->defaultStates()->setToggle($item, $on); }
+
+    public function isToggled(string $item): bool { return $this->defaultStates()->toggle($item); }
+
+    public function setRadio(string $group, string $item): void { $this->defaultStates()->setRadio($group, $item); }
+
+    public function radio(string $group): string { return $this->defaultStates()->radio($group); }
+
+    public function setItemLabel(string $item, string $label): void { $this->defaultStates()->setLabel($item, $label); }
+
+    public function itemLabel(string $item): string { return $this->defaultStates()->label($item); }
+
     private function defaultStates(): MenuStates
     {
         return $this->default_states ?? throw new WindowException('No default menu bar profile is set.');
@@ -232,6 +244,24 @@ final class FakeWindow implements ToolkitWindow
     }
 
     public function isItemEnabled(string $item): bool { return $this->states()->isEnabled($item); }
+
+    public function setRadio(string $group, string $item): static
+    {
+        $this->states()->setRadio($group, $item);
+
+        return $this;
+    }
+
+    public function radio(string $group): string { return $this->states()->radio($group); }
+
+    public function setItemLabel(string $item, string $label): static
+    {
+        $this->states()->setLabel($item, $label);
+
+        return $this;
+    }
+
+    public function itemLabel(string $item): string { return $this->states()->label($item); }
 
     private function states(): MenuStates
     {

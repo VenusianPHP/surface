@@ -94,6 +94,43 @@ interface ToolkitWindow extends OSWindow
     public function isItemEnabled(string $item): bool;
 
     /**
+     * Make $item the one on in its radio group of this window's menu bar. Posts nothing; the
+     * user's choice posts MenuRadioChosen.
+     *
+     * @param string $group
+     * @param string $item
+     * @return $this
+     * @throws WindowException When the window has no menu bar, no radio group has the name, or the item is not in it.
+     */
+    public function setRadio(string $group, string $item): static;
+
+    /**
+     * The item on in $group of this window's menu bar.
+     *
+     * @param string $group
+     * @return string
+     * @throws WindowException When the window has no menu bar or no radio group has the name.
+     */
+    public function radio(string $group): string;
+
+    /**
+     * Relabel a node of this window's menu bar, a folder or an item. Posts nothing.
+     *
+     * @param string $item
+     * @param string $label
+     * @return $this
+     * @throws WindowException When the window has no menu bar or no node has the id.
+     */
+    public function setItemLabel(string $item, string $label): static;
+
+    /**
+     * @param string $item
+     * @return string
+     * @throws WindowException When the window has no menu bar or no node has the id.
+     */
+    public function itemLabel(string $item): string;
+
+    /**
      * The window this child is modal to; null for a top-level window.
      *
      * @return ToolkitWindow|null
