@@ -30,6 +30,10 @@ All readonly `NamedSignal` + `PrimitiveMail` (`window()`, `path()`, `uuid()`); b
 | `ScrollChanged` | int value | `view.scroll-changed.<window>.<path>` | latest-wins; `TKScrollBar`: the user dragged the thumb (live), clicked the track, or wheeled over it |
 | `FocusGained` | — | `view.focus-gained.<window>.<path>` | any primitive: the user moved keyboard focus to its native (click, Tab, the toolkit's own move); never from `focus()` or `setInitialFocus()` |
 | `FocusLost` | — | `view.focus-lost.<window>.<path>` | any primitive: the user moved keyboard focus away from its native |
+| `KeyPressed` | `Key` key, character, modifiers, bool repeat | `view.key-pressed.<window>.<path>` | a focused, focusable canvas: a key went down; the physical key and the layout's text ('' for none); a lone modifier posts too. The canvas consumes the key: no `WindowKeyPressed`. Never for a key the canvas declined (Tab when it does not take Tab; a menu accelerator; Return or Esc for a role button) |
+| `KeyReleased` | `Key` key, modifiers | `view.key-released.<window>.<path>` | a focused, focusable canvas: a key came up |
+| `TextCommitted` | text | `view.text-committed.<window>.<path>` | a focused, focusable canvas: text the platform's input method committed (dead keys and compose resolved; one mail for `é`, none for the dead key alone) |
+| `EditCommanded` | `EditCommand` command | `view.edit-commanded.<window>.<path>` | a focused, focusable canvas: the platform's editing binding for the key (moves and their Shift selects, deletes, Yank, SelectAll, Cut, Copy, Paste, Undo, Redo, InsertNewline, InsertTab, InsertBacktab, Cancel). One press posts `KeyPressed`, then `EditCommanded` or `TextCommitted` or neither |
 | `RightClicked` | x, y (in the primitive) | `view.right-clicked.<window>.<path>` | any primitive: the innermost under a right click (secondary click, Ctrl-click on macOS, a primary press held still on Linux); none when it or an ancestor is disabled |
 | `TextChanged` | value | `view.text-changed.<window>.<path>` | `TKTextInput`, `TKTextArea` |
 | `TextSubmitted` | value | `view.text-submitted.<window>.<path>` | `TKTextInput` (return) |

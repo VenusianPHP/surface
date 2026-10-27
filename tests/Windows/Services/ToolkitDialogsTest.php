@@ -6,6 +6,7 @@ use Surface\Contracts\Windows\Mail\Services\AlertAnswered;
 use Surface\Contracts\Windows\Mail\Services\FilesChosen;
 use Surface\Contracts\Windows\Mail\WindowClosed;
 use Surface\Contracts\Windows\Services\Alert;
+use Surface\Contracts\Windows\Services\DialogCapability;
 use Surface\Contracts\Windows\Services\OpenRequest;
 use Surface\Contracts\Windows\Services\SaveRequest;
 use Surface\Contracts\Windows\WindowException;
@@ -127,6 +128,66 @@ it('takes a new dialog and a new child after the answer', function (): void {
     $child = $driver->open('child', 300, 120, null, $main);
 
     expect($child->parent())->toBe($main);
+});
+
+it('refuses a titled alert without AlertTitle, shows nothing, and takes the next alert', function (): void {
+    $driver = new FakeWindowDriver();
+    $main = $driver->open('main', 400, 300);
+
+    expect(fn () => $driver->dialogs()->alert($main, new Alert('Hi', title: 'Greeting')))->toThrow(WindowException::class, 'title')
+        ->and($driver->dialogs()->shown)->toBe([])
+        ->and($driver->dialogs()->openOn($main))->toBeNull();
+
+    $id = $driver->dialogs()->alert($main, new Alert('Hi'));
+    expect($driver->dialogs()->shown)->toBe([['alert', $id, 'main']]);
+});
+
+it('shows a titled alert where the driver supports AlertTitle', function (): void {
+    $driver = new FakeWindowDriver();
+    $main = $driver->open('main', 400, 300);
+    $driver->dialogs()->capabilities = [DialogCapability::AlertTitle];
+    $id = $driver->dialogs()->alert($main, new Alert('Hi', title: 'Greeting'));
+
+    expect($driver->dialogs()->supports(DialogCapability::AlertTitle))->toBeTrue()
+        ->and($driver->dialogs()->supports(DialogCapability::ShowHidden))->toBeFalse()
+        ->and($driver->dialogs()->shown)->toBe([['alert', $id, 'main']]);
+});
+
+it('refuses hidden files without ShowHidden, before it checks the parent', function (string $kind): void {
+    $driver = new FakeWindowDriver();
+    $main = $driver->open('main', 400, 300);
+    $main->close();
+    $show = $kind === 'open'
+        ? fn () => $driver->dialogs()->openFiles($main, new OpenRequest(showHidden: true))
+        : fn () => $driver->dialogs()->saveFile($main, new SaveRequest(showHidden: true));
+
+    expect($show)->toThrow(WindowException::class, 'hidden')
+        ->and($driver->dialogs()->shown)->toBe([]);
+})->with(['open', 'save']);
+
+it('leaves no request open when the driver throws while it shows one', function (): void {
+    $driver = new FakeWindowDriver();
+    $main = $driver->open('main', 400, 300);
+    $driver->dialogs()->failOpen = new InvalidArgumentException('Makefile has no extension');
+
+    expect(fn () => $driver->dialogs()->openFiles($main, new OpenRequest(filters: ['Make' => ['Makefile']])))->toThrow(InvalidArgumentException::class, 'Makefile')
+        ->and($driver->dialogs()->openOn($main))->toBeNull();
+
+    $driver->dialogs()->failOpen = null;
+    $id = $driver->dialogs()->openFiles($main, new OpenRequest());
+    expect($driver->dialogs()->openOn($main))->toBe($id);
+});
+
+it('answers whether the suppression box was ticked', function (): void {
+    $driver = new FakeWindowDriver();
+    $main = $driver->open('main', 400, 300);
+    $id = $driver->dialogs()->alert($main, new Alert('Hi', suppression: 'Don\'t ask again'));
+    $driver->dialogs()->answer($id, 0, true);
+    $closed = $driver->dialogs()->alert($main, new Alert('Again', suppression: 'Don\'t ask again'));
+    $main->close();
+
+    expect($driver->mail)->toEqual([new AlertAnswered($id, 0, true), new AlertAnswered($closed, -1, false), new WindowClosed('main')])
+        ->and((new AlertAnswered($id, 1))->suppressed)->toBeFalse();
 });
 
 it('gives the native a folder only', function (): void {

@@ -15,6 +15,9 @@ final readonly class Alert
      * @param list<string> $buttons 1 to 3, in reading order
      * @param int $default the index answered by Enter
      * @param int|null $cancel null: the last button
+     * @param AlertStyle|null $style null: the platform's plain alert
+     * @param string|null $suppression the "Don't ask again" checkbox label; null: no checkbox
+     * @param string|null $title the alert window's title; needs DialogCapability::AlertTitle
      * @throws InvalidArgumentException When $buttons is not a list of 1 to 3 strings, or an index is outside it.
      */
     public function __construct(
@@ -23,6 +26,9 @@ final readonly class Alert
         public array $buttons = ['OK'],
         public int $default = 0,
         ?int $cancel = null,
+        public ?AlertStyle $style = null,
+        public ?string $suppression = null,
+        public ?string $title = null,
     ) {
         if (! array_is_list($buttons)) {
             throw new InvalidArgumentException('Alert buttons must be a list.');

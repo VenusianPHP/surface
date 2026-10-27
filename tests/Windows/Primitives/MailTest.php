@@ -2,9 +2,15 @@
 
 declare(strict_types=1);
 
+use Surface\Contracts\HumanInput\Key;
 use Surface\Contracts\HumanInput\Modifiers;
 use Surface\Contracts\HumanInput\MouseButton;
+use Surface\Contracts\Windows\Input\EditCommand;
 use Surface\Contracts\Windows\Mail\View\ButtonClicked;
+use Surface\Contracts\Windows\Mail\View\EditCommanded;
+use Surface\Contracts\Windows\Mail\View\KeyPressed;
+use Surface\Contracts\Windows\Mail\View\KeyReleased;
+use Surface\Contracts\Windows\Mail\View\TextCommitted;
 use Surface\Contracts\Windows\Mail\View\CanvasClicked;
 use Surface\Contracts\Windows\Mail\View\CanvasDragged;
 use Surface\Contracts\Windows\Mail\View\CanvasPressed;
@@ -48,6 +54,10 @@ it('names each primitive mail view.<event>.<window>.<path>', function (Primitive
     'canvas dragged' => [new CanvasDragged('main', 'main.toolbar.save', 'u1', 3.0, 4.5, MouseButton::LEFT, new Modifiers()), 'view.dragged.main.main.toolbar.save'],
     'canvas released' => [new CanvasReleased('main', 'main.toolbar.save', 'u1', 3.0, 4.5, MouseButton::LEFT, new Modifiers()), 'view.released.main.main.toolbar.save'],
     'canvas wheeled' => [new CanvasWheeled('main', 'main.toolbar.save', 'u1', 0.0, 1.0, false, new Modifiers()), 'view.wheeled.main.main.toolbar.save'],
+    'key pressed' => [new KeyPressed('main', 'main.toolbar.save', 'u1', Key::A, 'a', new Modifiers(), false), 'view.key-pressed.main.main.toolbar.save'],
+    'key released' => [new KeyReleased('main', 'main.toolbar.save', 'u1', Key::A, new Modifiers()), 'view.key-released.main.main.toolbar.save'],
+    'text committed' => [new TextCommitted('main', 'main.toolbar.save', 'u1', 'a'), 'view.text-committed.main.main.toolbar.save'],
+    'edit commanded' => [new EditCommanded('main', 'main.toolbar.save', 'u1', EditCommand::MoveLeft), 'view.edit-commanded.main.main.toolbar.save'],
     'right clicked' => [new RightClicked('main', 'main.toolbar.save', 'u1', 3.0, 4.5), 'view.right-clicked.main.main.toolbar.save'],
     'text changed' => [new TextChanged('main', 'main.toolbar.save', 'u1', 'ab'), 'view.text-changed.main.main.toolbar.save'],
     'text submitted' => [new TextSubmitted('main', 'main.toolbar.save', 'u1', 'ab'), 'view.text-submitted.main.main.toolbar.save'],

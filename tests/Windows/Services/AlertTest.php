@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Surface\Contracts\Windows\Services\Alert;
+use Surface\Contracts\Windows\Services\AlertStyle;
 use Surface\Contracts\Windows\Services\OpenRequest;
 
 it('defaults to one OK button that Enter and Esc both answer', function (): void {
@@ -11,7 +12,19 @@ it('defaults to one OK button that Enter and Esc both answer', function (): void
     expect($alert->buttons)->toBe(['OK'])
         ->and($alert->default)->toBe(0)
         ->and($alert->cancel)->toBe(0)
-        ->and($alert->detail)->toBeNull();
+        ->and($alert->detail)->toBeNull()
+        ->and($alert->style)->toBeNull()
+        ->and($alert->suppression)->toBeNull()
+        ->and($alert->title)->toBeNull();
+});
+
+it('keeps its style, suppression label and title', function (): void {
+    $alert = new Alert('Delete?', style: AlertStyle::Critical, suppression: 'Don\'t ask again', title: 'Delete');
+
+    expect($alert->style)->toBe(AlertStyle::Critical)
+        ->and($alert->suppression)->toBe('Don\'t ask again')
+        ->and($alert->title)->toBe('Delete')
+        ->and(array_map(fn (AlertStyle $style): string => $style->value, AlertStyle::cases()))->toBe(['info', 'warning', 'critical']);
 });
 
 it('answers Esc with the last button unless a cancel is given', function (): void {

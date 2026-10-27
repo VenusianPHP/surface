@@ -2,9 +2,11 @@
 
 namespace Surface\Windows\Services;
 
+use Closure;
 use Surface\Contracts\Windows\Mail\Services\AlertAnswered;
 use Surface\Contracts\Windows\Mail\Services\FilesChosen;
 use Surface\Contracts\Windows\Services\Alert;
+use Surface\Contracts\Windows\Services\DialogCapability;
 use Surface\Contracts\Windows\Services\Dialogs;
 use Surface\Contracts\Windows\Services\OpenRequest;
 use Surface\Contracts\Windows\Services\SaveRequest;
@@ -12,12 +14,14 @@ use Surface\Contracts\Windows\ToolkitWindow;
 use Surface\Contracts\Windows\ToolkitWindowDriver;
 use Surface\Contracts\Windows\WindowException;
 use Surface\Windows\ChildWindows;
+use Throwable;
 use Voyager\Contracts\Signals\NamedSignal;
 
 /**
- * The request ids and the parent rules of dialogs, one time for every driver. A parent holds one
- * modal at a time (one dialog or one child window); its close answers the open dialog first; each
- * request id gets one answer. The driver shows, dismisses and posts.
+ * The request ids, the parent rules and the capability checks of dialogs, one time for every
+ * driver. A request that needs a capability the driver lacks throws before anything opens. A
+ * parent holds one modal at a time (one dialog or one child window); its close answers the open
+ * dialog first; each request id gets one answer. The driver shows, dismisses and posts.
  */
 abstract class ToolkitDialogs implements Dialogs
 {
@@ -28,24 +32,33 @@ abstract class ToolkitDialogs implements Dialogs
 
     final public function alert(ToolkitWindow $parent, Alert $alert): string
     {
+        if (! is_null($alert->title)) {
+            $this->need(DialogCapability::AlertTitle, 'an alert title');
+        }
         $id = $this->begin($parent, 'alert');
-        $this->showAlert($id, $parent, $alert);
+        $this->show($id, fn () => $this->showAlert($id, $parent, $alert));
 
         return $id;
     }
 
     final public function openFiles(ToolkitWindow $parent, OpenRequest $request): string
     {
+        if ($request->showHidden) {
+            $this->need(DialogCapability::ShowHidden, 'hidden files');
+        }
         $id = $this->begin($parent, 'files');
-        $this->showOpen($id, $parent, $request);
+        $this->show($id, fn () => $this->showOpen($id, $parent, $request));
 
         return $id;
     }
 
     final public function saveFile(ToolkitWindow $parent, SaveRequest $request): string
     {
+        if ($request->showHidden) {
+            $this->need(DialogCapability::ShowHidden, 'hidden files');
+        }
         $id = $this->begin($parent, 'files');
-        $this->showSave($id, $parent, $request);
+        $this->show($id, fn () => $this->showSave($id, $parent, $request));
 
         return $id;
     }
@@ -80,7 +93,7 @@ abstract class ToolkitDialogs implements Dialogs
         $kind = $this->open[$id]['kind'];
         unset($this->open[$id]);
         $this->dismiss($id);
-        $this->post($kind === 'alert' ? new AlertAnswered($id, -1) : new FilesChosen($id, []));
+        $this->post($kind === 'alert' ? new AlertAnswered($id, -1, false) : new FilesChosen($id, []));
     }
 
     /** A directory for the native: realpath() of a folder, or null for anything else. */
@@ -94,13 +107,13 @@ abstract class ToolkitDialogs implements Dialogs
     }
 
     /** The native answered. An id that is not open (answered, or ended by its parent's close) posts nothing. */
-    protected function answerAlert(string $id, int $button): void
+    protected function answerAlert(string $id, int $button, bool $suppressed = false): void
     {
         if (! isset($this->open[$id])) {
             return;
         }
         unset($this->open[$id]);
-        $this->post(new AlertAnswered($id, $button));
+        $this->post(new AlertAnswered($id, $button, $suppressed));
     }
 
     /**
@@ -127,6 +140,25 @@ abstract class ToolkitDialogs implements Dialogs
     abstract protected function dismiss(string $id): void;
 
     abstract protected function post(NamedSignal $mail): void;
+
+    /** @throws WindowException When the driver lacks $capability. */
+    private function need(DialogCapability $capability, string $what): void
+    {
+        if (! $this->supports($capability)) {
+            throw new WindowException("This driver's dialogs cannot show {$what} (no {$capability->name} capability).");
+        }
+    }
+
+    /** A show that throws leaves no request open: the parent takes the next dialog. */
+    private function show(string $id, Closure $show): void
+    {
+        try {
+            $show();
+        } catch (Throwable $thrown) {
+            unset($this->open[$id]);
+            throw $thrown;
+        }
+    }
 
     /** @param 'alert'|'files' $kind */
     private function begin(ToolkitWindow $parent, string $kind): string

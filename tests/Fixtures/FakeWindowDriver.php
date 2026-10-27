@@ -8,11 +8,13 @@ use LogicException;
 use Surface\Contracts\Windows\Mail\WindowClosed;
 use Surface\Contracts\Windows\Menus\MenuProfile;
 use Surface\Contracts\Windows\Services\Alert;
-use Surface\Contracts\Windows\Services\Clipboard;
 use Surface\Contracts\Windows\Services\Desktop;
+use Surface\Contracts\Windows\Services\DialogCapability;
 use Surface\Contracts\Windows\Services\OpenRequest;
 use Surface\Contracts\Windows\Services\SaveRequest;
+use Surface\Windows\Services\ToolkitClipboard;
 use Surface\Windows\Services\ToolkitDialogs;
+use Throwable;
 use Voyager\Contracts\Signals\NamedSignal;
 use Surface\Contracts\Windows\Primitives\PrimitiveFactory;
 use Surface\Contracts\Windows\Primitives\TKColumn;
@@ -37,20 +39,34 @@ final class FakeDialogs extends ToolkitDialogs
     /** @var list<string> */
     public array $dismissed = [];
 
+    /** @var list<DialogCapability> what supports() answers true for */
+    public array $capabilities = [];
+
+    /** Thrown by showOpen() while set, as a driver that cannot show the request. */
+    public ?Throwable $failOpen = null;
+
     public function __construct(private readonly FakeWindowDriver $fake)
     {
         parent::__construct($fake);
     }
 
+    public function supports(DialogCapability $capability): bool { return in_array($capability, $this->capabilities, true); }
+
     /** @param int|list<string> $value a button index for an alert, paths for a file panel */
-    public function answer(string $id, int|array $value): void
+    public function answer(string $id, int|array $value, bool $suppressed = false): void
     {
-        is_int($value) ? $this->answerAlert($id, $value) : $this->answerFiles($id, $value);
+        is_int($value) ? $this->answerAlert($id, $value, $suppressed) : $this->answerFiles($id, $value);
     }
 
     protected function showAlert(string $id, ToolkitWindow $parent, Alert $alert): void { $this->shown[] = ['alert', $id, $parent->name()]; }
 
-    protected function showOpen(string $id, ToolkitWindow $parent, OpenRequest $request): void { $this->shown[] = ['open', $id, $parent->name()]; }
+    protected function showOpen(string $id, ToolkitWindow $parent, OpenRequest $request): void
+    {
+        if (! is_null($this->failOpen)) {
+            throw $this->failOpen;
+        }
+        $this->shown[] = ['open', $id, $parent->name()];
+    }
 
     protected function showSave(string $id, ToolkitWindow $parent, SaveRequest $request): void { $this->shown[] = ['save', $id, $parent->name()]; }
 
@@ -59,11 +75,25 @@ final class FakeDialogs extends ToolkitDialogs
     protected function post(NamedSignal $mail): void { $this->fake->mail[] = $mail; }
 }
 
-final class FakeClipboard implements Clipboard
+/** Records each text request; the test answers with answer(). */
+final class FakeClipboard extends ToolkitClipboard
 {
     public ?string $text = null;
 
+    /** @var list<string> the request ids, in order */
+    public array $asked = [];
+
+    public function __construct(private readonly FakeWindowDriver $fake) {}
+
     public function setText(string $text): void { $this->text = $text; }
+
+    public function hasText(): bool { return ! is_null($this->text); }
+
+    public function answer(string $id, ?string $text): void { $this->answerText($id, $text); }
+
+    protected function readText(string $id): void { $this->asked[] = $id; }
+
+    protected function post(NamedSignal $mail): void { $this->fake->mail[] = $mail; }
 }
 
 final class FakeDesktop implements Desktop
@@ -122,7 +152,7 @@ final class FakeWindowDriver implements ToolkitWindowDriver
 
     public function dialogs(): FakeDialogs { return $this->dialogs ??= new FakeDialogs($this); }
 
-    public function clipboard(): FakeClipboard { return $this->clipboard ??= new FakeClipboard(); }
+    public function clipboard(): FakeClipboard { return $this->clipboard ??= new FakeClipboard($this); }
 
     public function desktop(): FakeDesktop { return $this->desktop ??= new FakeDesktop(); }
 

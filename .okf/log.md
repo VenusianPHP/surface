@@ -1,41 +1,49 @@
 # Log
 
+## 2026-10-27
+
+* Services, Surface layer: `AlertStyle`, `DialogCapability` (`AlertTitle`, `ShowHidden`) and `Dialogs::supports()`; `Alert` style, suppression and title; `OpenRequest` / `SaveRequest` filters and showHidden; `AlertAnswered::$suppressed`; `ToolkitDialogs` refuses a request that needs a capability the driver lacks and forgets a request whose show threw; `Clipboard::requestText()` / `hasText()`, `ToolkitClipboard` (one `ClipboardText` per id), `ClipboardChanged`. [windows](architecture/windows.md), [mail](api/mail.md)
+
+## 2026-10-26
+
+* Canvas keys, Surface layer: `EditCommand` (`Surface\Contracts\Windows\Input`, 40 cases: moves and their Shift selects, deletes, Yank, SelectAll, Cut, Copy, Paste, Undo, Redo, InsertNewline, InsertTab, InsertBacktab, Cancel) and the mail of a focused, focusable canvas: `KeyPressed`, `KeyReleased`, `TextCommitted`, `EditCommanded`. [view mail](api/view-mail.md)
+
 ## 2026-10-23
 
-* Menus (compare-app toolkit C13), Surface layer: radio items (`radio` group, `on`; `MenuItem::radio()`, `isOn()`; one folder, exactly one on, not an item id; `on` only on toggles and radios), `MenuRadioChosen`, `setRadio()` / `radio()` / `setItemLabel()` / `itemLabel()` on the window and, with `setToggle()` / `isToggled()`, the driver's default bar through `ToolkitWindowManager`; `MenuStates` keeps toggles, radios and labels (`toggleChanges()`, `radioChanges()`, `labelChanges()`; `changes()` stays enabled); context menus take toggles and radios and keep the user's choices (`withToggle()`, `withRadio()`, `nativeContextToggled()`, `nativeContextRadio()`, on menu buttons too); `TKPrimitive::popupMenu()` (`applyPopupMenu(): bool`, false when off screen); `TKTabView::addPage(…, ?index)`. [menu profiles](api/menu-profiles.md), [mail](api/mail.md), [primitives](architecture/primitives.md)
-* Canvas scrolling (compare-app toolkit C12), Surface layer: `TKScrollBar` (`scrollBar()`, `mintScrollBar()`; range, page, step, clamped value, `nativeMoved()`), `ScrollChanged`, hover mail (`CanvasMoved`, `CanvasEntered`, `CanvasLeft`), `ScrollPhase` on `CanvasWheeled` (default NONE); `Framebuffer::scroll()` on every kind (paged refuses), `RenderingEngine::canScroll()` / `scroll()` with the scrolled region in the next frame's damage. [primitives](architecture/primitives.md), [view mail](api/view-mail.md), [drawing](architecture/drawing.md), [framebuffers](architecture/framebuffers.md)
-* Path bar and toolbar (compare-app toolkit C11), Surface layer: `TKComboBox` (options, a completion list under the field, cleared when hidden), `TKMenuButton`, button images (`HasButtonImage`: `setImage(?Framebuffer, ImagePosition, scale)`, `setBordered`) on push and toggle buttons; `comboBox()`, `menuButton()`, `mintComboBox`, `mintMenuButton`. [primitives](architecture/primitives.md)
+* Menus, Surface layer: radio items (`radio` group, `on`; `MenuItem::radio()`, `isOn()`; one folder, exactly one on, not an item id; `on` only on toggles and radios), `MenuRadioChosen`, `setRadio()` / `radio()` / `setItemLabel()` / `itemLabel()` on the window and, with `setToggle()` / `isToggled()`, the driver's default bar through `ToolkitWindowManager`; `MenuStates` keeps toggles, radios and labels (`toggleChanges()`, `radioChanges()`, `labelChanges()`; `changes()` stays enabled); context menus take toggles and radios and keep the user's choices (`withToggle()`, `withRadio()`, `nativeContextToggled()`, `nativeContextRadio()`, on menu buttons too); `TKPrimitive::popupMenu()` (`applyPopupMenu(): bool`, false when off screen); `TKTabView::addPage(…, ?index)`. [menu profiles](api/menu-profiles.md), [mail](api/mail.md), [primitives](architecture/primitives.md)
+* Canvas scrolling, Surface layer: `TKScrollBar` (`scrollBar()`, `mintScrollBar()`; range, page, step, clamped value, `nativeMoved()`), `ScrollChanged`, hover mail (`CanvasMoved`, `CanvasEntered`, `CanvasLeft`), `ScrollPhase` on `CanvasWheeled` (default NONE); `Framebuffer::scroll()` on every kind (paged refuses), `RenderingEngine::canScroll()` / `scroll()` with the scrolled region in the next frame's damage. [primitives](architecture/primitives.md), [view mail](api/view-mail.md), [drawing](architecture/drawing.md), [framebuffers](architecture/framebuffers.md)
+* Path bar and toolbar, Surface layer: `TKComboBox` (options, a completion list under the field, cleared when hidden), `TKMenuButton`, button images (`HasButtonImage`: `setImage(?Framebuffer, ImagePosition, scale)`, `setBordered`) on push and toggle buttons; `comboBox()`, `menuButton()`, `mintComboBox`, `mintMenuButton`. [primitives](architecture/primitives.md)
 
 * `TKPrimitive::focus()` refuses a primitive under a hidden container ("not shown") and one disabled itself or through a container ("cannot take focus"), without asking the native: a toolkit would focus a widget the user cannot see or use. [primitives](architecture/primitives.md)
 
 ## 2026-10-22
 
-* Focus and window keys (compare-app toolkit C9), Surface layer: `TKPrimitive::focus()` / `hasFocus()`, `TKCanvas::setFocusable($on, $takesTab)` / `isFocusable()` / `takesTab()`, `ToolkitWindow::focused()` / `setInitialFocus()`; `FocusGained`, `FocusLost`, `WindowKeyPressed`; the key precedence. [primitives](architecture/primitives.md), [windows](architecture/windows.md), [view mail](api/view-mail.md), [mail](api/mail.md)
+* Focus and window keys, Surface layer: `TKPrimitive::focus()` / `hasFocus()`, `TKCanvas::setFocusable($on, $takesTab)` / `isFocusable()` / `takesTab()`, `ToolkitWindow::focused()` / `setInitialFocus()`; `FocusGained`, `FocusLost`, `WindowKeyPressed`; the key precedence. [primitives](architecture/primitives.md), [windows](architecture/windows.md), [view mail](api/view-mail.md), [mail](api/mail.md)
 
 ## 2026-10-21
 
-* Dialogs, clipboard and desktop (compare-app toolkit C7), Surface layer: `Dialogs`, `Clipboard`, `Desktop`, `Alert`, `OpenRequest`, `SaveRequest`; `AlertAnswered`, `FilesChosen`; `ToolkitDialogs` (request ids, one modal per parent, parent-close answers); `dialogs()` / `clipboard()` / `desktop()` on drivers and `ToolkitWindowManager`. [windows](architecture/windows.md), [mail](api/mail.md)
+* Dialogs, clipboard and desktop, Surface layer: `Dialogs`, `Clipboard`, `Desktop`, `Alert`, `OpenRequest`, `SaveRequest`; `AlertAnswered`, `FilesChosen`; `ToolkitDialogs` (request ids, one modal per parent, parent-close answers); `dialogs()` / `clipboard()` / `desktop()` on drivers and `ToolkitWindowManager`. [windows](architecture/windows.md), [mail](api/mail.md)
 
 ## 2026-10-20
 
-* Modal children, close veto and button roles (compare-app toolkit C6), Surface layer: `ToolkitWindowDriver::open()` and `ToolkitWindowManager::open()` take a parent; `ToolkitWindow::parent()`, `confirmClose()`, `isConfirmingClose()`; `ChildWindows` (parent rules, `childOf`); `ButtonRole`, `TKButton::setRole()` / `role()` / `holder()`. [windows](architecture/windows.md)
-* Menu enabled state and accelerators (compare-app toolkit C5), Surface layer: `Accelerator`, `MenuStates`, node keys `keys` and `enabled`, `hotkey` limited to accelerator characters, id and accelerator collisions refused, `setItemEnabled()` / `isItemEnabled()` on windows, drivers and `ToolkitWindowManager`. [menu profiles](api/menu-profiles.md)
+* Modal children, close veto and button roles, Surface layer: `ToolkitWindowDriver::open()` and `ToolkitWindowManager::open()` take a parent; `ToolkitWindow::parent()`, `confirmClose()`, `isConfirmingClose()`; `ChildWindows` (parent rules, `childOf`); `ButtonRole`, `TKButton::setRole()` / `role()` / `holder()`. [windows](architecture/windows.md)
+* Menu enabled state and accelerators, Surface layer: `Accelerator`, `MenuStates`, node keys `keys` and `enabled`, `hotkey` limited to accelerator characters, id and accelerator collisions refused, `setItemEnabled()` / `isItemEnabled()` on windows, drivers and `ToolkitWindowManager`. [menu profiles](api/menu-profiles.md)
 
 ## 2026-10-19
 
-* Canvas pointer (compare-app toolkit C4), Surface layer: `TKCanvas::watchPointer()` / `isWatchingPointer()` (abstract flag, nothing written to the native, `WindowException` once removed); `CanvasPressed`, `CanvasDragged`, `CanvasReleased`, `CanvasWheeled` with the press and wheel rules. [primitives](architecture/primitives.md), [view mail](api/view-mail.md)
+* Canvas pointer, Surface layer: `TKCanvas::watchPointer()` / `isWatchingPointer()` (abstract flag, nothing written to the native, `WindowException` once removed); `CanvasPressed`, `CanvasDragged`, `CanvasReleased`, `CanvasWheeled` with the press and wheel rules. [primitives](architecture/primitives.md), [view mail](api/view-mail.md)
 
 ## 2026-10-18
 
-* Tree (compare-app toolkit C3): `TKTree` over `TreeNode`s (cells and colours per column, children), expansion record kept across collapse and `setNodes`; `NodeSelected`, `NodeActivated`, `NodeExpanded`. [primitives](architecture/primitives.md), [view mail](api/view-mail.md)
+* Tree: `TKTree` over `TreeNode`s (cells and colours per column, children), expansion record kept across collapse and `setNodes`; `NodeSelected`, `NodeActivated`, `NodeExpanded`. [primitives](architecture/primitives.md), [view mail](api/view-mail.md)
 
 ## 2026-10-16
 
-* Split and tabs (compare-app toolkit C2): `TKSplitView` (panes, divider positions as fractions of visible panes) and `TKTabView` (pages as columns, titles, selection); `SplitMoved`, `TabSelected`. [primitives](architecture/primitives.md), [view mail](api/view-mail.md)
+* Split and tabs: `TKSplitView` (panes, divider positions as fractions of visible panes) and `TKTabView` (pages as columns, titles, selection); `SplitMoved`, `TabSelected`. [primitives](architecture/primitives.md), [view mail](api/view-mail.md)
 
 ## 2026-10-14
 
-* Text panes (compare-app toolkit C1): TKTextArea read-only, wrap, line backgrounds, range styles, line selection, scroll position and ViewScrolled; FontSpec monospace; TextLines for UTF-16 drivers. [primitives](architecture/primitives.md)
+* Text panes: TKTextArea read-only, wrap, line backgrounds, range styles, line selection, scroll position and ViewScrolled; FontSpec monospace; TextLines for UTF-16 drivers. [primitives](architecture/primitives.md)
 * Releasing: `split.yml` on a `v*` tag; new `tests.yml` (PHP 8.4/8.5, ext-gd) gates; `.github/split.sh` splits all eleven components to `venusian-surface` with the same tag. [releasing](runbooks/releasing.md)
 
 ## 2026-10-10
