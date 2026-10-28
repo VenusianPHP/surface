@@ -1,5 +1,9 @@
 # Log
 
+## 2026-10-28
+
+* **Version**: 0.11.0 with the Venusian 0.11 ecosystem. Root and the eleven component manifests: `version` 0.11.0, `dev-main` → `0.11.x-dev`, `venusian-surface/*`, `venusian-voyager/*` and `gpio/contracts` `^0.11.0`, PHP `~8.4.27||^8.5.12` (the framework's patched floor), homepages `0.11.x`. `ext-fb`, `ext-rasterize` and `ext-imgdec` are suggested at `^0.10.0|^0.11.0`, since the drivers take 0.10 or newer; `scrapyard-io/framework` at `^0.11.0`. The jovian toolkit drivers and the dept-of-scrapyard-robotics panel drivers stay suggested at `^0.10.0` until they move. No API change. 2176 passed, 4 skipped on Homebrew PHP 8.4 NTS and ZTS.
+
 ## 2026-10-27
 
 * Services, Surface layer: `AlertStyle`, `DialogCapability` (`AlertTitle`, `ShowHidden`) and `Dialogs::supports()`; `Alert` style, suppression and title; `OpenRequest` / `SaveRequest` filters and showHidden; `AlertAnswered::$suppressed`; `ToolkitDialogs` refuses a request that needs a capability the driver lacks and forgets a request whose show threw; `Clipboard::requestText()` / `hasText()`, `ToolkitClipboard` (one `ClipboardText` per id), `ClipboardChanged`. [windows](architecture/windows.md), [mail](api/mail.md)

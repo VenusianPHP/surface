@@ -8,7 +8,7 @@
         "interfaces"
     ],
     "license": "MIT",
-    "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.10.x/contracts",
+    "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.11.x/contracts",
     "support": {
         "issues": "https://github.com/VenusianPHP/surface/issues",
         "source": "https://github.com/venusian-surface/contracts"
@@ -20,9 +20,9 @@
         }
     ],
     "require": {
-        "php": "^8.4|^8.5|^8.6",
-        "venusian-surface/nuts-and-bolts": "^0.10.0",
-        "venusian-voyager/contracts": "^0.10.1"
+        "php": "~8.4.27||^8.5.12",
+        "venusian-surface/nuts-and-bolts": "^0.11.0",
+        "venusian-voyager/contracts": "^0.11.0"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
@@ -36,7 +36,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "0.10.x-dev"
+            "dev-main": "0.11.x-dev"
         }
     }
 }

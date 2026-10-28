@@ -2,7 +2,7 @@
     "name": "venusian-surface/fonts",
     "description": "Surface bitmap faces: the GFXFont registry, the classic 5x7, and make:font.",
     "license": "MIT",
-    "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.10.x/fonts",
+    "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.11.x/fonts",
     "support": {
         "issues": "https://github.com/VenusianPHP/surface/issues",
         "source": "https://github.com/venusian-surface/fonts"
@@ -14,12 +14,12 @@
         }
     ],
     "require": {
-        "php": "^8.4|^8.5|^8.6",
-        "venusian-surface/contracts": "^0.10.0",
-        "venusian-voyager/console": "^0.10.1",
-        "venusian-voyager/contracts": "^0.10.1",
-        "venusian-voyager/filesystem": "^0.10.1",
-        "venusian-voyager/nuts-and-bolts": "^0.10.1"
+        "php": "~8.4.27||^8.5.12",
+        "venusian-surface/contracts": "^0.11.0",
+        "venusian-voyager/console": "^0.11.0",
+        "venusian-voyager/contracts": "^0.11.0",
+        "venusian-voyager/filesystem": "^0.11.0",
+        "venusian-voyager/nuts-and-bolts": "^0.11.0"
     },
     "minimum-stability": "dev",
     "autoload": {
@@ -32,7 +32,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "0.10.x-dev"
+            "dev-main": "0.11.x-dev"
         },
         "venusian": {
             "providers": [

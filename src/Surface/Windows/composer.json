@@ -9,7 +9,7 @@
         "gui"
     ],
     "license": "MIT",
-    "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.10.x/windows",
+    "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.11.x/windows",
     "support": {
         "issues": "https://github.com/VenusianPHP/surface/issues",
         "source": "https://github.com/venusian-surface/windows"
@@ -21,13 +21,13 @@
         }
     ],
     "require": {
-        "php": "^8.4|^8.5|^8.6",
-        "venusian-surface/bridge": "^0.10.0",
-        "venusian-surface/contracts": "^0.10.0",
-        "venusian-surface/framebuffers": "^0.10.0",
-        "venusian-surface/nuts-and-bolts": "^0.10.0",
-        "venusian-voyager/contracts": "^0.10.1",
-        "venusian-voyager/nuts-and-bolts": "^0.10.1"
+        "php": "~8.4.27||^8.5.12",
+        "venusian-surface/bridge": "^0.11.0",
+        "venusian-surface/contracts": "^0.11.0",
+        "venusian-surface/framebuffers": "^0.11.0",
+        "venusian-surface/nuts-and-bolts": "^0.11.0",
+        "venusian-voyager/contracts": "^0.11.0",
+        "venusian-voyager/nuts-and-bolts": "^0.11.0"
     },
     "suggest": {
         "jovian/venusian-appkit": "^0.10.0 - To bridge to AppKit and open AppKit windows on macOS.",
@@ -46,7 +46,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "0.10.x-dev"
+            "dev-main": "0.11.x-dev"
         },
         "venusian": {
             "providers": [

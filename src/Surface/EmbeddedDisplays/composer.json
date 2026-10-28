@@ -2,7 +2,7 @@
     "name": "venusian-surface/embedded-displays",
     "description": "Surface embedded displays: an IC display panel as a drawing output.",
     "license": "MIT",
-    "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.10.x/embedded-displays",
+    "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.11.x/embedded-displays",
     "support": {
         "issues": "https://github.com/VenusianPHP/surface/issues",
         "source": "https://github.com/venusian-surface/embedded-displays"
@@ -14,15 +14,15 @@
         }
     ],
     "require": {
-        "php": "^8.4|^8.5|^8.6",
-        "gpio/contracts": "^0.10.0",
-        "venusian-surface/contracts": "^0.10.0",
-        "venusian-surface/framebuffers": "^0.10.0",
-        "venusian-voyager/contracts": "^0.10.1",
-        "venusian-voyager/nuts-and-bolts": "^0.10.1"
+        "php": "~8.4.27||^8.5.12",
+        "gpio/contracts": "^0.11.0",
+        "venusian-surface/contracts": "^0.11.0",
+        "venusian-surface/framebuffers": "^0.11.0",
+        "venusian-voyager/contracts": "^0.11.0",
+        "venusian-voyager/nuts-and-bolts": "^0.11.0"
     },
     "suggest": {
-        "scrapyard-io/framework": "^0.10.0 - conjure panels from config/circuits.",
+        "scrapyard-io/framework": "^0.11.0 - conjure panels from config/circuits.",
         "dept-of-scrapyard-robotics/ssd1306": "^0.10.0 - SSD1306 monochrome OLED panels over I2C or SPI.",
         "dept-of-scrapyard-robotics/st77xx": "^0.10.0 - ST7735, ST7789 and ST7796 colour TFT panels over SPI.",
         "dept-of-scrapyard-robotics/ssd1680": "^0.10.0 - SSD1680 black/white and black/white/red ePaper panels.",
@@ -40,7 +40,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "0.10.x-dev"
+            "dev-main": "0.11.x-dev"
         },
         "venusian": {
             "providers": [
