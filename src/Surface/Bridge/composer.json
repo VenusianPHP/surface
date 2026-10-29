@@ -30,9 +30,9 @@
         "venusian-voyager/nuts-and-bolts": "^0.11.0"
     },
     "suggest": {
-        "jovian/venusian-appkit": "^0.10.0 - To bridge to AppKit and open AppKit windows on macOS.",
-        "jovian/venusian-gtk": "^0.10.0 - To bridge to GTK 4 and open GTK windows on Linux or macOS.",
-        "jovian/venusian-qt": "^0.10.0 - To bridge to Qt 6 and open Qt windows on Linux or macOS."
+        "jovian/venusian-appkit": "^0.11.0 - To bridge to AppKit and open AppKit windows on macOS.",
+        "jovian/venusian-gtk": "^0.11.0 - To bridge to GTK 4 and open GTK windows on Linux or macOS.",
+        "jovian/venusian-qt": "^0.11.0 - To bridge to Qt 6 and open Qt windows on Linux or macOS."
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
