@@ -41,6 +41,7 @@
         "venusian-surface/images": "self.version",
         "venusian-surface/nuts-and-bolts": "self.version",
         "venusian-surface/rasterize": "self.version",
+        "venusian-surface/text": "self.version",
         "venusian-surface/windows": "self.version"
     },
     "suggest": {},

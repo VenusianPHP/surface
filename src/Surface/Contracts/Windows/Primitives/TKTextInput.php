@@ -3,6 +3,7 @@
 namespace Surface\Contracts\Windows\Primitives;
 
 use Surface\Contracts\Windows\Styling\FontSpec;
+use Surface\Contracts\Windows\Styling\TextAlignment;
 use Surface\NutsAndBolts\Color;
 
 /**
@@ -50,4 +51,7 @@ interface TKTextInput extends TKPrimitive
      * @return $this
      */
     public function setTextColor(?Color $color): static;
+
+    /** The text's place inside the view; left until set. */
+    public function setAlignment(TextAlignment $alignment): static;
 }

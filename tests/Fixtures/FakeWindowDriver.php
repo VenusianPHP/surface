@@ -26,6 +26,8 @@ use Surface\Contracts\Windows\Primitives\TKRow;
 use Surface\Contracts\Windows\ToolkitWindow;
 use Surface\Contracts\Windows\ToolkitWindowDriver;
 use Surface\Contracts\Windows\WindowException;
+use Surface\Contracts\Windows\Styling\FontMetrics;
+use Surface\Contracts\Windows\Styling\FontSpec;
 use Surface\Contracts\Windows\Primitives\PrimitiveRegistry;
 use Surface\Windows\ChildWindows;
 use Surface\Windows\Menus\MenuStates;
@@ -155,6 +157,8 @@ final class FakeWindowDriver implements ToolkitWindowDriver
     public function clipboard(): FakeClipboard { return $this->clipboard ??= new FakeClipboard($this); }
 
     public function desktop(): FakeDesktop { return $this->desktop ??= new FakeDesktop(); }
+
+    public function fontMetrics(FontSpec $font): FontMetrics { return new FontMetrics(10.0, 3.0, 15.0, 7.0, $font->monospace); }
 
     public function has(string $name): bool { return isset($this->windows[$name]); }
 

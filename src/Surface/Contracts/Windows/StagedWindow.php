@@ -32,6 +32,16 @@ interface StagedWindow extends OSWindow, WindowOutput
 
     public function supports(WindowCapability $capability): bool;
 
+    /**
+     * Ask the stager to post the staged input mail (Mail\Staged: pressed, released, moved, dragged, wheeled,
+     * entered, left, key-pressed, key-released, text-committed, focus-gained, focus-lost) for user action.
+     * State only: the stager reads it.
+     */
+    public function watchInput(bool $on = true): static;
+
+    /** Whether input is being watched; false until watchInput() is called. */
+    public function watchesInput(): bool;
+
     public function title(): string;
 
     public function setTitle(string $title): static;

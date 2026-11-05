@@ -3,6 +3,7 @@
 namespace Surface\Contracts\Windows\Primitives;
 
 use Surface\Contracts\Windows\Styling\FontSpec;
+use Surface\Contracts\Windows\Styling\TextAlignment;
 use Surface\Contracts\Windows\Styling\ScrollPosition;
 use Surface\Contracts\Windows\Styling\TextRangeStyle;
 use Surface\NutsAndBolts\Color;
@@ -33,6 +34,18 @@ interface TKTextArea extends TKPrimitive
     public function setWrap(bool $wrap): static;
 
     public function wraps(): bool;
+
+    /**
+     * Tab stops every $columns × the font's space advance; 8 until set.
+     *
+     * @throws \InvalidArgumentException When $columns is less than 1.
+     */
+    public function setTabWidth(int $columns): static;
+
+    public function tabWidth(): int;
+
+    /** Every line's place inside the view; left until set. */
+    public function setAlignment(TextAlignment $alignment): static;
 
     /**
      * Full-width backgrounds by 0-based line; replaces the previous set. Lines past the text are ignored.

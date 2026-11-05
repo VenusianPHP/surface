@@ -5,6 +5,7 @@ namespace Surface\Windows\Primitives;
 use Surface\Contracts\Windows\Primitives\Placement;
 use Surface\Contracts\Windows\Primitives\TKTextInput as PrimitiveContract;
 use Surface\Contracts\Windows\Styling\FontSpec;
+use Surface\Contracts\Windows\Styling\TextAlignment;
 use Surface\Contracts\Windows\ToolkitWindow;
 use Surface\NutsAndBolts\Color;
 
@@ -17,6 +18,8 @@ abstract class TKTextInput extends TKPrimitive implements PrimitiveContract
     protected ?FontSpec $font = null;
 
     protected ?Color $text_color = null;
+
+    protected TextAlignment $alignment = TextAlignment::LEFT;
 
     public function __construct(
         string $name,
@@ -72,6 +75,15 @@ abstract class TKTextInput extends TKPrimitive implements PrimitiveContract
         return $this;
     }
 
+    public function setAlignment(TextAlignment $alignment): static
+    {
+        $this->live();
+        $this->alignment = $alignment;
+        $this->applyAlignment($alignment);
+
+        return $this;
+    }
+
     public function setTextColor(?Color $color): static
     {
         $this->live();
@@ -115,4 +127,6 @@ abstract class TKTextInput extends TKPrimitive implements PrimitiveContract
      * @return void
      */
     abstract protected function applyTextColor(?Color $color): void;
+
+    abstract protected function applyAlignment(TextAlignment $alignment): void;
 }

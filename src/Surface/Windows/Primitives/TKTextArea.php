@@ -5,7 +5,9 @@ namespace Surface\Windows\Primitives;
 use Surface\Contracts\Windows\Primitives\Placement;
 use Surface\Contracts\Windows\Primitives\TKTextArea as PrimitiveContract;
 use Surface\Contracts\Windows\Styling\FontSpec;
+use InvalidArgumentException;
 use Surface\Contracts\Windows\Styling\ScrollPosition;
+use Surface\Contracts\Windows\Styling\TextAlignment;
 use Surface\Contracts\Windows\Styling\TextRangeStyle;
 use Surface\Contracts\Windows\ToolkitWindow;
 use Surface\Contracts\Windows\WindowException;
@@ -25,6 +27,10 @@ abstract class TKTextArea extends TKPrimitive implements PrimitiveContract
     protected bool $read_only = false;
 
     protected bool $wrap = true;
+
+    protected int $tab_width = 8;
+
+    protected TextAlignment $alignment = TextAlignment::LEFT;
 
     /** @var array<int, Color> */
     protected array $line_backgrounds = [];
@@ -118,6 +124,32 @@ abstract class TKTextArea extends TKPrimitive implements PrimitiveContract
         return $this->wrap;
     }
 
+    public function setTabWidth(int $columns): static
+    {
+        $this->live();
+        if ($columns < 1) {
+            throw new InvalidArgumentException("Text area '{$this->path()}' tab width is at least 1 column, got {$columns}.");
+        }
+        $this->tab_width = $columns;
+        $this->applyTabWidth($columns);
+
+        return $this;
+    }
+
+    public function tabWidth(): int
+    {
+        return $this->tab_width;
+    }
+
+    public function setAlignment(TextAlignment $alignment): static
+    {
+        $this->live();
+        $this->alignment = $alignment;
+        $this->applyAlignment($alignment);
+
+        return $this;
+    }
+
     /**
      * @param array<int, Color> $backgrounds
      * @throws WindowException When a key is not a line number or a value not a Color.
@@ -164,7 +196,8 @@ abstract class TKTextArea extends TKPrimitive implements PrimitiveContract
             }
             $fitted[] = $length === $style->length
                 ? $style
-                : new TextRangeStyle($style->line, $style->start, $length, $style->foreground, $style->background);
+                : new TextRangeStyle($style->line, $style->start, $length, $style->foreground, $style->background,
+                    $style->bold, $style->italic, $style->underline, $style->strikeout);
         }
         $this->range_styles = $fitted;
         $this->applyRangeStyles($fitted);
@@ -289,6 +322,11 @@ abstract class TKTextArea extends TKPrimitive implements PrimitiveContract
     abstract protected function applyReadOnly(bool $read_only): void;
 
     abstract protected function applyWrap(bool $wrap): void;
+
+    /** Also re-applied by the driver when the font changes: the stops follow the space advance. */
+    abstract protected function applyTabWidth(int $columns): void;
+
+    abstract protected function applyAlignment(TextAlignment $alignment): void;
 
     /**
      * @param array<int, Color> $backgrounds lines inside the text, ascending; [] clears

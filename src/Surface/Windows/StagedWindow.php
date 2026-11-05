@@ -104,6 +104,9 @@ abstract class StagedWindow implements StagedWindowContract
 
     protected ?Closure $hit_test = null;
 
+    /** Read by the stager's input source; nothing is written to the native. */
+    private bool $watching_input = false;
+
     /**
      * @param  array<string, mixed>  $options  From options(): validated, every key present.
      */
@@ -220,6 +223,19 @@ abstract class StagedWindow implements StagedWindowContract
     public function supports(WindowCapability $capability): bool
     {
         return in_array($capability, $this->nativeCapabilities(), true);
+    }
+
+    public function watchInput(bool $on = true): static
+    {
+        $this->live();
+        $this->watching_input = $on;
+
+        return $this;
+    }
+
+    public function watchesInput(): bool
+    {
+        return $this->watching_input;
     }
 
     public function title(): string

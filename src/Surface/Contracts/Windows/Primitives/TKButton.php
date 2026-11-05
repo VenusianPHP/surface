@@ -3,6 +3,7 @@
 namespace Surface\Contracts\Windows\Primitives;
 
 use Surface\Contracts\Windows\Styling\FontSpec;
+use Surface\Contracts\Windows\Styling\TextAlignment;
 use Surface\NutsAndBolts\Color;
 
 /**
@@ -32,6 +33,9 @@ interface TKButton extends TKPrimitive, HasButtonImage
      * @return $this
      */
     public function setTextColor(?Color $color): static;
+
+    /** The text's place inside the view; centre until set. */
+    public function setAlignment(TextAlignment $alignment): static;
 
     /**
      * Give the button a role, or remove its role. The window's previous holder of the role loses

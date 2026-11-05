@@ -15,6 +15,7 @@ readonly class FontSpec
      * @param FontWeight $weight
      * @param string|null $family null = the system font
      * @param bool $monospace with no family: the OS's fixed-pitch face; a named family wins
+     * @param bool $italic the family's italic (or oblique) face
      * @throws InvalidArgumentException When the size is not positive and finite.
      */
     public function __construct(
@@ -22,6 +23,7 @@ readonly class FontSpec
         public FontWeight $weight = FontWeight::REGULAR,
         public ?string $family = null,
         public bool $monospace = false,
+        public bool $italic = false,
     ) {
         if (! is_finite($size) || $size <= 0.0) {
             throw new InvalidArgumentException("Font size must be positive and finite, got {$size}.");

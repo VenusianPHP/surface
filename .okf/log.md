@@ -1,5 +1,9 @@
 # Log
 
+## 2026-11-04
+
+* **Windows**: `FontSpec` italic; `FontMetrics` and `ToolkitWindowDriver::fontMetrics()`; `TextRangeStyle` bold, italic, underline and strikeout flags (a run needs a colour or a flag; a clipped run keeps its flags); `TKTextArea` `setTabWidth()` / `tabWidth()` (8 until set, ≥ 1); `setAlignment()` on `TKButton` (centre until set), `TKTextInput` and `TKTextArea` (left until set). Drivers implement `fontMetrics`, `applyTabWidth` and `applyAlignment`. See [styling](api/styling.md).
+
 ## 2026-10-28
 
 * **Version**: 0.11.0 with the Venusian 0.11 ecosystem. Root and the eleven component manifests: `version` 0.11.0, `dev-main` → `0.11.x-dev`, `venusian-surface/*`, `venusian-voyager/*` and `gpio/contracts` `^0.11.0`, PHP `~8.4.27||^8.5.12` (the framework's patched floor), homepages `0.11.x`. `ext-fb`, `ext-rasterize` and `ext-imgdec` are suggested at `^0.10.0|^0.11.0`, since the drivers take 0.10 or newer; `scrapyard-io/framework` at `^0.11.0`. The jovian toolkit drivers are suggested at `^0.11.0`; the dept-of-scrapyard-robotics panel drivers stay at `^0.10.0` until they move. No API change. 2176 passed, 4 skipped on Homebrew PHP 8.4 NTS and ZTS.

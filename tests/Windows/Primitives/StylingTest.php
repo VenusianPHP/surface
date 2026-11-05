@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Surface\Contracts\Windows\Styling\FontMetrics;
 use Surface\Contracts\Windows\Styling\FontSpec;
 use Surface\Contracts\Windows\Styling\FontWeight;
 use Surface\Contracts\Windows\Styling\ScrollPosition;
@@ -35,13 +36,39 @@ it('asks for the fixed-pitch face with monospace and keeps the family when one i
         ->and((new FontSpec(12.0, family: 'Menlo', monospace: true))->family)->toBe('Menlo');
 });
 
-it('refuses a range style with negative values or no colour', function (): void {
+it('asks for an upright face unless italic', function (): void {
+    expect((new FontSpec(12.0))->italic)->toBeFalse()
+        ->and((new FontSpec(12.0, italic: true))->italic)->toBeTrue();
+});
+
+it('keeps font metrics in points and refuses a negative or infinite one', function (): void {
+    $metrics = new FontMetrics(10.0, 3.0, 15.0, 7.0, true);
+
+    expect([$metrics->ascent, $metrics->descent, $metrics->lineHeight, $metrics->averageCharWidth, $metrics->fixedPitch])->toBe([10.0, 3.0, 15.0, 7.0, true])
+        ->and(fn () => new FontMetrics(10.0, -3.0, 15.0, 7.0, false))->toThrow(InvalidArgumentException::class, 'not negative')
+        ->and(fn () => new FontMetrics(INF, 3.0, 15.0, 7.0, false))->toThrow(InvalidArgumentException::class, 'finite')
+        ->and(fn () => new FontMetrics(10.0, 3.0, NAN, 7.0, false))->toThrow(InvalidArgumentException::class, 'finite');
+});
+
+it('refuses a range style with negative values or with no colour and no flag', function (): void {
     $style = new TextRangeStyle(1, 2, 3, foreground: Color::hex('#ff0000'));
 
     expect([$style->line, $style->start, $style->length])->toBe([1, 2, 3])
+        ->and([$style->bold, $style->italic, $style->underline, $style->strikeout, $style->hasFlags()])->toBe([false, false, false, false, false])
         ->and(fn () => new TextRangeStyle(-1, 0, 1, foreground: Color::hex('#ff0000')))->toThrow(InvalidArgumentException::class, 'not negative')
         ->and(fn () => new TextRangeStyle(0, 0, -1, background: Color::hex('#ff0000')))->toThrow(InvalidArgumentException::class, 'not negative')
-        ->and(fn () => new TextRangeStyle(0, 0, 1))->toThrow(InvalidArgumentException::class, 'a foreground or a background');
+        ->and(fn () => new TextRangeStyle(0, 0, 1))->toThrow(InvalidArgumentException::class, 'a colour or a flag');
+});
+
+it('takes a range style with only flags', function (): void {
+    foreach (['bold', 'italic', 'underline', 'strikeout'] as $flag) {
+        $style = new TextRangeStyle(0, 0, 3, ...[$flag => true]);
+
+        expect($style->{$flag})->toBeTrue()
+            ->and($style->hasFlags())->toBeTrue()
+            ->and($style->foreground)->toBeNull()
+            ->and($style->background)->toBeNull();
+    }
 });
 
 it('measures a scroll position as content fractions and turns a fraction back into an offset', function (): void {

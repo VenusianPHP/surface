@@ -9,6 +9,8 @@ use Surface\Contracts\Framebuffers\Region;
 use Surface\Contracts\Rasterize\FillRule;
 use Surface\NutsAndBolts\Affine;
 use Surface\NutsAndBolts\Color;
+use Surface\NutsAndBolts\LinearGradient;
+use Surface\Contracts\Text\ShapedRun;
 
 /**
  * Something that draws into a framebuffer: the software engine on the CPU, or
@@ -119,6 +121,12 @@ interface RenderingEngine
     public function clip(?Region $region): static;
 
     /** The clip as it applies: inside the surface, empty when nothing can be drawn. The whole surface when none is set. */
+    /** Clip to the intersection of the clip in force and $region, until popClip(). clip() still replaces the clip whole. */
+    public function pushClip(Region $region): static;
+
+    /** Put back the clip in force before the last pushClip(). */
+    public function popClip(): static;
+
     public function clipRegion(): Region;
 
     /** Replace every pixel of the surface with $color, whatever the clip. */
@@ -144,6 +152,26 @@ interface RenderingEngine
     public function fillEllipse(float $cx, float $cy, float $rx, float $ry, Color $color): static;
 
     public function strokeEllipse(float $cx, float $cy, float $rx, float $ry, Color $color, float $stroke = 1.0): static;
+
+    /**
+     * A rect with per-corner radii [top-left, top-right, bottom-right, bottom-left], each held to half the short side,
+     * and an optional border drawn inside the rect. A gradient, when given, fills in place of $fill.
+     *
+     * @param  array{float, float, float, float}  $radii
+     */
+    public function roundRect(float $x, float $y, float $width, float $height, array $radii, Color $fill, ?Color $border = null, float $borderWidth = 0.0, ?LinearGradient $gradient = null): static;
+
+    /** A soft shadow of a rounded rect, spread by blur and set blur / 4 lower. */
+    public function shadow(float $x, float $y, float $width, float $height, float $radius, float $blur, Color $color): static;
+
+    /**
+     * An 8-bit coverage mask (width*height bytes, rows top to bottom) in a colour whose alpha multiplies each byte.
+     * Its top-left is (x, y) through the transform, rounded to whole pixels; the mask itself is not scaled.
+     */
+    public function coverage(string $mask, int $width, int $height, float $x, float $y, Color $color): static;
+
+    /** A shaped run with its baseline at y, each glyph's mask on whole pixels. */
+    public function glyphs(ShapedRun $run, float $x, float $y, Color $color): static;
 
     /**
      * Draw another framebuffer's pixels with their top-left at (x, y), at the

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Surface\Contracts\Windows\Primitives\TKPrimitiveGroup;
 use Surface\Contracts\Windows\Styling\ScrollPosition;
+use Surface\Contracts\Windows\Styling\TextAlignment;
 use Surface\Contracts\Windows\Styling\TextRangeStyle;
 use Surface\Contracts\Windows\WindowException;
 use Surface\NutsAndBolts\Color;
@@ -58,6 +59,38 @@ it('normalises line endings, styles lines and ranges inside the text, and clears
 
     $area->setValue('z');
     expect($area->log)->toHaveCount(6);
+});
+
+it('keeps a run\'s flags when it clips the run to its line', function (): void {
+    $area = areaHost()->textArea('t', "one\ntwo");
+    $area->setRangeStyles([new TextRangeStyle(1, 1, 9, bold: true, underline: true)]);
+
+    expect($area->log)->toBe(['ranges:1:1+2[bu]']);
+});
+
+it('keeps a tab width of at least one column, 8 until set', function (): void {
+    $area = areaHost()->textArea('t', "a\tb");
+
+    expect($area->tabWidth())->toBe(8);
+
+    $area->setTabWidth(4);
+    expect($area->tabWidth())->toBe(4)
+        ->and($area->log)->toBe(['tabs:4'])
+        ->and(fn () => $area->setTabWidth(0))->toThrow(InvalidArgumentException::class, 'at least 1')
+        ->and(fn () => $area->setTabWidth(-1))->toThrow(InvalidArgumentException::class, 'at least 1')
+        ->and($area->tabWidth())->toBe(4)
+        ->and($area->log)->toBe(['tabs:4']);
+});
+
+it('aligns a button, an input and a text area', function (): void {
+    $host = areaHost();
+    $button = $host->button('b', 'Go')->setAlignment(TextAlignment::RIGHT);
+    $input = $host->textInput('i', '12')->setAlignment(TextAlignment::CENTER);
+    $area = $host->textArea('t', 'x')->setAlignment(TextAlignment::RIGHT);
+
+    expect($button->log)->toBe(['alignment:right'])
+        ->and($input->log)->toBe(['alignment:center'])
+        ->and($area->log)->toBe(['alignment:right']);
 });
 
 it('records what the user typed without clearing styles', function (): void {

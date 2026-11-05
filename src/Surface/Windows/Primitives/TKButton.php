@@ -6,6 +6,7 @@ use Surface\Contracts\Windows\Primitives\ButtonRole;
 use Surface\Contracts\Windows\Primitives\Placement;
 use Surface\Contracts\Windows\Primitives\TKButton as PrimitiveContract;
 use Surface\Contracts\Windows\Styling\FontSpec;
+use Surface\Contracts\Windows\Styling\TextAlignment;
 use Surface\Contracts\Windows\ToolkitWindow;
 use Surface\NutsAndBolts\Color;
 
@@ -19,6 +20,8 @@ abstract class TKButton extends TKPrimitive implements PrimitiveContract
     protected ?FontSpec $font = null;
 
     protected ?Color $text_color = null;
+
+    protected TextAlignment $alignment = TextAlignment::CENTER;
 
     protected ?ButtonRole $role = null;
 
@@ -51,6 +54,15 @@ abstract class TKButton extends TKPrimitive implements PrimitiveContract
         $this->live();
         $this->font = $font;
         $this->applyFont($font);
+
+        return $this;
+    }
+
+    public function setAlignment(TextAlignment $alignment): static
+    {
+        $this->live();
+        $this->alignment = $alignment;
+        $this->applyAlignment($alignment);
 
         return $this;
     }
@@ -132,4 +144,6 @@ abstract class TKButton extends TKPrimitive implements PrimitiveContract
      * @return void
      */
     abstract protected function applyTextColor(?Color $color): void;
+
+    abstract protected function applyAlignment(TextAlignment $alignment): void;
 }

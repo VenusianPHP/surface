@@ -460,6 +460,8 @@ final class FakeButton extends TKButton
     protected function applyTextColor(?Color $color): void { $this->log[] = 'color:'.($color?->toHex() ?? 'none'); }
 
     protected function applyRole(?ButtonRole $role): void { $this->log[] = 'role:'.($role->value ?? 'none'); }
+
+    protected function applyAlignment(TextAlignment $alignment): void { $this->log[] = "alignment:{$alignment->value}"; }
 }
 
 final class FakeImage extends ImageAbstract
@@ -541,6 +543,8 @@ final class FakeTextInput extends TextInputAbstract
     protected function applyFont(FontSpec $font): void { $this->log[] = "font:{$font->size}"; }
 
     protected function applyTextColor(?Color $color): void { $this->log[] = 'color:'.($color?->toHex() ?? 'none'); }
+
+    protected function applyAlignment(TextAlignment $alignment): void { $this->log[] = "alignment:{$alignment->value}"; }
 }
 
 final class FakeTextArea extends TextAreaAbstract
@@ -562,6 +566,10 @@ final class FakeTextArea extends TextAreaAbstract
 
     protected function applyWrap(bool $wrap): void { $this->log[] = 'wrap:'.(int) $wrap; }
 
+    protected function applyTabWidth(int $columns): void { $this->log[] = "tabs:{$columns}"; }
+
+    protected function applyAlignment(TextAlignment $alignment): void { $this->log[] = "alignment:{$alignment->value}"; }
+
     protected function applyLineBackgrounds(array $backgrounds): void
     {
         $this->log[] = 'lines:'.implode(',', array_map(fn (int $line, Color $color): string => "{$line}={$color->toHex()}", array_keys($backgrounds), $backgrounds));
@@ -569,7 +577,15 @@ final class FakeTextArea extends TextAreaAbstract
 
     protected function applyRangeStyles(array $styles): void
     {
-        $this->log[] = 'ranges:'.implode(',', array_map(fn (TextRangeStyle $s): string => "{$s->line}:{$s->start}+{$s->length}", $styles));
+        $this->log[] = 'ranges:'.implode(',', array_map(fn (TextRangeStyle $s): string => "{$s->line}:{$s->start}+{$s->length}".self::flags($s), $styles));
+    }
+
+    /** "[bisu]" letters for the flags a run has, nothing for a colour-only run. */
+    private static function flags(TextRangeStyle $s): string
+    {
+        $letters = ($s->bold ? 'b' : '').($s->italic ? 'i' : '').($s->strikeout ? 's' : '').($s->underline ? 'u' : '');
+
+        return $letters === '' ? '' : "[{$letters}]";
     }
 
     protected function applySelectLines(int $first, int $last): void { $this->log[] = "select:{$first}-{$last}"; }
