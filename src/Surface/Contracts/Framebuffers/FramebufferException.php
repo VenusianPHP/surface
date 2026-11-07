@@ -11,9 +11,9 @@ class FramebufferException extends SurfaceException
         return new self(trim("{$spec->pixel_format->value} at {$spec->bit_depth->value} bpp is not supported here. {$reason}"));
     }
 
-    public static function extensionMissing(string $extension): self
+    public static function extensionMissing(string $extension, string $version = '0.10'): self
     {
-        return new self("The 'extended' framebuffer driver needs ext-{$extension} 0.10 or newer loaded in this PHP (".PHP_BINARY.').');
+        return new self("The 'extended' framebuffer driver needs ext-{$extension} {$version} or newer loaded in this PHP (".PHP_BINARY.').');
     }
 
     public static function outOfRange(int $x, int $y, int $width, int $height): self

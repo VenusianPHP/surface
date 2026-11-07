@@ -249,7 +249,7 @@ it('draws roundrect, roundring and shadow as Rasterize spans', function (Rasteri
     $buffer = $framebuffers->full(FormatSpec::rgba8(), 48, 32);
     (new VelvetGE($buffer, $raster, $edges))->frame(function (RenderingEngine $g): void {
         $g->clear(Color::hex('#101820'));
-        $g->shadow(4, 4, 24, 14, 4, 6, Color::rgba(0, 0, 0, 0.5));
+        $g->shadow(4, 4, 24, 14, 4, 6, Color::rgba(0, 0, 0, 0.5), 0.0, 1.5);
         $g->roundRect(3.5, 2, 26, 16, [6, 2, 6, 0], Color::hex('#336699'), Color::hex('#ffcc00'), 1.5);
         $g->roundRect(30, 18, 14, 10, [3, 3, 3, 3], Color::rgba(255, 64, 0, 0.7));
     });

@@ -3,6 +3,7 @@
 namespace Surface\Contracts\Framebuffers;
 
 use Surface\NutsAndBolts\Affine;
+use Surface\NutsAndBolts\GradientSpread;
 
 interface Framebuffer
 {
@@ -45,8 +46,33 @@ interface Framebuffer
      * edges held), blended like paintSpans() with source alpha × $opacity
      * (0..255) as the alpha. Pixels outside the surface or $clip are skipped.
      * A paged source gives its current page, at its place.
+     *
+     * Three optional parts change what is painted, applied in this order to each
+     * sampled pixel (all in whole 0..255 steps, each rounded to nearest, halves up):
+     *  1. $tint, 0xRRGGBBAA, is multiplied in per channel: c = (c × t + 127) / 255,
+     *     alpha included, so a tint's alpha is an opacity. 0xFFFFFFFF changes nothing.
+     *  2. $opacity scales the alpha, as before.
+     *  3. $coverage, Spans in this surface's coordinates, scales the alpha by the
+     *     coverage of the span that holds the pixel; a pixel no span holds is skipped.
+     * $window, [u0, v0, u1, v1] with u0 < u1 and v0 < v1 in the placement's source
+     * coordinates (a paged source's rows are offset as the placement is), limits
+     * the painted pixels to those whose centre maps inside it. The window crops
+     * only: smooth sampling still reads, and holds at the edges of, the whole source.
      */
-    public function paintImage(Framebuffer $source, Affine $placement, int $opacity = 255, Filter $filter = Filter::NEAREST, ?Region $clip = null): static;
+    public function paintImage(Framebuffer $source, Affine $placement, int $opacity = 255, Filter $filter = Filter::NEAREST, ?Region $clip = null, int $tint = 0xFFFFFFFF, ?array $window = null, ?string $coverage = null): static;
+
+    /**
+     * Paints a gradient through spans: each covered pixel takes the ramp colour of its position, its alpha scaled by the
+     * span's coverage, blended over what is there. The position of a pixel centre (x + ½, y + ½) goes through $inverse
+     * (a, b, c, d, e, f: u = a·x + c·y + e, v = b·x + d·y + f); a linear gradient's t is u, a radial one's is hypot(u, v);
+     * $spread folds t into 0..1; the ramp entry is floor(t × 255 + ½). Spans must lie inside the surface.
+     *
+     * @param  string  $spans  Packed spans, in rows ascending, x ascending without overlap within a row.
+     * @param  string  $ramp  256 colours of 4 bytes, RGBA, straight alpha.
+     * @param  string  $kind  'linear' or 'radial'.
+     * @param  array{float, float, float, float, float, float}  $inverse
+     */
+    public function paintGradient(string $spans, string $ramp, string $kind, GradientSpread $spread, array $inverse): static;
 
     public function clear(): static;
 

@@ -44,7 +44,7 @@ Kind = logic over a `PixelStore` (the pixel glob). Kinds written once, abstract.
 | Flavor | Store | Bytes |
 |---|---|---|
 | `native` | `NativePixelStore`: PHP string + `Packing` | PHP; `pointer()` 0 |
-| `extended` | `ExtendedPixelStore`: one `FbBuffer` | C (ext-fb 0.10); `pointer()` an address |
+| `extended` | `ExtendedPixelStore`: one `FbBuffer` | C (ext-fb 0.11.1); `pointer()` an address |
 
 `Layout::of(spec)` = one rule set for storable specs; both flavors resolve there. `PixelMapper` = colour ↔ word in integers, same arithmetic as ext-fb. Result: identical bytes; fixtures + `ParityTest` enforce.[^fixtures]
 

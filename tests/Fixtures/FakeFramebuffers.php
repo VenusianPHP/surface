@@ -125,8 +125,13 @@ final class FakePixelStore implements PixelStore
         return $box;
     }
 
+    public function paintGradient(string $spans, string $ramp, string $kind, \Surface\NutsAndBolts\GradientSpread $spread, array $inverse, int $row = 0): ?Region
+    {
+        throw new FramebufferException('the fake paints no gradients');
+    }
+
     /** Writes the red byte of the nearest source pixel wherever the point lands inside: enough to see where a kind routes an image. */
-    public function paintRgba8(string $rgba8, int $width, int $height, array $inverse, Region $target, int $opacity, Filter $filter, int $row = 0): void
+    public function paintRgba8(string $rgba8, int $width, int $height, array $inverse, Region $target, int $opacity, Filter $filter, int $row = 0, int $tint = 0xFFFFFFFF, ?array $window = null, ?string $coverage = null): void
     {
         [$a, $b, $c, $d, $e, $f] = $inverse;
         for ($y = $target->y; $y < $target->bottom(); $y++) {

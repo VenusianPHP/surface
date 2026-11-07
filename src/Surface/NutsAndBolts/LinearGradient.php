@@ -2,28 +2,45 @@
 
 namespace Surface\NutsAndBolts;
 
-/**
- * A two-stop linear gradient across a shape's box: from at one side, to at the other.
- * 0 degrees runs left to right, 90 top to bottom (y grows down).
- */
-final readonly class LinearGradient
+use InvalidArgumentException;
+
+/** Colours that change along the line from (x0, y0) to (x1, y1), the same across it: SVG's linearGradient. */
+final readonly class LinearGradient extends Gradient
 {
+    /**
+     * @param  list<array{float, Color}>  $stops
+     *
+     * @throws InvalidArgumentException When a number is not finite, the two points are one, or as Gradient.
+     */
     public function __construct(
-        public Color $from,
-        public Color $to,
-        public float $angleDegrees = 90.0,
-    ) {}
+        public float $x0,
+        public float $y0,
+        public float $x1,
+        public float $y1,
+        array $stops,
+        GradientSpread $spread = GradientSpread::PAD,
+    ) {
+        foreach ([$x0, $y0, $x1, $y1] as $number) {
+            if (! is_finite($number)) {
+                throw new InvalidArgumentException('A gradient takes finite numbers.');
+            }
+        }
+        if ($x0 === $x1 && $y0 === $y1) {
+            throw new InvalidArgumentException('A linear gradient runs between two points that differ.');
+        }
+        parent::__construct($stops, $spread);
+    }
 
-    /** The colour at $t, 0 (from) .. 1 (to). */
-    public function at(float $t): Color
+    public function kind(): string
     {
-        $t = min(1.0, max(0.0, $t));
+        return 'linear';
+    }
 
-        return new Color(
-            $this->from->red + ($this->to->red - $this->from->red) * $t,
-            $this->from->green + ($this->to->green - $this->from->green) * $t,
-            $this->from->blue + ($this->to->blue - $this->from->blue) * $t,
-            $this->from->alpha + ($this->to->alpha - $this->from->alpha) * $t,
-        );
+    public function toGradientSpace(Affine $transform): ?Affine
+    {
+        $dx = $this->x1 - $this->x0;
+        $dy = $this->y1 - $this->y0;
+
+        return $transform->multiply(new Affine($dx, $dy, -$dy, $dx, $this->x0, $this->y0))->inverse();
     }
 }

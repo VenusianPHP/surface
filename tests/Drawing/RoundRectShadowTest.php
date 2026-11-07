@@ -45,7 +45,7 @@ it('records one roundrect without a border', function () {
 it('scales radii, border and blur with an even transform', function () {
     $commands = (new RecordingEngine)->commandsOf(function (RenderingEngine $g) {
         $g->scale(2)->roundRect(1, 1, 10, 10, [2, 2, 2, 2], rrFill(), rrEdge(), 1);
-        $g->shadow(1, 1, 10, 10, 3, 4, rrFill());
+        $g->shadow(1, 1, 10, 10, 3, 4, rrFill(), 0.0, 1.0);
     });
 
     expect(array_map(fn ($c) => array_slice($c, 0, -2), $commands))->toEqual([
@@ -77,10 +77,14 @@ it('refuses a turned shadow', function (Closure $turn) {
     'an uneven scale' => [fn (RenderingEngine $g) => $g->scale(2, 1)],
 ])->throws(DrawingException::class);
 
-it('moves a shadow blur / 4 down', function () {
-    $commands = (new RecordingEngine)->commandsOf(fn (RenderingEngine $g) => $g->shadow(10, 10, 20, 20, 4, 8, rrFill()));
+it('moves a shadow by the caller\'s offset, and by none when it gives none', function () {
+    $moved = (new RecordingEngine)->commandsOf(fn (RenderingEngine $g) => $g->shadow(10, 10, 20, 20, 4, 8, rrFill(), 3.0, 2.0));
+    $still = (new RecordingEngine)->commandsOf(fn (RenderingEngine $g) => $g->shadow(10, 10, 20, 20, 4, 8, rrFill()));
+    $scaled = (new RecordingEngine)->commandsOf(fn (RenderingEngine $g) => $g->scale(2)->shadow(10, 10, 20, 20, 4, 8, rrFill(), 3.0, 2.0));
 
-    expect($commands)->toEqual([['shadow', 10.0, 12.0, 30.0, 32.0, 4.0, 8.0, RR_FILL, new Region(0, 0, 100, 80)]]);
+    expect($moved)->toEqual([['shadow', 13.0, 12.0, 33.0, 32.0, 4.0, 8.0, RR_FILL, new Region(0, 0, 100, 80)]])
+        ->and($still)->toEqual([['shadow', 10.0, 10.0, 30.0, 30.0, 4.0, 8.0, RR_FILL, new Region(0, 0, 100, 80)]])
+        ->and(array_slice($scaled[0], 1, 4))->toBe([26.0, 24.0, 66.0, 64.0]);
 });
 
 it('fills only the border when it reaches the middle', function () {
@@ -103,7 +107,7 @@ it('damages nothing when the same rounded rect is drawn again', function () {
 it('boxes a shadow by its blur', function () {
     $engine = new RecordingEngine(framebuffers()->driver('native')->dirty(FormatSpec::rgba8(), 64, 64));
     $engine->frame(fn (RenderingEngine $g) => $g->clear(Color::rgb(0, 0, 0)));
-    $engine->frame(fn (RenderingEngine $g) => $g->clear(Color::rgb(0, 0, 0))->shadow(20, 20, 10, 10, 2, 4, rrFill()));
+    $engine->frame(fn (RenderingEngine $g) => $g->clear(Color::rgb(0, 0, 0))->shadow(20, 20, 10, 10, 2, 4, rrFill(), 0.0, 1.0));
 
     // the box 20..30 moved 1 down, grown by blur + 1
     expect($engine->damage())->toHaveCount(1)

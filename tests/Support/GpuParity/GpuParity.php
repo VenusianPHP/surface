@@ -219,6 +219,49 @@ final class GpuParity
                 $g->push()->translate(36.4, 3.6)->scale(1.6, 0.8)->text('AV', 0, 0, Color::rgb(120, 220, 255), $font)->pop();
                 $g->push()->translate(36.4, 16.6)->scale(0.8, 1.4)->text('AV', 0, 0, Color::rgba(255, 180, 40, 0.8), $font)->pop();
             }],
+            // The tint multiplies each pixel (alpha too), then the opacity, then the coverage: whole-pixel placement, nearest.
+            'tinted images' => [true, function (RenderingEngine $g): void {
+                $g->clear(Color::rgb(230, 230, 240));
+                $g->image(GpuParity::tile(), 4, 4, tint: Color::rgba(255, 128, 64, 0.75));
+                $g->image(GpuParity::tile(), 20, 2, 24, 24, 0.5, tint: Color::rgb(0, 255, 255));
+                $g->image(GpuParity::tile(), 50, 10, tint: Color::rgba(255, 255, 255, 0.4));
+            }],
+            // A source rect scales and mirrors onto the destination; the window crops, nearest, whole pixels.
+            'image source rects' => [true, function (RenderingEngine $g): void {
+                $g->clear(Color::rgb(20, 20, 30));
+                $g->image(GpuParity::tile(), 2, 2, 8, 8, sourceRect: [2, 2, 4, 4]);
+                $g->image(GpuParity::tile(), 14, 2, 8, 8, sourceRect: [6, 0, -4, 4]);
+                $g->image(GpuParity::tile(), 26, 2, sourceRect: [1, 1, 5, 6], tint: Color::rgba(255, 255, 0, 0.8));
+                $g->image(GpuParity::tile(), 4, 16, 12, 12, 0.7, sourceRect: [0, 7, 8, -7]);
+            }],
+            // Rounded corners: the rounded box's coverage at the edge, so tolerant there like every rounded shape.
+            'rounded images' => [false, function (RenderingEngine $g): void {
+                $g->clear(Color::rgb(240, 240, 240));
+                $g->image(GpuParity::tile(), 4, 4, 24, 24, radii: [6, 10, 0, 3]);
+                $g->image(GpuParity::tile(), 34, 4, 20, 16, 0.5, radii: [8, 8, 8, 8], tint: Color::rgb(255, 200, 200));
+                $g->image(GpuParity::tile(), 36, 22, 24, 8, radii: [4, 4, 4, 4], sourceRect: [0, 2, 8, 4]);
+            }],
+            // Curves flatten in Surface and strokes become polygon outlines: every engine fills the same polygons.
+            'curves and strokes' => [false, function (RenderingEngine $g): void {
+                $g->clear(Color::rgb(240, 240, 240));
+                $g->fill((new \Surface\NutsAndBolts\Path())->moveTo(3, 28)->cubicTo(3, 2, 27, 2, 27, 28)->close(), Color::rgb(60, 120, 200));
+                $g->stroke((new \Surface\NutsAndBolts\Path())->moveTo(32, 26)->cubicTo(36, 4, 48, 4, 52, 20)->quadTo(56, 28, 62, 12),
+                    Color::rgb(200, 40, 40), new \Surface\Contracts\Drawing\StrokeStyle(width: 3.0, cap: \Surface\Contracts\Rasterize\StrokeCap::ROUND, join: \Surface\Contracts\Rasterize\StrokeJoin::ROUND));
+                $g->stroke((new \Surface\NutsAndBolts\Path())->moveTo(32, 30)->lineTo(46, 30)->lineTo(46, 22)->lineTo(60, 22),
+                    Color::rgb(20, 20, 20), new \Surface\Contracts\Drawing\StrokeStyle(width: 2.0, cap: \Surface\Contracts\Rasterize\StrokeCap::SQUARE, join: \Surface\Contracts\Rasterize\StrokeJoin::BEVEL, dash: [4.0, 2.0]));
+            }],
+            // A gradient's colour at a pixel is a ramp entry of its position: every engine reads the same 256 colours.
+            'gradients' => [false, function (RenderingEngine $g): void {
+                $heat = [[0.0, Color::rgb(255, 0, 0)], [0.5, Color::rgb(255, 255, 0)], [1.0, Color::rgb(0, 0, 255)]];
+                $box = fn (float $x0, float $y0, float $x1, float $y1) => (new \Surface\NutsAndBolts\Path())->moveTo($x0, $y0)->lineTo($x1, $y0)->lineTo($x1, $y1)->lineTo($x0, $y1)->close();
+                $g->clear(Color::rgb(230, 230, 230));
+                $g->fill($box(2, 2, 30, 14), new \Surface\NutsAndBolts\LinearGradient(2, 0, 30, 0, $heat));
+                $g->fill($box(34, 2, 62, 14), new \Surface\NutsAndBolts\RadialGradient(48, 8, 10, $heat, \Surface\NutsAndBolts\GradientSpread::REFLECT));
+                $g->stroke((new \Surface\NutsAndBolts\Path())->moveTo(4, 24)->cubicTo(16, 14, 40, 34, 60, 22),
+                    new \Surface\NutsAndBolts\LinearGradient(0, 0, 32, 0, $heat, \Surface\NutsAndBolts\GradientSpread::REPEAT),
+                    new \Surface\Contracts\Drawing\StrokeStyle(width: 5.0, cap: \Surface\Contracts\Rasterize\StrokeCap::ROUND));
+                $g->fill($box(40, 18, 62, 30), new \Surface\NutsAndBolts\LinearGradient(40, 0, 62, 0, [[0.0, Color::rgba(0, 0, 0, 0.0)], [1.0, Color::rgba(0, 0, 0, 0.8)]]));
+            }],
             'images scaled and turned' => [false, function (RenderingEngine $g): void {
                 $g->clear(Color::hex('#202020'));
                 $g->image(GpuParity::tile(), 2.5, 3.5, 20, 12, filter: Filter::LINEAR);

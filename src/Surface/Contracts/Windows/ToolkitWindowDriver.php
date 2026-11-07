@@ -6,6 +6,7 @@ use Surface\Contracts\Windows\Menus\MenuProfile;
 use Surface\Contracts\Windows\Services\Clipboard;
 use Surface\Contracts\Windows\Services\Desktop;
 use Surface\Contracts\Windows\Services\Dialogs;
+use Surface\Contracts\Windows\Services\SystemAccent;
 use Surface\Contracts\Windows\Styling\FontMetrics;
 use Surface\Contracts\Windows\Styling\FontSpec;
 
@@ -101,6 +102,8 @@ interface ToolkitWindowDriver extends WindowDriver
     public function clipboard(): Clipboard;
 
     public function desktop(): Desktop;
+
+    public function systemAccent(): SystemAccent;
 
     /**
      * What the toolkit measures for the font a native view would get from this FontSpec. A family

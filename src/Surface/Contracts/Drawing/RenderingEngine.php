@@ -9,6 +9,8 @@ use Surface\Contracts\Framebuffers\Region;
 use Surface\Contracts\Rasterize\FillRule;
 use Surface\NutsAndBolts\Affine;
 use Surface\NutsAndBolts\Color;
+use Surface\NutsAndBolts\Gradient;
+use Surface\NutsAndBolts\Path;
 
 /**
  * Something that draws into a framebuffer: the software engine on the CPU, or
@@ -141,6 +143,25 @@ interface RenderingEngine
     /** @param list<list<array{float, float}>> $contours */
     public function fillPath(array $contours, Color $color, FillRule $rule = FillRule::NON_ZERO): static;
 
+    /**
+     * Fill a path, curves included, with a colour or a gradient (given in the path's units, through the transform
+     * with it). The path goes through the transform and is flattened to straight pieces within a quarter pixel
+     * (Path::flatten), so every engine fills the same polygon; an open subpath is closed for the fill.
+     *
+     * @throws DrawingException When a point passes the limit of the surface.
+     */
+    public function fill(Path $path, Color|Gradient $paint, FillRule $rule = FillRule::NON_ZERO): static;
+
+    /**
+     * Stroke a path as SVG, Canvas 2D and Skia do: the width, caps, joins, miter limit and dash of $style, in
+     * the units the path is given in. The path is flattened within a quarter pixel after the transform. A
+     * subpath that was only moved to draws nothing; one that was drawn but has no length draws a dot under a
+     * round cap and a square under a square one, as SVG 2 says.
+     *
+     * @throws DrawingException Under a transform that does not scale x and y alike or that shears, or when a point passes the limit.
+     */
+    public function stroke(Path $path, Color|Gradient $paint, StrokeStyle $style): static;
+
     public function fillEllipse(float $cx, float $cy, float $rx, float $ry, Color $color): static;
 
     public function strokeEllipse(float $cx, float $cy, float $rx, float $ry, Color $color, float $stroke = 1.0): static;
@@ -154,20 +175,37 @@ interface RenderingEngine
     public function roundRect(float $x, float $y, float $width, float $height, array $radii, Color $fill, ?Color $border = null, float $borderWidth = 0.0): static;
 
     /**
-     * A soft shadow of a rounded rect, spread by blur and set blur / 4 lower.
+     * A soft shadow of a rounded rect, spread by blur and moved by ($dx, $dy), in the units the box is given in.
      *
      * @throws DrawingException Under a turn, shear or uneven scale.
      */
-    public function shadow(float $x, float $y, float $width, float $height, float $radius, float $blur, Color $color): static;
+    public function shadow(float $x, float $y, float $width, float $height, float $radius, float $blur, Color $color, float $dx = 0.0, float $dy = 0.0): static;
 
     /**
      * Draw another framebuffer's pixels with their top-left at (x, y), at the
      * source's own size unless a width and height are given. The source is
      * read when the frame is drawn, not when this is called.
      *
+     * Three optional parts shape the image. $tint is multiplied into every source
+     * pixel, alpha included (a tint's alpha is an opacity that multiplies $opacity).
+     * $radii, [tl, tr, br, bl], cut the image to a rounded rect of the destination
+     * box, each radius held to 0..min(width, height) / 2 and the edge covered as
+     * roundRect()'s is; it needs an upright transform that scales x and y alike.
+     * $sourceRect, [x, y, w, h] in source pixels, draws only that part: its left
+     * and top edges land on the destination's, its right and bottom edges on the
+     * other side, and a negative w or h mirrors that axis (x or y is then the edge
+     * the destination's left or top shows). It must be non-empty and inside the
+     * source. The width and height default to the source rect's size. Smooth
+     * sampling still reads the pixels beside the rect and holds only at the edges
+     * of the whole source (as a texture atlas does).
+     *
      * @param  float  $opacity  0..1
+     * @param  array{float, float, float, float}|null  $radii
+     * @param  array{float, float, float, float}|null  $sourceRect
+     *
+     * @throws DrawingException When the radii or the source rect are malformed, or radii are given under a turn, shear or uneven scale.
      */
-    public function image(Framebuffer $source, float $x, float $y, ?float $width = null, ?float $height = null, float $opacity = 1.0, Filter $filter = Filter::NEAREST): static;
+    public function image(Framebuffer $source, float $x, float $y, ?float $width = null, ?float $height = null, float $opacity = 1.0, Filter $filter = Filter::NEAREST, ?array $radii = null, ?Color $tint = null, ?array $sourceRect = null): static;
 
     /**
      * Text. ($x, $y) is the top-left of the first line box; "\n" starts a new

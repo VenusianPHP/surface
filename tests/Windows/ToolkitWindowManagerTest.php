@@ -47,7 +47,8 @@ it('gives the services of the driver', function (): void {
 
     expect($manager->dialogs())->toBe($driver->dialogs())
         ->and($manager->clipboard())->toBe($driver->clipboard())
-        ->and($manager->desktop())->toBe($driver->desktop());
+        ->and($manager->desktop())->toBe($driver->desktop())
+        ->and($manager->systemAccent())->toBe($driver->systemAccent());
 });
 
 it('parses every configured profile up front', function (): void {

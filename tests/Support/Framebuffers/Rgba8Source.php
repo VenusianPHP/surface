@@ -11,6 +11,7 @@ use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\Framebuffer;
 use Surface\Contracts\Framebuffers\Region;
 use Surface\NutsAndBolts\Affine;
+use Surface\NutsAndBolts\GradientSpread;
 
 /** RGBA8 bytes as a read-only framebuffer: what a fixture's rgba8 op blits from. Pixel words are 0xRRGGBBAA. */
 final class Rgba8Source implements Framebuffer
@@ -54,7 +55,9 @@ final class Rgba8Source implements Framebuffer
 
     public function paintSpans(string $spans, int $rgba8): static { throw new LogicException('read-only source'); }
 
-    public function paintImage(Framebuffer $source, Affine $placement, int $opacity = 255, Filter $filter = Filter::NEAREST, ?Region $clip = null): static { throw new LogicException('read-only source'); }
+    public function paintImage(Framebuffer $source, Affine $placement, int $opacity = 255, Filter $filter = Filter::NEAREST, ?Region $clip = null, int $tint = 0xFFFFFFFF, ?array $window = null, ?string $coverage = null): static { throw new LogicException('read-only source'); }
+
+    public function paintGradient(string $spans, string $ramp, string $kind, GradientSpread $spread, array $inverse): static { throw new LogicException('read-only source'); }
 
     public function clear(): static { throw new LogicException('read-only source'); }
 

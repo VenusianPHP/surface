@@ -142,18 +142,18 @@ it('uploads an image source once a frame and draws each placement over its corne
     $other = new NativeFullFramebuffer(FormatSpec::rgba8(), 2, 2);
     $placed = Affine::translation(10.0, 6.0)->multiply(Affine::scaling(2.0, 2.0));
     $list = Lowering::lower([
-        ['image', $tile, $placed, 255, Filter::NEAREST, loweringClip()],
-        ['image', $other, Affine::translation(1.0, 1.0), 128, Filter::LINEAR, loweringClip()],
-        ['image', $tile, Affine::translation(40.0, 2.0), 255, Filter::NEAREST, loweringClip()],
+        ['image', $tile, $placed, 255, Filter::NEAREST, null, loweringClip()],
+        ['image', $other, Affine::translation(1.0, 1.0), 128, Filter::LINEAR, null, loweringClip()],
+        ['image', $tile, Affine::translation(40.0, 2.0), 255, Filter::NEAREST, null, loweringClip()],
     ], 64, 32);
 
     expect($list->operations)->toEqual([
         [Op::UPLOAD, 0, $tile],
         [Op::SCISSOR, loweringClip()],
-        [Op::IMAGE, 0, 0, $placed->inverse(), 255, Filter::NEAREST],
+        [Op::IMAGE, 0, 0, $placed->inverse(), 255, Filter::NEAREST, 0xFFFFFFFF, null, null],
         [Op::UPLOAD, 1, $other],
-        [Op::IMAGE, 6, 1, Affine::translation(1.0, 1.0)->inverse(), 128, Filter::LINEAR],
-        [Op::IMAGE, 12, 0, Affine::translation(40.0, 2.0)->inverse(), 255, Filter::NEAREST],
+        [Op::IMAGE, 6, 1, Affine::translation(1.0, 1.0)->inverse(), 128, Filter::LINEAR, 0xFFFFFFFF, null, null],
+        [Op::IMAGE, 12, 0, Affine::translation(40.0, 2.0)->inverse(), 255, Filter::NEAREST, 0xFFFFFFFF, null, null],
     ])
         ->and($list->operations[0][2])->toBe($tile)
         ->and(vertices($list, 0, 6))->toBe([10.0, 6.0, 26.0, 6.0, 26.0, 14.0, 10.0, 6.0, 26.0, 14.0, 10.0, 14.0]);
@@ -201,7 +201,7 @@ it('lowers a frame the engine recorded, every operation inside the vertex string
 
 it('uploads an HdrImage as itself, so a device can upload its half floats', function () {
     $hdr = HdrImage::fromFloats([2.0, 2.0, 2.0, 1.0], 1, 1);
-    $list = Lowering::lower([['image', $hdr, Affine::translation(1.0, 1.0), 255, Filter::LINEAR, loweringClip()]], 64, 32);
+    $list = Lowering::lower([['image', $hdr, Affine::translation(1.0, 1.0), 255, Filter::LINEAR, null, loweringClip()]], 64, 32);
 
     expect($list->operations[0])->toBe([Op::UPLOAD, 0, $hdr]);
 });
@@ -234,7 +234,7 @@ it('refuses glyphs without an atlas', function () {
 it('lowers roundrect, roundring and shadow to one quad op each', function () {
     $commands = (new RecordingEngine)->commandsOf(fn (RenderingEngine $g) => $g
         ->roundRect(4, 4, 20, 10, [3, 3, 3, 3], Color::rgb(255, 0, 0), Color::rgb(0, 0, 255), 1.0)
-        ->shadow(30, 4, 10, 10, 2, 4, Color::rgba(0, 0, 0, 0.5)));
+        ->shadow(30, 4, 10, 10, 2, 4, Color::rgba(0, 0, 0, 0.5), 0.0, 1.0));
     $list = Lowering::lower($commands, 64, 32);
     $ops = array_values(array_filter($list->operations, fn (array $o) => $o[0] !== Op::SCISSOR));
     [$fill, $ring, $shade] = $ops;
@@ -246,4 +246,22 @@ it('lowers roundrect, roundring and shadow to one quad op each', function () {
         ->and(vertices($list, $ring[1], 6))->toBe(quadOf(3.0, 3.0, 25.0, 15.0))
         ->and(array_slice($shade, 2, 6))->toBe([30.0, 5.0, 40.0, 15.0, 2.0, 4.0])
         ->and(vertices($list, $shade[1], 6))->toBe(quadOf(25.0, 0.0, 45.0, 20.0));
+});
+
+it('lowers a gradient path to the stencil fill, a ramp upload and a cover in the gradient', function () {
+    $path = (new Surface\NutsAndBolts\Path())->moveTo(4, 4)->lineTo(20, 4)->lineTo(20, 12)->lineTo(4, 12)->close();
+    $gradient = new Surface\NutsAndBolts\LinearGradient(4, 0, 20, 0, [[0.0, Color::rgb(0, 0, 0)], [1.0, Color::rgb(255, 255, 255)]], Surface\NutsAndBolts\GradientSpread::REFLECT);
+    $commands = (new RecordingEngine)->commandsOf(fn (RenderingEngine $g) => $g->fill($path, $gradient));
+    $list = Lowering::lower($commands, 64, 32);
+    $ops = array_values(array_filter($list->operations, fn (array $o) => $o[0] !== Op::SCISSOR));
+
+    expect(array_map(fn (array $o) => $o[0], $ops))->toBe([Op::STENCIL_FILL, Op::UPLOAD, Op::COVER_GRADIENT])
+        ->and($ops[1][1])->toBe(0)
+        ->and($ops[1][2]->viewportWidth())->toBe(256)
+        ->and($ops[1][2]->viewportHeight())->toBe(1)
+        ->and(bin2hex(substr($ops[1][2]->toRgba8(), 255 * 4, 4)))->toBe('ffffffff')
+        ->and(array_slice($ops[2], 2, 1))->toBe([0])
+        ->and($ops[2][3])->toBe(0)
+        ->and($ops[2][5])->toBe(2)
+        ->and(vertices($list, $ops[2][1], 6))->toBe(quadOf(4.0, 4.0, 20.0, 12.0));
 });

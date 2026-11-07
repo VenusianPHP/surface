@@ -9,6 +9,8 @@ use Surface\Contracts\Windows\Mail\WindowClosed;
 use Surface\Contracts\Windows\Menus\MenuProfile;
 use Surface\Contracts\Windows\Services\Alert;
 use Surface\Contracts\Windows\Services\Desktop;
+use Surface\Contracts\Windows\Services\SystemAccent;
+use Surface\NutsAndBolts\Color;
 use Surface\Contracts\Windows\Services\DialogCapability;
 use Surface\Contracts\Windows\Services\OpenRequest;
 use Surface\Contracts\Windows\Services\SaveRequest;
@@ -105,6 +107,13 @@ final class FakeDesktop implements Desktop
     public function open(string $path): void { $this->path = $path; }
 }
 
+final class FakeSystemAccent implements SystemAccent
+{
+    public ?Color $color = null;
+
+    public function color(): ?Color { return $this->color; }
+}
+
 /** Records what the manager hands a toolkit window driver. */
 final class FakeWindowDriver implements ToolkitWindowDriver
 {
@@ -128,6 +137,8 @@ final class FakeWindowDriver implements ToolkitWindowDriver
     private ?FakeClipboard $clipboard = null;
 
     private ?FakeDesktop $desktop = null;
+
+    private ?FakeSystemAccent $systemAccent = null;
 
     public function open(string $name, int $width, int $height, ?MenuProfile $menu = null, ?ToolkitWindow $parent = null): ToolkitWindow
     {
@@ -157,6 +168,8 @@ final class FakeWindowDriver implements ToolkitWindowDriver
     public function clipboard(): FakeClipboard { return $this->clipboard ??= new FakeClipboard($this); }
 
     public function desktop(): FakeDesktop { return $this->desktop ??= new FakeDesktop(); }
+
+    public function systemAccent(): FakeSystemAccent { return $this->systemAccent ??= new FakeSystemAccent(); }
 
     public function fontMetrics(FontSpec $font): FontMetrics { return new FontMetrics(10.0, 3.0, 15.0, 7.0, $font->monospace); }
 

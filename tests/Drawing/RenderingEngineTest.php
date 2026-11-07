@@ -248,9 +248,64 @@ it('places an image through the transform, at its own size or the one given', fu
     });
 
     expect($commands)->toEqual([
-        ['image', $source, Affine::translation(3.0, 5.0), 255, Filter::NEAREST, surface()],
-        ['image', $source, new Affine(4.0, 0.0, 0.0, 2.0, 12.0, 12.0), 128, Filter::LINEAR, surface()],
+        ['image', $source, Affine::translation(3.0, 5.0), 255, Filter::NEAREST, null, surface()],
+        ['image', $source, new Affine(4.0, 0.0, 0.0, 2.0, 12.0, 12.0), 128, Filter::LINEAR, null, surface()],
     ])->and($commands[0][1])->toBe($source);
+});
+
+it('maps a source rect onto the destination, mirrors a negative size, and records the window that paints', function (): void {
+    $source = new NativeFullFramebuffer(FormatSpec::rgba8(), 4, 2);
+    $commands = (new RecordingEngine())->commandsOf(function (RenderingEngine $g) use ($source): void {
+        $g->image($source, 0, 0, 8, 4, sourceRect: [1, 1, 2, 1]);
+        $g->image($source, 0, 0, sourceRect: [3, 0, -2, 2]);
+    });
+
+    // x: the destination's left edge shows source 1, its right edge source 3 (u = 4 × (x − ...)); the second is mirrored: 3 on the left, 1 on the right
+    expect($commands[0][2])->toEqual(new Affine(4.0, 0.0, 0.0, 4.0, -4.0, -4.0))
+        ->and($commands[0][5])->toBe(['tint' => 0xFFFFFFFF, 'window' => [1.0, 1.0, 3.0, 2.0], 'round' => null])
+        ->and($commands[1][2])->toEqual(new Affine(-1.0, 0.0, 0.0, 1.0, 3.0, 0.0))
+        ->and($commands[1][5]['window'])->toBe([1.0, 0.0, 3.0, 2.0]);
+});
+
+it('takes the destination size from the source rect when none is given', function (): void {
+    $source = new NativeFullFramebuffer(FormatSpec::rgba8(), 8, 8);
+    $commands = (new RecordingEngine())->commandsOf(fn (RenderingEngine $g) => $g->image($source, 5, 6, sourceRect: [2, 2, 3, 4]));
+
+    expect($commands[0][2])->toEqual(new Affine(1.0, 0.0, 0.0, 1.0, 3.0, 4.0));
+});
+
+it('refuses a source rect that is empty, outside the source or malformed', function (array $rect): void {
+    $source = new NativeFullFramebuffer(FormatSpec::rgba8(), 4, 2);
+
+    expect(fn () => (new RecordingEngine())->commandsOf(fn (RenderingEngine $g) => $g->image($source, 0, 0, sourceRect: $rect)))->toThrow(DrawingException::class);
+})->with([[[0, 0, 0, 1]], [[0, 0, 5, 1]], [[-1, 0, 2, 1]], [[1, 0, -2, 1]], [[0, 0, 1]], [[0, 0, 1, NAN]]]);
+
+it('records a tint as 0xRRGGBBAA and draws nothing for one with no alpha', function (): void {
+    $source = new NativeFullFramebuffer(FormatSpec::rgba8(), 2, 2);
+    $commands = (new RecordingEngine())->commandsOf(function (RenderingEngine $g) use ($source): void {
+        $g->image($source, 0, 0, tint: Color::rgba(255, 128, 0, 0.5));
+        $g->image($source, 0, 0, tint: Color::rgba(255, 128, 0, 0.0));
+    });
+
+    expect($commands)->toHaveCount(1)
+        ->and($commands[0][5]['tint'])->toBe(0xFF800080);
+});
+
+it('records the box and the held, scaled radii of a rounded image', function (): void {
+    $source = new NativeFullFramebuffer(FormatSpec::rgba8(), 8, 4);
+    $commands = (new RecordingEngine())->commandsOf(function (RenderingEngine $g) use ($source): void {
+        $g->translate(10, 10)->scale(2);
+        $g->image($source, 1, 1, radii: [10, 0, 0, 1]);
+    });
+
+    expect($commands[0][5]['round'])->toBe([12.0, 12.0, 28.0, 20.0, [4.0, 0.0, 0.0, 2.0]]);
+});
+
+it('refuses radii that are not four numbers, or under a turn', function (): void {
+    $source = new NativeFullFramebuffer(FormatSpec::rgba8(), 8, 4);
+
+    expect(fn () => (new RecordingEngine())->commandsOf(fn (RenderingEngine $g) => $g->image($source, 0, 0, radii: [1, 2])))->toThrow(DrawingException::class)
+        ->and(fn () => (new RecordingEngine())->commandsOf(fn (RenderingEngine $g) => $g->rotate(0.3)->image($source, 0, 0, radii: [2, 2, 2, 2])))->toThrow(DrawingException::class, 'upright');
 });
 
 it('draws nothing for a zero or negative size, radius, stroke or opacity, or too few points', function (): void {

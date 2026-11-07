@@ -55,7 +55,7 @@ Driver keys, read with code defaults by each driver (absent from the published f
 
 | Key | Default | Values |
 |---|---|---|
-| `default` | `env('FRAMEBUFFERS_DRIVER', 'auto')` | `auto` (extended when ext-fb 0.10 is loaded, native when not), `native` (bytes in PHP, always available), `extended` (bytes in C, needs ext-fb 0.10) |
+| `default` | `env('FRAMEBUFFERS_DRIVER', 'auto')` | `auto` (extended when ext-fb 0.11.1 is loaded, native when not), `native` (bytes in PHP, always available), `extended` (bytes in C, needs ext-fb 0.10) |
 
 `rasterize`:[^rasterize]
 

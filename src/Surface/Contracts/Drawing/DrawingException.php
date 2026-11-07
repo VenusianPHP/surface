@@ -11,6 +11,16 @@ class DrawingException extends SurfaceException
         return new self('shadow() needs an upright transform that scales x and y alike.');
     }
 
+    public static function unevenRoundedImage(): self
+    {
+        return new self('image() with radii needs an upright transform that scales x and y alike.');
+    }
+
+    public static function unevenStroke(): self
+    {
+        return new self('stroke() needs a transform that scales x and y alike and does not shear: a turn, a mirror or a uniform scale.');
+    }
+
     public static function badRadii(): self
     {
         return new self('Radii are a list of four numbers: [tl, tr, br, bl].');

@@ -6,6 +6,7 @@ use Surface\Bridge\ToolkitManager;
 use Surface\Contracts\Windows\Services\Clipboard;
 use Surface\Contracts\Windows\Services\Desktop;
 use Surface\Contracts\Windows\Services\Dialogs;
+use Surface\Contracts\Windows\Services\SystemAccent;
 use Surface\Contracts\Windows\ToolkitWindow;
 use Surface\Contracts\Windows\ToolkitWindowDriver as ToolkitWindowDriverContract;
 use Surface\Contracts\Windows\WindowException;
@@ -109,6 +110,8 @@ class ToolkitWindowManager
     public function clipboard(): Clipboard { return $this->driver()->clipboard(); }
 
     public function desktop(): Desktop { return $this->driver()->desktop(); }
+
+    public function systemAccent(): SystemAccent { return $this->driver()->systemAccent(); }
 
     public function profile(string $name): MenuProfile
     {
