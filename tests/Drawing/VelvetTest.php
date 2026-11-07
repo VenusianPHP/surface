@@ -244,3 +244,27 @@ it('draws ePaper with hard edges in the panel\'s inks', function (RasterizeDrive
         ->and($paper->getPixel(20, 14))->toBe(2)                 // the red ink
         ->and($paper->getPixel(31, 0))->toBe($paper->paper());
 })->with('engine pairings');
+
+it('draws roundrect, roundring and shadow as Rasterize spans', function (RasterizeDriver $raster, FramebufferDriver $framebuffers, Edges $edges): void {
+    $buffer = $framebuffers->full(FormatSpec::rgba8(), 48, 32);
+    (new VelvetGE($buffer, $raster, $edges))->frame(function (RenderingEngine $g): void {
+        $g->clear(Color::hex('#101820'));
+        $g->shadow(4, 4, 24, 14, 4, 6, Color::rgba(0, 0, 0, 0.5));
+        $g->roundRect(3.5, 2, 26, 16, [6, 2, 6, 0], Color::hex('#336699'), Color::hex('#ffcc00'), 1.5);
+        $g->roundRect(30, 18, 14, 10, [3, 3, 3, 3], Color::rgba(255, 64, 0, 0.7));
+    });
+
+    $direct = $framebuffers->full(FormatSpec::rgba8(), 48, 32);
+    $r = $raster->rasterizer(Region::wholeSurface(48, 32), $edges);
+    $direct->fill(PixelMapper::for($direct->hostFormat())->map(Color::hex('#101820')));
+    $direct->paintSpans($r->shadow(4, 5.5, 24, 14, 4, 6), rgbaOf(Color::rgba(0, 0, 0, 0.5)));
+    $direct->paintSpans($r->fillRoundRect(5, 3.5, 23, 13, [4.5, 0.5, 4.5, 0]), rgbaOf(Color::hex('#336699')));
+    $direct->paintSpans($r->strokeRoundRect(3.5, 2, 26, 16, [6, 2, 6, 0], 1.5), rgbaOf(Color::hex('#ffcc00')));
+    $direct->paintSpans($r->fillRoundRect(30, 18, 14, 10, [3, 3, 3, 3]), rgbaOf(Color::rgba(255, 64, 0, 0.7)));
+
+    for ($y = 0; $y < 32; $y++) {
+        for ($x = 0; $x < 48; $x++) {
+            expect($buffer->getPixel($x, $y))->toBe($direct->getPixel($x, $y), "pixel {$x},{$y}");
+        }
+    }
+})->with('engine pairings')->with([Edges::HARD, Edges::ANTIALIASED]);

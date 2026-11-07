@@ -5,10 +5,26 @@ namespace Surface\Windows;
 use Closure;
 use Surface\Bridge\BridgedToolkitSession;
 use Surface\Contracts\Drawing\VSync;
+use Surface\Contracts\HumanInput\Key;
+use Surface\Contracts\HumanInput\Modifiers;
+use Surface\Contracts\HumanInput\MouseButton;
 use Surface\Contracts\Framebuffers\Region;
 use Surface\Contracts\Windows\Display;
 use Surface\Contracts\Windows\DisplayMode;
 use Surface\Contracts\Windows\Hdr;
+use Surface\Contracts\Windows\Mail\Staged\StagedDragged;
+use Surface\Contracts\Windows\Mail\Staged\StagedEntered;
+use Surface\Contracts\Windows\Mail\Staged\StagedFocusGained;
+use Surface\Contracts\Windows\Mail\Staged\StagedFocusLost;
+use Surface\Contracts\Windows\Mail\Staged\StagedKeyPressed;
+use Surface\Contracts\Windows\Mail\Staged\StagedKeyReleased;
+use Surface\Contracts\Windows\Mail\Staged\StagedLeft;
+use Surface\Contracts\Windows\Mail\Staged\StagedMoved;
+use Surface\Contracts\Windows\Mail\Staged\StagedPressed;
+use Surface\Contracts\Windows\Mail\Staged\StagedReleased;
+use Surface\Contracts\Windows\Mail\Staged\StagedTextCommitted;
+use Surface\Contracts\Windows\Mail\Staged\StagedWheeled;
+use Surface\Contracts\Windows\Mail\View\ScrollPhase;
 use Surface\Contracts\Windows\Mail\WindowCloseRequested;
 use Surface\Contracts\Windows\Mail\WindowClosed;
 use Surface\Contracts\Windows\Mail\WindowDisplayChanged;
@@ -646,6 +662,7 @@ abstract class StagedWindow implements StagedWindowContract
             return;
         }
         $this->session->post(new WindowFocused($this->name));
+        $this->postInput(new StagedFocusGained($this->name));
     }
 
     /** The native window stopped being key; nothing once closed. */
@@ -655,6 +672,75 @@ abstract class StagedWindow implements StagedWindowContract
             return;
         }
         $this->session->post(new WindowFocusLost($this->name));
+        $this->postInput(new StagedFocusLost($this->name));
+    }
+
+    /**
+     * Input mail goes out only while watchInput() is on and the window is open.
+     * Pending latest mail (a move) goes out first, so the mail keeps the order
+     * the events came in.
+     */
+    private function postInput(object $mail): void
+    {
+        if (! $this->open || ! $this->watching_input) {
+            return;
+        }
+        $this->session->flushLatest();
+        $this->session->post($mail);
+    }
+
+    /** A button went down at $x, $y in points from the top-left; $clicks counts presses within the double-click time. A stager calls this from its native callback. */
+    protected function pressed(float $x, float $y, MouseButton $button, int $clicks, Modifiers $modifiers): void
+    {
+        $this->postInput(new StagedPressed($this->name, $x, $y, $button, $clicks, $modifiers));
+    }
+
+    protected function released(float $x, float $y, MouseButton $button, Modifiers $modifiers): void
+    {
+        $this->postInput(new StagedReleased($this->name, $x, $y, $button, $modifiers));
+    }
+
+    /** The pointer moved with no button down. Latest wins until the next input mail or the pump flushes. */
+    protected function pointerMoved(float $x, float $y, Modifiers $modifiers): void
+    {
+        if ($this->open && $this->watching_input) {
+            $this->session->postLatest("staged.moved.{$this->name}", new StagedMoved($this->name, $x, $y, $modifiers));
+        }
+    }
+
+    protected function dragged(float $x, float $y, MouseButton $button, Modifiers $modifiers): void
+    {
+        $this->postInput(new StagedDragged($this->name, $x, $y, $button, $modifiers));
+    }
+
+    protected function wheeled(float $dx, float $dy, bool $precise, Modifiers $modifiers, ScrollPhase $phase = ScrollPhase::NONE): void
+    {
+        $this->postInput(new StagedWheeled($this->name, $dx, $dy, $precise, $modifiers, $phase));
+    }
+
+    protected function pointerEntered(): void
+    {
+        $this->postInput(new StagedEntered($this->name));
+    }
+
+    protected function pointerLeft(): void
+    {
+        $this->postInput(new StagedLeft($this->name));
+    }
+
+    protected function keyPressed(Key $key, string $character, Modifiers $modifiers, bool $repeat): void
+    {
+        $this->postInput(new StagedKeyPressed($this->name, $key, $character, $modifiers, $repeat));
+    }
+
+    protected function keyReleased(Key $key, Modifiers $modifiers): void
+    {
+        $this->postInput(new StagedKeyReleased($this->name, $key, $modifiers));
+    }
+
+    protected function textCommitted(string $text): void
+    {
+        $this->postInput(new StagedTextCommitted($this->name, $text));
     }
 
     /** Nothing drawn in the window shows now; nothing once closed or already occluded. */

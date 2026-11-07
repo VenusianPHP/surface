@@ -139,6 +139,59 @@ abstract class Rasterizer implements RasterizerContract
         return $rx <= 0 || $ry <= 0 || $stroke <= 0 ? '' : $this->scanner->ring($cx, $cy, $rx, $ry, $stroke);
     }
 
+    public function fillRoundRect(float $x, float $y, float $width, float $height, array $radii): string
+    {
+        self::numbers(['x' => $x, 'y' => $y, 'width' => $width, 'height' => $height]);
+        $held = self::radii($radii, $width, $height);
+
+        return $width <= 0 || $height <= 0 ? '' : $this->scanner->roundRect($x, $y, $x + $width, $y + $height, $held);
+    }
+
+    public function strokeRoundRect(float $x, float $y, float $width, float $height, array $radii, float $stroke): string
+    {
+        self::numbers(['x' => $x, 'y' => $y, 'width' => $width, 'height' => $height, 'stroke' => $stroke]);
+        $held = self::radii($radii, $width, $height);
+
+        return $width <= 0 || $height <= 0 || $stroke <= 0 ? '' : $this->scanner->roundRing($x, $y, $x + $width, $y + $height, $held, $stroke);
+    }
+
+    public function shadow(float $x, float $y, float $width, float $height, float $radius, float $blur): string
+    {
+        self::numbers(['x' => $x, 'y' => $y, 'width' => $width, 'height' => $height, 'radius' => $radius, 'blur' => $blur]);
+        if ($width <= 0 || $height <= 0) {
+            return '';
+        }
+
+        return $this->scanner->shadow($x, $y, $x + $width, $y + $height, self::hold($radius, $width, $height), max(0.0, $blur));
+    }
+
+    /**
+     * Four radii, each held to 0..min(w, h)/2.
+     *
+     * @return array{float, float, float, float}
+     */
+    private static function radii(array $radii, float $width, float $height): array
+    {
+        if (! array_is_list($radii) || count($radii) !== 4) {
+            throw new RasterizeException('Radii are a list of four numbers: [tl, tr, br, bl].');
+        }
+        $held = [];
+        foreach ($radii as $i => $r) {
+            if (! is_int($r) && ! is_float($r)) {
+                throw new RasterizeException('Radii are a list of four numbers: [tl, tr, br, bl].');
+            }
+            self::number("Radius {$i}", (float) $r);
+            $held[] = self::hold((float) $r, $width, $height);
+        }
+
+        return $held;
+    }
+
+    private static function hold(float $radius, float $width, float $height): float
+    {
+        return max(0.0, min($radius, min($width, $height) / 2));
+    }
+
     /** Hard edges draw a stroke of at most one pixel as a one-pixel line. */
     private function thin(float $stroke): bool
     {

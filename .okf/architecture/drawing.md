@@ -71,7 +71,7 @@ Layers, each usable alone: Framebuffers (pixels) · Rasterize (shapes → spans)
 
 # Verbs
 
-`clear` · `fillRect` · `strokeRect` · `line` · `polyline` · `fillTriangle` · `fillPolygon` · `fillPath` · `fillEllipse` · `strokeEllipse` · `image`. `Color` per call. Zero/negative size, radius, stroke, opacity: nothing. Non-finite, or past 2²⁴ once transformed: `DrawingException`.
+`clear` · `fillRect` · `strokeRect` · `line` · `polyline` · `fillTriangle` · `fillPolygon` · `fillPath` · `fillEllipse` · `strokeEllipse` · `roundRect` · `shadow` · `image`. `Color` per call. Zero/negative size, radius, stroke, opacity: nothing. Non-finite, or past 2²⁴ once transformed: `DrawingException`.
 
 Commands the base hands an engine's `execute()`:[^base]
 
@@ -83,16 +83,28 @@ Commands the base hands an engine's `execute()`:[^base]
 | `['ellipse', cx, cy, rx, ry, rgba, clip]` | ellipse under translate + scale |
 | `['ring', cx, cy, rx, ry, stroke, rgba, clip]` | stroked ellipse under translate + scale |
 | `['image', Framebuffer, Affine, 1..255, Filter, clip]` | `image` |
+| `['roundrect', x0, y0, x1, y1, [tl, tr, br, bl], rgba, clip]` | `roundRect` fill under an upright, even transform; with a border, the box inset by it, radii `max(0, r − border)`, left out when the border reaches the middle |
+| `['roundring', x0, y0, x1, y1, [tl, tr, br, bl], inset, rgba, clip]` | `roundRect` border, inside the rect |
+| `['shadow', x0, y0, x1, y1, radius, blur, rgba, clip]` | `shadow`, the box already moved blur / 4 down |
+| `['spans', bytes, rgba, clip]` | whole-pixel opaque bitmap `text` |
+| `['glyphs', TrueTypeFont, pixelSize, [[face, glyph, maskLeft, maskTop, style], …], rgba, box, clip]` | TrueType `text` upright at an even scale; box = union of the masks, no grow |
 
 Stroke width × `sqrt(|det|)`. Turned ellipse → polygon within 0.1 px (`π·sqrt(r / 0.2)` sides, 12..1024). Trig lives here, never in Rasterize.
 
+`roundRect(x, y, w, h, [tl, tr, br, bl], fill, ?border, borderWidth)`: radii held to `0..min(w, h)/2`; not four numbers → `DrawingException::badRadii()`. `shadow(x, y, w, h, radius, blur, color)`: the rounded box moved blur / 4 down, blur < 0 as 0. Upright and even = `b = c = 0`, `a = d > 0`: coordinates in framebuffer pixels, radii, inset and blur × `a`. Boxes: `roundrect` / `roundring` the extent + 1, `shadow` the extent + blur + 1.
+
+Limits:[^base]
+
+* A rounded rect under a turn, shear or uneven scale is a polygon path, each corner a quarter of the ellipse rule's sides: fill `NON_ZERO`, border two contours `EVEN_ODD`.
+* A shadow under a turn, shear or uneven scale throws `DrawingException::unevenShadow()`: a blurred turned box needs its distance in the box's own frame.
+
 # Text
 
-`text(string, x, y, Color, GFXFont)`, `textBounds(string, GFXFont)`: bitmap faces, drawn under the transform and clip. Whole-pixel opaque text lowers to a `spans` command (no rasterising); the rest to one `path`. See [Fonts](fonts.md).
+`text(string, x, y, Color, Font)`, `textBounds(string, Font)`: bitmap and TrueType faces, drawn under the transform and clip. Bitmap: whole-pixel opaque text lowers to a `spans` command (no rasterising); the rest to one `path`. TrueType: upright at an even scale lowers to one `glyphs` command; the rest to one `path` of the glyph outlines. See [Fonts](fonts.md).
 
 # VelvetGE
 
-Software engine, `velvet`. `new VelvetGE(Framebuffer, RasterizeDriver, ?Edges)`. Command → Rasterize spans → `paintSpans()`; image → `paintImage()`; clear → `fill()`. Edges default: anti-aliased where format blends (RGB, grey), hard otherwise.[^velvet]
+Software engine, `velvet`. `new VelvetGE(Framebuffer, RasterizeDriver, ?Edges)`. Command → Rasterize spans → `paintSpans()`; `roundrect` / `roundring` / `shadow` → `fillRoundRect` / `strokeRoundRect` / `shadow`;  `glyphs` → mask runs → one `paintSpans()`; image → `paintImage()`; clear → `fill()`. Edges default: anti-aliased where format blends (RGB, grey), hard otherwise.[^velvet]
 
 Framebuffer kind = mode:
 
@@ -101,6 +113,8 @@ Framebuffer kind = mode:
 | full, dirty, ePaper | drawn over what is there; dirty epoch left to the drainer |
 | ring | `repair()`, draw, `present()` |
 | paged | drawn into current page, only its rows rasterised; holder: `setPage(0)` + `frame()` + drain, then `setPage(n)` + `replay()` + drain. Pages = same frame on a full buffer, byte for byte |
+
+Measured (Mac, 400×340 RGBA8, 30 bordered rounded rects radius 8 + 30 shadows blur 12, whole frames): 4.98 ms both extended · 177 ms native rasterize, extended framebuffer.
 
 Measured (Mac, 320×240 RGBA8, 100 shapes + 1 image): 6.8 ms both extended · 310 ms extended geometry / native bytes · 670 ms native geometry / extended bytes · 990 ms both native.
 
@@ -133,8 +147,18 @@ Measured (Mac, 320×240 RGBA8, 100 shapes + 1 image): 6.8 ms both extended · 31
 | `[UPLOAD, texture, Framebuffer]` | source texture from `toRgba8()`; an `HdrImage` from `rgba16f()` on an HDR target |
 | `[IMAGE, first, texture, Affine, opacity, Filter]` | quad over placed corners; Affine maps target pixel centre → source |
 | `[RECTS, first, count, rgba]` | count / 6 quads, one a span |
+| `[ROUNDRECT, first, x0, y0, x1, y1, [tl, tr, br, bl], rgba]` | quad 1 px past the box; coverage per sample inside the rounded box |
+| `[ROUNDRING, first, x0, y0, x1, y1, [tl, tr, br, bl], inset, rgba]` | same quad; coverage per sample inside the box and outside the box inset by `inset`, radii `max(0, r − inset)` |
+| `[SHADOW, first, x0, y0, x1, y1, radius, blur, rgba]` | quad blur + 1 past the box; coverage per pixel centre `1 − smoothstep(−blur, blur, d)`; hard edges ≥ 128 → 255 |
+| `[ATLAS, atlas, width, height]` | make texture `atlas`, 8-bit single channel, all zero; kept across frames until the next `ATLAS` for it or `release()` |
+| `[MASK, atlas, Region, bytes]` | write width × height coverage bytes, rows top-down, into that region of the atlas |
+| `[GLYPHS, first, count, texels, atlas, rgba]` | count vertices of quads; atlas texel pairs start at vertex `texels`; coverage sampled nearest, blended as `paintSpans()` blends it |
 
-Lowering: `clear` → `CLEAR`, or `SCISSOR` + `SOLID` for a region · `path` → `STENCIL_FILL` + `COVER` (contour of n points = n − 2 triangles from its first point, cover = box floor/ceil) · `polyline` → `Stroker::outline()` then as path, non-zero · `ellipse` / `ring` → one quad a pixel past the shape · `image` → `UPLOAD` once a frame a source, `IMAGE` with the inverse placement · `spans` → `RECTS`. `SCISSOR` only when the clip changes.
+Lowering: `clear` → `CLEAR`, or `SCISSOR` + `SOLID` for a region · `path` → `STENCIL_FILL` + `COVER` (contour of n points = n − 2 triangles from its first point, cover = box floor/ceil) · `polyline` → `Stroker::outline()` then as path, non-zero · `ellipse` / `ring` → one quad a pixel past the shape · `image` → `UPLOAD` once a frame a source, `IMAGE` with the inverse placement · `spans` → `RECTS` · `roundrect` / `roundring` / `shadow` → one `ROUNDRECT` / `ROUNDRING` / `SHADOW` quad, as an ellipse · `glyphs` → `GLYPHS`, after a first pass hands every mask of the frame to `GlyphAtlas::prepare()`, so all `ATLAS` / `MASK` ops come before any draw. `SCISSOR` only when the clip changes.
+
+`GlyphAtlas` (one per `GpuRenderingEngine`, its edges; `forget()` on `release()`): shelves with 1 px between masks, key `face|pixelSize|glyph|style`, a mask uploaded once across frames. A frame whose new masks do not fit resets the atlas at its start; one that alone does not fit doubles it, up to 4096, then `DrawingException::atlasFull()`. Hard edges threshold at 128 before upload. A `glyphs` command lowered without an atlas → `DrawingException::noAtlas()`.[^gpu]
+
+GpuParity (`tests/Support/GpuParity/GpuParity.php`) holds every engine package to Velvet's pixels, scene by scene: a scene is `[exact, frame, tolerance?]`. Exact scenes match every byte; lenient ones (`'rounded rects'`, as ellipses) excuse edge pixels; `'shadows'` carries a tolerance of 1 per channel at every pixel, since float32 coverage on the GPU can round a step apart from Velvet's double.
 
 Output contracts (`Surface\Contracts\Drawing`): `OutputTarget` gains `pixelSize()` and `pixelFormat()` (RGBA8 for a window, wire format for a display) · `WindowOutput extends Pipeable`: `surfaces()`, `lend(kind, borrower)`, `lent()`, `reclaim()` · `SurfaceKind`: `METAL_LAYER`, `VULKAN_SURFACE`, `GL_CONTEXT`, `SDL_WINDOW`, `DMABUF`, each with `handle()` and `engines()` · `LentSurface`: kind, handles by name, live `size()`, `released()` · `SurfaceBorrower` (the engine): `framebuffer()`, `lendingHandles()`, `presentInto(LentSurface): bool`.
 
@@ -158,5 +182,5 @@ Velvet args: `output` alone (an `OutputTarget`: Velvet draws over its `framebuff
 [^contract]: `Surface\Contracts\Drawing`.
 [^base]: `Surface\Drawing\RenderingEngine`: an engine supplies `name()`, `framebuffer()`, `execute()`.
 [^velvet]: Byte-identical to Rasterize + framebuffer called directly; `VelvetTest` enforces through every driver pairing.
-[^gpu]: `Surface\\Drawing\\Gpu`: `GpuRenderingEngine`, `GpuDevice`, `DrawList`, `Op`, `Lowering`.
+[^gpu]: `Surface\\Drawing\\Gpu`: `GpuRenderingEngine`, `GpuDevice`, `DrawList`, `Op`, `Lowering`, `GlyphAtlas`.
 [^manager]: Not a Voyager `Manager`: engines are built per call from arguments, never cached.

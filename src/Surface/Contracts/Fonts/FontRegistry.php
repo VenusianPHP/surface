@@ -2,7 +2,7 @@
 
 namespace Surface\Contracts\Fonts;
 
-/** Slug → face. One instance per slug; the default slug answers face(null). */
+/** Slug → bitmap or TrueType face. One instance per slug; the default slug answers face(null). */
 interface FontRegistry
 {
     /**
@@ -11,8 +11,13 @@ interface FontRegistry
      */
     public function extend(string $slug, string $class): static;
 
-    /** @throws FontException When the slug is unknown. */
-    public function face(?string $slug = null): GFXFont;
+    /** A TrueType face: a fontconfig pattern at a size in pixels. */
+    public function truetype(string $slug, string $pattern, float $size): static;
+
+    /**
+     * @throws FontException When the slug is unknown, or it is TrueType and the font exts are missing.
+     */
+    public function face(?string $slug = null): Font;
 
     public function has(string $slug): bool;
 

@@ -27,6 +27,20 @@ class FormatSpec
         return new self(PixelFormat::ROW_MAJOR, BitDepth::B32, channel_order: ChannelOrder::BGRA);
     }
 
+    /**
+     * The host format a name stands for in config: 'rgba8' or 'bgra8'.
+     *
+     * @throws FramebufferException For any other name.
+     */
+    public static function named(string $name): self
+    {
+        return match ($name) {
+            'rgba8' => self::rgba8(),
+            'bgra8' => self::bgra8(),
+            default => throw new FramebufferException("A host format is 'rgba8' or 'bgra8', got '{$name}'."),
+        };
+    }
+
     public function equals(FormatSpec $other): bool
     {
         if ($this->pixel_format !== $other->pixel_format

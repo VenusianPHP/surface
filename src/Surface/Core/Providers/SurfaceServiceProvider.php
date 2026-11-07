@@ -10,7 +10,6 @@ use Surface\Framebuffers\FramebuffersServiceProvider;
 use Surface\HumanInput\HumanInputServiceProvider;
 use Surface\Images\ImagesServiceProvider;
 use Surface\Rasterize\RasterizeServiceProvider;
-use Surface\Text\TextServiceProvider;
 use Surface\Windows\WindowsServiceProvider;
 use Voyager\NutsAndBolts\AggregateServiceProvider;
 
@@ -25,7 +24,6 @@ class SurfaceServiceProvider extends AggregateServiceProvider
         RasterizeServiceProvider::class,
         ImagesServiceProvider::class,
         FontsServiceProvider::class,
-        TextServiceProvider::class,
         DrawingServiceProvider::class,
     ];
 

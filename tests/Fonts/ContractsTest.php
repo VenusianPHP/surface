@@ -113,3 +113,63 @@ it('FontException is a Surface exception with three shapes', function () {
         ->and(FontException::notAFont('Foo')->getMessage())->toContain('Foo')
         ->and(FontException::invalidHeader('no Bitmaps[]')->getMessage())->toBe('no Bitmaps[]');
 });
+
+function spyFontDriver(): Surface\Contracts\Fonts\FontDriver
+{
+    return new class implements Surface\Contracts\Fonts\FontDriver {
+        public array $calls = [];
+
+        public function driver(): string
+        {
+            return 'spy';
+        }
+
+        public function shape(string $pattern, float $pixelSize, string $utf8): Surface\Contracts\Fonts\ShapedRun
+        {
+            $this->calls[] = ['shape', $pattern, $pixelSize, $utf8];
+
+            return new Surface\Contracts\Fonts\ShapedRun($utf8, [], 0.0, 0.0, 0.0, 0.0);
+        }
+
+        public function mask(string $face, float $pixelSize, int $glyph, int $style): Surface\Contracts\Fonts\GlyphMask
+        {
+            $this->calls[] = ['mask', $face, $pixelSize, $glyph, $style];
+
+            return new Surface\Contracts\Fonts\GlyphMask('', 0, 0, 0, 0);
+        }
+
+        public function outline(string $face, float $pixelSize, int $glyph, int $style): array
+        {
+            return [];
+        }
+
+        public function close(): void {}
+    };
+}
+
+it('marks a GFXFont as a bitmap font', function () {
+    expect((new Surface\Fonts\ClassicFont)->type())->toBe(Surface\Contracts\Fonts\FontType::Bitmap);
+});
+
+it('keeps a TrueType font\'s pattern and size, and resizes with at()', function () {
+    $font = new Surface\Contracts\Fonts\TrueTypeFont('sans-serif', 13, spyFontDriver());
+
+    expect($font->type())->toBe(Surface\Contracts\Fonts\FontType::TrueType)
+        ->and($font->pattern)->toBe('sans-serif')
+        ->and($font->size)->toBe(13.0)
+        ->and($font->at(20)->size)->toBe(20.0)
+        ->and($font->at(20)->pattern)->toBe('sans-serif');
+});
+
+it('refuses a TrueType size that is not above zero', function (float $size) {
+    new Surface\Contracts\Fonts\TrueTypeFont('sans-serif', $size, spyFontDriver());
+})->with([0.0, -1.0, NAN, INF])->throws(FontException::class);
+
+it('passes shape and mask through to its driver', function () {
+    $driver = spyFontDriver();
+    $font = new Surface\Contracts\Fonts\TrueTypeFont('sans-serif', 13, $driver);
+    $font->shape(26.0, 'Hi');
+    $font->mask('a#0', 26.0, 5, 1);
+
+    expect($driver->calls)->toBe([['shape', 'sans-serif', 26.0, 'Hi'], ['mask', 'a#0', 26.0, 5, 1]]);
+});

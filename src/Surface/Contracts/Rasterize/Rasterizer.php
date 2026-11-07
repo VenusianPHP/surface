@@ -61,4 +61,21 @@ interface Rasterizer
     public function fillEllipse(float $cx, float $cy, float $rx, float $ry): string;
 
     public function strokeEllipse(float $cx, float $cy, float $rx, float $ry, float $stroke = 1.0): string;
+
+    /**
+     * A rect with each corner cut by its own radius, held to 0..min(w, h)/2.
+     *
+     * @param  array{float, float, float, float}  $radii  [tl, tr, br, bl]
+     */
+    public function fillRoundRect(float $x, float $y, float $width, float $height, array $radii): string;
+
+    /**
+     * A band $stroke wide inside the rounded rect; the whole rect when it reaches the middle.
+     *
+     * @param  array{float, float, float, float}  $radii  [tl, tr, br, bl]
+     */
+    public function strokeRoundRect(float $x, float $y, float $width, float $height, array $radii, float $stroke): string;
+
+    /** A blurred rounded box: coverage 1 − smoothstep(−blur, blur, d) at each pixel centre. A blur ≤ 0 is the hard box. */
+    public function shadow(float $x, float $y, float $width, float $height, float $radius, float $blur): string;
 }

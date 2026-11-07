@@ -103,6 +103,9 @@ final class FakeStagedWindow extends StagedWindow
 
     public function nativeFrame(float $now, float $next): void { $this->frameDue($now, $next); }
 
+    /** A native input callback, by the helper it reaches: nativeInput('pressed', 1.0, 2.0, …). */
+    public function nativeInput(string $helper, mixed ...$arguments): void { $this->$helper(...$arguments); }
+
     /** The close box was hit. */
     public function nativeCloseBox(): void { $this->closeRequested(); }
 

@@ -130,6 +130,109 @@ final class NativeScanner implements Scanner
         });
     }
 
+    public function roundRect(float $x0, float $y0, float $x1, float $y1, array $radii): string
+    {
+        // 1. check the box and the four radii
+        self::numbers([$x0, $y0, $x1, $y1]);
+        $r = self::four($radii);
+        if ($x1 <= $x0 || $y1 <= $y0) {
+            return '';
+        }
+
+        // 2. one interval a sample line
+        return $this->scan(fn (float $y): array => self::roundAcross($x0, $y0, $x1, $y1, $r, $y));
+    }
+
+    public function roundRing(float $x0, float $y0, float $x1, float $y1, array $radii, float $inset): string
+    {
+        // 1. check the box, the four radii and the inset
+        self::numbers([$x0, $y0, $x1, $y1, $inset]);
+        $r = self::four($radii);
+        if ($x1 <= $x0 || $y1 <= $y0 || $inset <= 0) {
+            return '';
+        }
+
+        // 2. the inset box and its radii, max(0, r − inset)
+        $ix0 = $x0 + $inset;
+        $iy0 = $y0 + $inset;
+        $ix1 = $x1 - $inset;
+        $iy1 = $y1 - $inset;
+        $ir = [max(0.0, $r[0] - $inset), max(0.0, $r[1] - $inset), max(0.0, $r[2] - $inset), max(0.0, $r[3] - $inset)];
+        $hollow = $ix1 > $ix0 && $iy1 > $iy0;
+
+        // 3. a line: the outer interval, less the inner one when the line crosses it
+        return $this->scan(function (float $y) use ($x0, $y0, $x1, $y1, $r, $ix0, $iy0, $ix1, $iy1, $ir, $hollow): array {
+            $outer = self::roundAcross($x0, $y0, $x1, $y1, $r, $y);
+            if ($outer === [] || ! $hollow) {
+                return $outer;
+            }
+            $inner = self::roundAcross($ix0, $iy0, $ix1, $iy1, $ir, $y);
+            if ($inner === []) {
+                return $outer;
+            }
+
+            return [[$outer[0][0], $inner[0][0]], [$inner[0][1], $outer[0][1]]];
+        });
+    }
+
+    public function shadow(float $x0, float $y0, float $x1, float $y1, float $radius, float $blur): string
+    {
+        // 1. check the box, the radius and the blur
+        self::numbers([$x0, $y0, $x1, $y1, $radius, $blur]);
+        if ($x1 <= $x0 || $y1 <= $y0) {
+            return '';
+        }
+
+        // 2. the pixels the blur can reach, cut to the clip
+        $left = (int) self::clamp(floor($x0 - $blur), $this->clip->x, $this->clip->right());
+        $right = (int) self::clamp(ceil($x1 + $blur), $this->clip->x, $this->clip->right());
+        $top = (int) self::clamp(floor($y0 - $blur), $this->clip->y, $this->clip->bottom());
+        $bottom = (int) self::clamp(ceil($y1 + $blur), $this->clip->y, $this->clip->bottom());
+        if ($right <= $left || $bottom <= $top) {
+            return '';
+        }
+
+        // 3. the box as centre and half sizes
+        $cx = ($x0 + $x1) / 2;
+        $cy = ($y0 + $y1) / 2;
+        $hx = ($x1 - $x0) / 2;
+        $hy = ($y1 - $y0) / 2;
+
+        // 4. columns this far inside both sides see a distance that depends on y alone: one run
+        $band = (int) ceil($radius + $blur) + 2;
+        $middle_from = (int) ceil($x0) + $band;
+        $middle_to = (int) floor($x1) - $band;
+        $hard = $this->edges === Edges::HARD;
+
+        // 5. a row: runs of equal coverage, coverage 0 left out
+        $out = '';
+        for ($row = $top; $row < $bottom; $row++) {
+            $py = $row + 0.5;
+            $start = $left;
+            $value = -1;
+            for ($col = $left; $col < $right; $col++) {
+                $middle = $col === $middle_from && $middle_to > $middle_from;
+                $px = $middle ? $cx : $col + 0.5;
+                $v = self::shade(self::roundDistance($px - $cx, $py - $cy, $hx, $hy, $radius), $blur, $hard);
+                if ($v !== $value) {
+                    if ($value > 0) {
+                        $out .= pack('vvvC', $row, $start, $col - $start, $value);
+                    }
+                    $start = $col;
+                    $value = $v;
+                }
+                if ($middle) {
+                    $col = min($middle_to, $right) - 1;
+                }
+            }
+            if ($value > 0) {
+                $out .= pack('vvvC', $row, $start, $right - $start, $value);
+            }
+        }
+
+        return $out;
+    }
+
     public function polyline(array $points, bool $closed): string
     {
         $flat = self::flat($points, 'Points');
@@ -333,6 +436,105 @@ final class NativeScanner implements Scanner
         $h = $rx * sqrt($s);
 
         return [[$cx - $h, $cx + $h]];
+    }
+
+    /**
+     * Where line y crosses a rounded box: [left, right). Above a corner's band the end is cut by the
+     * quarter circle centred r in from both sides: (corner x) ∓ r·sqrt(1 − t²), t = (y − centre y) / r,
+     * written as across() writes the ellipse so a box that is a circle answers the ellipse's bytes.
+     *
+     * @param  array{float, float, float, float}  $r  [tl, tr, br, bl]
+     * @return list<array{float, float}>
+     */
+    private static function roundAcross(float $x0, float $y0, float $x1, float $y1, array $r, float $y): array
+    {
+        // 1. outside the box: nothing
+        if ($y < $y0 || $y >= $y1) {
+            return [];
+        }
+
+        // 2. the left end: tl above its band, bl below its band
+        $left = $x0;
+        if ($y < $y0 + $r[0]) {
+            $left = self::corner($x0 + $r[0], $y0 + $r[0], $r[0], $y, -1.0);
+        } elseif ($y > $y1 - $r[3]) {
+            $left = self::corner($x0 + $r[3], $y1 - $r[3], $r[3], $y, -1.0);
+        }
+
+        // 3. the right end: tr above its band, br below its band
+        $right = $x1;
+        if ($y < $y0 + $r[1]) {
+            $right = self::corner($x1 - $r[1], $y0 + $r[1], $r[1], $y, 1.0);
+        } elseif ($y > $y1 - $r[2]) {
+            $right = self::corner($x1 - $r[2], $y1 - $r[2], $r[2], $y, 1.0);
+        }
+
+        // 4. an empty interval is none
+        return $right > $left ? [[$left, $right]] : [];
+    }
+
+    /** One end on a quarter circle of radius r centred (cx, cy): cx + side·r·sqrt(max(0, 1 − t²)). */
+    private static function corner(float $cx, float $cy, float $r, float $y, float $side): float
+    {
+        $t = ($y - $cy) / $r;
+        $s = 1.0 - $t * $t;
+        if ($s < 0) {
+            $s = 0.0;
+        }
+        $h = $r * sqrt($s);
+
+        return $side < 0 ? $cx - $h : $cx + $h;
+    }
+
+    /** Signed distance from (dx, dy), measured from the box centre, to the box of half sizes hx, hy rounded by r. */
+    private static function roundDistance(float $dx, float $dy, float $hx, float $hy, float $r): float
+    {
+        $qx = abs($dx) - $hx + $r;
+        $qy = abs($dy) - $hy + $r;
+        $ox = $qx > 0 ? $qx : 0.0;
+        $oy = $qy > 0 ? $qy : 0.0;
+        $in = $qx > $qy ? $qx : $qy;
+
+        return ($in < 0 ? $in : 0.0) + sqrt($ox * $ox + $oy * $oy) - $r;
+    }
+
+    /** Coverage 0..255 at distance d: 1 − smoothstep(−blur, blur, d); a blur of 0 is in when d < 0. */
+    private static function shade(float $d, float $blur, bool $hard): int
+    {
+        if ($blur > 0) {
+            $t = self::clamp(($d + $blur) / (2 * $blur), 0.0, 1.0);
+            $c = 1.0 - $t * $t * (3 - 2 * $t);
+        } else {
+            $c = $d < 0 ? 1.0 : 0.0;
+        }
+        $v = (int) floor($c * 255 + 0.5);
+        if ($hard) {
+            return $v >= 128 ? 255 : 0;
+        }
+
+        return $v;
+    }
+
+    /**
+     * Four finite radii.
+     *
+     * @return array{float, float, float, float}
+     */
+    private static function four(mixed $radii): array
+    {
+        if (! is_array($radii) || ! array_is_list($radii) || count($radii) !== 4) {
+            throw new RasterizeException('Radii are a list of four numbers: [tl, tr, br, bl].');
+        }
+        $out = [];
+        foreach ($radii as $r) {
+            if (! is_int($r) && ! is_float($r)) {
+                throw new RasterizeException('Radii are a list of four numbers: [tl, tr, br, bl].');
+            }
+            $out[] = (float) $r;
+        }
+        self::numbers($out);
+
+        return $out;
     }
 
     private static function clamp(float $value, float $low, float $high): float

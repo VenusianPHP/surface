@@ -63,3 +63,60 @@ it('re-extending a slug drops the cached instance', function () {
 
     expect($fonts->face('x'))->toBeInstanceOf($b::class)->and($fonts->face('x'))->not->toBe($first);
 });
+
+function ttConfig(): array
+{
+    return ['faces' => [
+        'classic' => ['class' => ClassicFont::class, 'enabled' => true],
+        'ui' => ['pattern' => 'sans-serif', 'size' => 13, 'enabled' => true],
+    ]];
+}
+
+it('answers a TrueType face from config, one instance per slug', function () {
+    $fonts = new FontManager(ttConfig(), fn () => new Venusian\Surface\Tests\Support\Fakes\FakeFontDriver);
+    $ui = $fonts->face('ui');
+
+    expect($ui)->toBeInstanceOf(Surface\Contracts\Fonts\TrueTypeFont::class)
+        ->and($ui->pattern)->toBe('sans-serif')
+        ->and($ui->size)->toBe(13.0)
+        ->and($fonts->face('UI'))->toBe($ui);
+});
+
+it('registers a TrueType face with truetype()', function () {
+    $fonts = (new FontManager([], fn () => new Venusian\Surface\Tests\Support\Fakes\FakeFontDriver))->truetype('Mono', 'monospace', 11);
+
+    expect($fonts->has('mono'))->toBeTrue()
+        ->and($fonts->face('mono')->pattern)->toBe('monospace')
+        ->and($fonts->face('mono')->size)->toBe(11.0);
+});
+
+it('asks for the driver only on the first TrueType face', function () {
+    $asked = 0;
+    $fonts = new FontManager(ttConfig(), function () use (&$asked) {
+        $asked++;
+
+        return new Venusian\Surface\Tests\Support\Fakes\FakeFontDriver;
+    });
+    $fonts->face('classic');
+    expect($asked)->toBe(0);
+    $fonts->face('ui');
+    $fonts->truetype('mono', 'monospace', 11)->face('mono');
+    expect($asked)->toBe(1);
+});
+
+it('keeps bitmap fonts working without the font exts', function () {
+    $fonts = new FontManager(ttConfig(), fn () => throw FontException::extensionsMissing());
+
+    expect($fonts->face('classic'))->toBeInstanceOf(ClassicFont::class);
+    try {
+        $fonts->face('ui');
+        $this->fail('no exception');
+    } catch (FontException $e) {
+        expect($e->getMessage())->toContain('ext-freetype')->toContain('ext-harfbuzz')->toContain('ext-fontconfig');
+    }
+    expect(fn () => (new FontManager(ttConfig()))->face('ui'))->toThrow(FontException::class, 'ext-freetype');
+});
+
+it('lists TrueType slugs with the bitmap ones', function () {
+    expect((new FontManager(ttConfig()))->slugs())->toBe(['classic', 'ui']);
+});

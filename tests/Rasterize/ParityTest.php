@@ -112,3 +112,23 @@ it('rasterizes strokes to the same bytes through either driver', function (Edges
             ->and(bin2hex($extended->strokeRect($x, $y, $w, $h, $stroke)))->toBe(bin2hex($native->strokeRect($x, $y, $w, $h, $stroke)), "rect {$n}");
     }
 })->with([Edges::HARD, Edges::ANTIALIASED])->with(range(1, 8))->skip(! class_exists(RasterScanner::class), 'ext-rasterize is not loaded in this PHP.');
+
+it('rasterizes rounded rects, rounded rings and shadows to the same bytes through either driver', function (Edges $edges, int $seed): void {
+    [$clip, $random] = parityStart($seed);
+    $native = (new NativeRasterizeDriver())->rasterizer($clip, $edges);
+    $extended = (new ExtendedRasterizeDriver())->rasterizer($clip, $edges);
+
+    for ($n = 0; $n < 25; $n++) {
+        [$x, $y] = [parityCoordinate($random, $clip->x - 8, $clip->right()), parityCoordinate($random, $clip->y - 8, $clip->bottom())];
+        [$w, $h] = [parityCoordinate($random, 0, 40), parityCoordinate($random, 0, 40)];
+        $radii = [parityCoordinate($random, -2, 22), parityCoordinate($random, -2, 22), parityCoordinate($random, -2, 22), parityCoordinate($random, -2, 22)];
+        $inset = parityCoordinate($random, 0, 12);
+        $blur = parityCoordinate($random, -1, 16);
+
+        $round = $native->fillRoundRect($x, $y, $w, $h, $radii);
+        SpanGrid::assertWellFormed($round, $clip, $edges);
+        expect(bin2hex($extended->fillRoundRect($x, $y, $w, $h, $radii)))->toBe(bin2hex($round), "roundRect {$n}")
+            ->and(bin2hex($extended->strokeRoundRect($x, $y, $w, $h, $radii, $inset)))->toBe(bin2hex($native->strokeRoundRect($x, $y, $w, $h, $radii, $inset)), "roundRing {$n}")
+            ->and(bin2hex($extended->shadow($x, $y, $w, $h, $radii[0], $blur)))->toBe(bin2hex($native->shadow($x, $y, $w, $h, $radii[0], $blur)), "shadow {$n}");
+    }
+})->with([Edges::HARD, Edges::ANTIALIASED])->with(range(1, 8))->skip(! class_exists(RasterScanner::class), 'ext-rasterize is not loaded in this PHP.');

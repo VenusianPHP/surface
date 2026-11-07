@@ -66,6 +66,33 @@ final class ExtendedScanner implements Scanner
         }
     }
 
+    public function roundRect(float $x0, float $y0, float $x1, float $y1, array $radii): string
+    {
+        try {
+            return $this->scanner->roundRect($x0, $y0, $x1, $y1, $radii);
+        } catch (ValueError $e) {
+            throw new RasterizeException($e->getMessage(), previous: $e);
+        }
+    }
+
+    public function roundRing(float $x0, float $y0, float $x1, float $y1, array $radii, float $inset): string
+    {
+        try {
+            return $this->scanner->roundRing($x0, $y0, $x1, $y1, $radii, $inset);
+        } catch (ValueError $e) {
+            throw new RasterizeException($e->getMessage(), previous: $e);
+        }
+    }
+
+    public function shadow(float $x0, float $y0, float $x1, float $y1, float $radius, float $blur): string
+    {
+        try {
+            return $this->scanner->shadow($x0, $y0, $x1, $y1, $radius, $blur);
+        } catch (ValueError $e) {
+            throw new RasterizeException($e->getMessage(), previous: $e);
+        }
+    }
+
     public function polyline(array $points, bool $closed): string
     {
         try {

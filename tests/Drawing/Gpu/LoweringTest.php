@@ -205,3 +205,45 @@ it('uploads an HdrImage as itself, so a device can upload its half floats', func
 
     expect($list->operations[0])->toBe([Op::UPLOAD, 0, $hdr]);
 });
+
+it('lowers glyphs to MASK uploads before one GLYPHS op', function () {
+    $font = new Surface\Contracts\Fonts\TrueTypeFont('sans-serif', 13.0, new Venusian\Surface\Tests\Support\Fakes\FakeFontDriver);
+    $commands = (new RecordingEngine)->commandsOf(fn (RenderingEngine $g) => $g->text('Hi', 10, 20, Color::rgb(255, 255, 255), $font));
+    $atlas = new Surface\Drawing\Gpu\GlyphAtlas(Surface\Contracts\Rasterize\Edges::ANTIALIASED);
+    $list = Lowering::lower($commands, 64, 64, $atlas);
+    $glyphs = $list->operations[4];
+    $h = $atlas->where('fake#0|13|72|0');
+    $i = $atlas->where('fake#0|13|105|0');
+
+    expect(array_map(fn (array $o) => $o[0], $list->operations))->toBe([Op::ATLAS, Op::MASK, Op::MASK, Op::SCISSOR, Op::GLYPHS])
+        ->and($glyphs[2])->toBe(12)
+        ->and(vertices($list, $glyphs[1], 12))->toBe([...quadOf(10.0, 20.0, 17.0, 30.0), ...quadOf(17.0, 20.0, 24.0, 30.0)])
+        ->and(vertices($list, $glyphs[3], 12))->toBe([
+            ...quadOf($h->x, $h->y, $h->right(), $h->bottom()),
+            ...quadOf($i->x, $i->y, $i->right(), $i->bottom()),
+        ]);
+});
+
+it('refuses glyphs without an atlas', function () {
+    $font = new Surface\Contracts\Fonts\TrueTypeFont('sans-serif', 13.0, new Venusian\Surface\Tests\Support\Fakes\FakeFontDriver);
+    $commands = (new RecordingEngine)->commandsOf(fn (RenderingEngine $g) => $g->text('Hi', 10, 20, Color::rgb(255, 255, 255), $font));
+
+    expect(fn () => Lowering::lower($commands, 64, 64))->toThrow(Surface\Contracts\Drawing\DrawingException::class);
+});
+
+it('lowers roundrect, roundring and shadow to one quad op each', function () {
+    $commands = (new RecordingEngine)->commandsOf(fn (RenderingEngine $g) => $g
+        ->roundRect(4, 4, 20, 10, [3, 3, 3, 3], Color::rgb(255, 0, 0), Color::rgb(0, 0, 255), 1.0)
+        ->shadow(30, 4, 10, 10, 2, 4, Color::rgba(0, 0, 0, 0.5)));
+    $list = Lowering::lower($commands, 64, 32);
+    $ops = array_values(array_filter($list->operations, fn (array $o) => $o[0] !== Op::SCISSOR));
+    [$fill, $ring, $shade] = $ops;
+
+    expect(array_map(fn (array $o) => $o[0], $ops))->toBe([Op::ROUNDRECT, Op::ROUNDRING, Op::SHADOW])
+        ->and(array_slice($fill, 2))->toBe([5.0, 5.0, 23.0, 13.0, [2.0, 2.0, 2.0, 2.0], 0xFF0000FF])
+        ->and(vertices($list, $fill[1], 6))->toBe(quadOf(4.0, 4.0, 24.0, 14.0))
+        ->and(array_slice($ring, 2))->toBe([4.0, 4.0, 24.0, 14.0, [3.0, 3.0, 3.0, 3.0], 1.0, 0x0000FFFF])
+        ->and(vertices($list, $ring[1], 6))->toBe(quadOf(3.0, 3.0, 25.0, 15.0))
+        ->and(array_slice($shade, 2, 6))->toBe([30.0, 5.0, 40.0, 15.0, 2.0, 4.0])
+        ->and(vertices($list, $shade[1], 6))->toBe(quadOf(25.0, 0.0, 45.0, 20.0));
+});

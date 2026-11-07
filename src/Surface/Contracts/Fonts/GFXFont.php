@@ -9,7 +9,7 @@ namespace Surface\Contracts\Fonts;
  * encoding once and cache it. Readers never throw: an unknown code is null,
  * a byte past the table is 0.
  */
-abstract class GFXFont
+abstract class GFXFont implements Font
 {
     protected int $first = 0x20;
 
@@ -44,6 +44,11 @@ abstract class GFXFont
     private ?YOffsetMode $resolved_y_offset_mode = null;
 
     private ?int $cap_height = null;
+
+    public function type(): FontType
+    {
+        return FontType::Bitmap;
+    }
 
     public function first(): int
     {

@@ -35,7 +35,7 @@ Meets Framebuffers only at span bytes (`Spans`, 7 bytes: y, x, length, coverage)
 | Layer | Class | Does |
 |---|---|---|
 | Shapes | `Rasterizer` (abstract) | checks input (finite, ≤ 2²⁴), picks thin line or outline, `Stroker` contours, calls its scanner |
-| Row work | `Scanner` | `path`, `ellipse`, `ring`, `polyline` → spans |
+| Row work | `Scanner` | `path`, `ellipse`, `ring`, `roundRect`, `roundRing`, `shadow`, `polyline` → spans |
 | Flavor | `NativeRasterizer` / `ExtendedRasterizer` | only `mint()` the scanner |
 
 | Driver | Scanner | Geometry |
@@ -43,7 +43,14 @@ Meets Framebuffers only at span bytes (`Spans`, 7 bytes: y, x, length, coverage)
 | `native` | `NativeScanner` | PHP |
 | `extended` | `ExtendedScanner` over `RasterScanner` | C (ext-rasterize 0.10); detected by `class_exists(RasterScanner::class)` |
 
-Shapes: `fillRect`, `strokeRect`, `line`, `polyline`, `fillTriangle`, `fillPolygon` (any polygon), `fillPath` (contours: holes, unions), `fillEllipse`, `strokeEllipse`. Circles = ellipses. Transforms are the caller's: rotated shapes arrive as polygons.[^shapes]
+Shapes: `fillRect`, `strokeRect`, `line`, `polyline`, `fillTriangle`, `fillPolygon` (any polygon), `fillPath` (contours: holes, unions), `fillEllipse`, `strokeEllipse`, `fillRoundRect`, `strokeRoundRect`, `shadow`. Circles = ellipses.
+
+Rounded shapes:[^scanner]
+
+* Radii `[tl, tr, br, bl]`, each held to `0..min(w, h)/2` by `Rasterizer`; not a list of four numbers → `RasterizeException`.
+* `roundRect`: one interval a sample line; an end inside a corner's band is on its quarter circle, `cx ∓ r·sqrt(1 − t²)`, written as the ellipse is, so a box that is a circle answers the ellipse's bytes.
+* `strokeRoundRect` (`roundRing`): the band between the box and the box inset by the stroke, inner radii `max(0, r − stroke)`; the whole box when the inset box is empty.
+* `shadow`: coverage `1 − smoothstep(−blur, blur, d)` sampled once at each pixel centre in both edge modes, `d` the signed distance to the box rounded by `radius`, `smoothstep = t·t·(3 − 2t)`, `t = clamp((d + blur) / 2·blur, 0, 1)`. Blur ≤ 0: the hard box, in where `d < 0`. Hard edges: coverage ≥ 128 → 255. Columns more than `radius + blur + 2` inside both sides depend on y alone: one sample, one run. Transforms are the caller's: rotated shapes arrive as polygons.[^shapes]
 
 # Edges
 

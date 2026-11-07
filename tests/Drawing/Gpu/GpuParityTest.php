@@ -56,8 +56,51 @@ it('reports frames of different sizes', function () {
     expect(GpuParity::mismatches(substr(edgeFrame(), 4), edgeFrame(), 6, 3, true))->toBe(['The frames differ in size: 68 bytes, Velvet 72.']);
 });
 
+it('names the truetype text scene as exact', function () {
+    expect(GpuParity::scenes())->toHaveKey('truetype text')
+        ->and(GpuParity::scenes()['truetype text'][0])->toBeTrue();
+});
+
+it('names the shadow scene as tolerant by 1', function () {
+    expect(GpuParity::scenes()['shadows'][0])->toBeTrue()
+        ->and(GpuParity::scenes()['shadows'][2] ?? 0)->toBe(1)
+        ->and(GpuParity::scenes()['rounded rects'][0])->toBeFalse();
+});
+
+it('lets each channel differ by the tolerance, and no more', function () {
+    $off = fn (string $frame, int $by) => substr_replace($frame, chr(255 - $by)."\xff\xff\xff", (1 * 6 + 4) * 4, 4);
+
+    expect(GpuParity::mismatches($off(edgeFrame(), 1), edgeFrame(), 6, 3, true, 1))->toBe([])
+        ->and(GpuParity::mismatches($off(edgeFrame(), 2), edgeFrame(), 6, 3, true, 1))->toBe(['(4, 1): fdffffff, Velvet ffffffff']);
+});
+
 it('names scenes of both kinds', function () {
     $exact = array_column(GpuParity::scenes(), 0);
 
     expect($exact)->toContain(true)->toContain(false);
+});
+
+it('stretches glyphs in Velvet, the reference, by a scale whose x and y differ', function () {
+    $ink = function (float $sx, float $sy): array {
+        $v = GpuParity::velvet(64, 32, Edges::ANTIALIASED);
+        $v->frame(function ($g) use ($sx, $sy) {
+            $g->clear(Surface\NutsAndBolts\Color::rgb(0, 0, 0));
+            $g->push()->translate(2, 2)->scale($sx, $sy)->text('Ab', 0, 0, Surface\NutsAndBolts\Color::rgb(255, 255, 255), new Surface\Fonts\ClassicFont)->pop();
+        });
+        $px = $v->framebuffer()->toRgba8();
+        [$xs, $ys] = [[], []];
+        for ($y = 0; $y < 32; $y++) {
+            for ($x = 0; $x < 64; $x++) {
+                if (ord($px[($y * 64 + $x) * 4]) > 0) {
+                    [$xs[], $ys[]] = [$x, $y];
+                }
+            }
+        }
+
+        return [max($xs) - min($xs) + 1, max($ys) - min($ys) + 1];
+    };
+    [$w, $h] = $ink(1, 1);
+
+    expect($ink(2, 1))->toBe([2 * $w, $h])
+        ->and($ink(1, 2))->toBe([$w, 2 * $h]);
 });

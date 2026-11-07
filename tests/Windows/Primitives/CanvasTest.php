@@ -26,7 +26,10 @@ function canvas(): FakeCanvas
     return (new FakeHost('main'))->column('m')->canvas('view');
 }
 
-afterEach(fn () => TKCanvas::resolveFramebuffersUsing(null));
+afterEach(function (): void {
+    TKCanvas::resolveFramebuffersUsing(null);
+    TKCanvas::resolveFormatUsing(null);
+});
 
 it('measures itself in device pixels', function (): void {
     $canvas = canvas();
@@ -263,3 +266,16 @@ it('keeps the string path for the native driver', function (): void {
 it('defaults a canvas framebuffer to dirty', function (): void {
     expect(canvas()->framebuffer(width: 8, height: 4))->toBeInstanceOf(DamageTrackingFramebuffer::class);
 });
+
+it('makes and pipes framebuffers in the format it resolves, and RGBA8 without one', function (): void {
+    $canvas = canvas();
+    $default = $canvas->pixelFormat();
+    TKCanvas::resolveFormatUsing(fn (): FormatSpec => FormatSpec::bgra8());
+    $bgra = framebuffers()->driver('extended')->dirty(FormatSpec::bgra8(), 8, 4);
+
+    expect($default->equals(FormatSpec::rgba8()))->toBeTrue()
+        ->and($canvas->pixelFormat()->equals(FormatSpec::bgra8()))->toBeTrue()
+        ->and($canvas->framebuffer('full', 8, 4, driver: 'extended')->hostFormat()->equals(FormatSpec::bgra8()))->toBeTrue()
+        ->and($canvas->canPipe($bgra))->toBeTrue()
+        ->and($canvas->canPipe(framebuffers()->driver('extended')->dirty(FormatSpec::rgba8(), 8, 4)))->toBeFalse();
+})->skip(! class_exists(FbBuffer::class), 'ext-fb 0.10 is not loaded in this PHP.');

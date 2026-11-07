@@ -30,6 +30,9 @@ trait HostsDrawing
     /** @var (Closure(string|null): FramebufferDriver)|null */
     protected static ?Closure $framebuffers = null;
 
+    /** @var (Closure(): FormatSpec)|null */
+    protected static ?Closure $format = null;
+
     protected ?Framebuffer $framebuffer = null;
 
     protected ?string $kind = null;
@@ -52,6 +55,17 @@ trait HostsDrawing
         static::$framebuffers = $resolver;
     }
 
+    /**
+     * Where hosts get the format of their framebuffers, and of the pixels applyPixels() and applyAddress()
+     * receive: the application's config. Without one, RGBA8. Static per using class.
+     *
+     * @param  (Closure(): FormatSpec)|null  $resolver
+     */
+    public static function resolveFormatUsing(?Closure $resolver): void
+    {
+        static::$format = $resolver;
+    }
+
     public function pixelSize(): array
     {
         $this->live();
@@ -63,7 +77,7 @@ trait HostsDrawing
 
     public function pixelFormat(): FormatSpec
     {
-        return FormatSpec::rgba8();
+        return static::$format ? (static::$format)() : FormatSpec::rgba8();
     }
 
     public function framebuffer(string $kind = 'dirty', ?int $width = null, ?int $height = null, int $frames = 2, ?string $driver = null): Framebuffer
@@ -96,10 +110,11 @@ trait HostsDrawing
         $from = static::$framebuffers
             ? (static::$framebuffers)($driver)
             : (($driver ?? 'native') === 'native' ? new NativeFramebufferDriver() : new ExtendedFramebufferDriver());
+        $format = $this->pixelFormat();
         $this->framebuffer = match ($kind) {
-            'full' => $from->full(FormatSpec::rgba8(), $width, $height),
-            'dirty' => $from->dirty(FormatSpec::rgba8(), $width, $height),
-            'ring' => $from->ring(FormatSpec::rgba8(), $width, $height, $frames),
+            'full' => $from->full($format, $width, $height),
+            'dirty' => $from->dirty($format, $width, $height),
+            'ring' => $from->ring($format, $width, $height, $frames),
         };
         $this->kind = $kind;
         $this->shown = null;
@@ -114,7 +129,7 @@ trait HostsDrawing
 
     public function canPipe(Framebuffer $framebuffer): bool
     {
-        return $framebuffer->pointer() !== 0 && $framebuffer->hostFormat()->equals(FormatSpec::rgba8());
+        return $framebuffer->pointer() !== 0 && $framebuffer->hostFormat()->equals($this->pixelFormat());
     }
 
     public function present(): static
@@ -143,7 +158,7 @@ trait HostsDrawing
         }
         $width = $bound->viewportWidth();
         $height = $bound->viewportHeight();
-        // C memory in RGBA8: the toolkit copies it itself. PHP-held bytes go as a string.
+        // C memory in pixelFormat(): the toolkit copies it itself. PHP-held bytes go as a string.
         if ($this->canPipe($bound)) {
             $this->applyAddress($bound->pointer(), $width, $height, $width * 4, $damage);
         } else {
@@ -270,15 +285,15 @@ trait HostsDrawing
      * Put RGBA8 pixels on screen: stretched over the host, the fourth byte ignored.
      * $damage lists the regions changed since the last present; [] is the whole frame.
      *
-     * @param  string  $rgba8  $width × $height × 4 bytes, top row first.
+     * @param  string  $rgba8  $width × $height × 4 bytes in pixelFormat() (RGBA8 unless configured), top row first.
      * @param  list<\Surface\Contracts\Framebuffers\Region>  $damage
      */
     abstract protected function applyPixels(string $rgba8, int $width, int $height, array $damage): void;
 
     /**
      * Put the framebuffer's C memory on screen by its address: $stride bytes a
-     * row, $height rows, top row first, stretched over the host, the fourth
-     * byte ignored. $damage lists the regions changed since the last present;
+     * row, $height rows, top row first, in pixelFormat() (RGBA8 unless
+     * configured), stretched over the host, the alpha byte ignored. $damage lists the regions changed since the last present;
      * [] is the whole frame. The toolkit copies what it needs before returning.
      *
      * @param  int  $address  The framebuffer's pointer(): trusted, $stride × $height readable bytes.

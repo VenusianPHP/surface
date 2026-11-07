@@ -1,5 +1,10 @@
 # Log
 
+## 2026-11-05
+
+* **roundRect and shadow are commands**: Rasterize `fillRoundRect`, `strokeRoundRect`, `shadow` (native scanner; ext-rasterize to follow); engine verbs `roundRect()` and `shadow()` recording `roundrect`, `roundring` and `shadow`; Velvet draws them through Rasterize. [rasterize](architecture/rasterize.md), [drawing](architecture/drawing.md)
+* **Fonts has bitmap and TrueType types** (Angel's ruling): `Font`, `FontType`, `TrueTypeFont`, `FontDriver`, `ShapedRun`, `ShapedGlyph`, `GlyphMask`; `ExtendedFontDriver` (ext-only); `FontRegistry::face(): Font` and `truetype()`; `text()` / `textBounds()` take `Font`; the `glyphs` command, painted by Velvet as coverage spans. The Silk-era drawing shortcuts are reverted (`cbf756e`). [fonts](architecture/fonts.md), [drawing](architecture/drawing.md)
+
 ## 2026-11-04
 
 * **Windows**: `FontSpec` italic; `FontMetrics` and `ToolkitWindowDriver::fontMetrics()`; `TextRangeStyle` bold, italic, underline and strikeout flags (a run needs a colour or a flag; a clipped run keeps its flags); `TKTextArea` `setTabWidth()` / `tabWidth()` (8 until set, ≥ 1); `setAlignment()` on `TKButton` (centre until set), `TKTextInput` and `TKTextArea` (left until set). Drivers implement `fontMetrics`, `applyTabWidth` and `applyAlignment`. See [styling](api/styling.md).

@@ -1,6 +1,6 @@
 {
     "name": "venusian-surface/fonts",
-    "description": "Surface bitmap faces: the GFXFont registry, the classic 5x7, and make:font.",
+    "description": "Surface fonts: bitmap faces (GFXFont) and TrueType faces through ext-only drivers.",
     "license": "MIT",
     "homepage": "https://venusian.projectsaturnstudios.com/ecosystem/venusian/surface/0.11.x/fonts",
     "support": {
@@ -20,6 +20,11 @@
         "venusian-voyager/contracts": "^0.11.0",
         "venusian-voyager/filesystem": "^0.11.0",
         "venusian-voyager/nuts-and-bolts": "^0.11.0"
+    },
+    "suggest": {
+        "ext-fontconfig": "*",
+        "ext-freetype": "*",
+        "ext-harfbuzz": "*"
     },
     "minimum-stability": "dev",
     "autoload": {

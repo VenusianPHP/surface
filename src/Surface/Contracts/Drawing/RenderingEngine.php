@@ -2,15 +2,13 @@
 
 namespace Surface\Contracts\Drawing;
 
-use Surface\Contracts\Fonts\GFXFont;
+use Surface\Contracts\Fonts\Font;
 use Surface\Contracts\Framebuffers\Filter;
 use Surface\Contracts\Framebuffers\Framebuffer;
 use Surface\Contracts\Framebuffers\Region;
 use Surface\Contracts\Rasterize\FillRule;
 use Surface\NutsAndBolts\Affine;
 use Surface\NutsAndBolts\Color;
-use Surface\NutsAndBolts\LinearGradient;
-use Surface\Contracts\Text\ShapedRun;
 
 /**
  * Something that draws into a framebuffer: the software engine on the CPU, or
@@ -121,12 +119,6 @@ interface RenderingEngine
     public function clip(?Region $region): static;
 
     /** The clip as it applies: inside the surface, empty when nothing can be drawn. The whole surface when none is set. */
-    /** Clip to the intersection of the clip in force and $region, until popClip(). clip() still replaces the clip whole. */
-    public function pushClip(Region $region): static;
-
-    /** Put back the clip in force before the last pushClip(). */
-    public function popClip(): static;
-
     public function clipRegion(): Region;
 
     /** Replace every pixel of the surface with $color, whatever the clip. */
@@ -154,24 +146,19 @@ interface RenderingEngine
     public function strokeEllipse(float $cx, float $cy, float $rx, float $ry, Color $color, float $stroke = 1.0): static;
 
     /**
-     * A rect with per-corner radii [top-left, top-right, bottom-right, bottom-left], each held to half the short side,
-     * and an optional border drawn inside the rect. A gradient, when given, fills in place of $fill.
+     * A rect with per-corner radii [top-left, top-right, bottom-right, bottom-left], each held to
+     * 0..min(w, h)/2, and an optional border drawn inside the rect.
      *
      * @param  array{float, float, float, float}  $radii
      */
-    public function roundRect(float $x, float $y, float $width, float $height, array $radii, Color $fill, ?Color $border = null, float $borderWidth = 0.0, ?LinearGradient $gradient = null): static;
-
-    /** A soft shadow of a rounded rect, spread by blur and set blur / 4 lower. */
-    public function shadow(float $x, float $y, float $width, float $height, float $radius, float $blur, Color $color): static;
+    public function roundRect(float $x, float $y, float $width, float $height, array $radii, Color $fill, ?Color $border = null, float $borderWidth = 0.0): static;
 
     /**
-     * An 8-bit coverage mask (width*height bytes, rows top to bottom) in a colour whose alpha multiplies each byte.
-     * Its top-left is (x, y) through the transform, rounded to whole pixels; the mask itself is not scaled.
+     * A soft shadow of a rounded rect, spread by blur and set blur / 4 lower.
+     *
+     * @throws DrawingException Under a turn, shear or uneven scale.
      */
-    public function coverage(string $mask, int $width, int $height, float $x, float $y, Color $color): static;
-
-    /** A shaped run with its baseline at y, each glyph's mask on whole pixels. */
-    public function glyphs(ShapedRun $run, float $x, float $y, Color $color): static;
+    public function shadow(float $x, float $y, float $width, float $height, float $radius, float $blur, Color $color): static;
 
     /**
      * Draw another framebuffer's pixels with their top-left at (x, y), at the
@@ -183,17 +170,17 @@ interface RenderingEngine
     public function image(Framebuffer $source, float $x, float $y, ?float $width = null, ?float $height = null, float $opacity = 1.0, Filter $filter = Filter::NEAREST): static;
 
     /**
-     * Bitmap text from the face's own glyphs. ($x, $y) is the top-left of the
-     * first line box; "\n" starts a new line, "\r" is ignored, codes outside
-     * the face are skipped. One glyph pixel is one unit: scale and turn it
-     * through the transform.
+     * Text. ($x, $y) is the top-left of the first line box; "\n" starts a new
+     * line, "\r" is ignored. A bitmap face draws its own glyphs, codes outside
+     * it skipped, one glyph pixel to one unit. A TrueType face is shaped at its
+     * size in units. Both scale and turn through the transform.
      */
-    public function text(string $text, float $x, float $y, Color $color, GFXFont $font): static;
+    public function text(string $text, float $x, float $y, Color $color, Font $font): static;
 
     /**
      * The ink box of a text, relative to its origin, before any transform.
      *
      * @return array{float, float, float, float} [x, y, width, height]; all zero when nothing inks.
      */
-    public function textBounds(string $text, GFXFont $font): array;
+    public function textBounds(string $text, Font $font): array;
 }

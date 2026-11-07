@@ -13,6 +13,7 @@ use Surface\Contracts\Framebuffers\Filter;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\Framebuffer;
 use Surface\Contracts\Framebuffers\PixelFormat;
+use Surface\Contracts\Fonts\TrueTypeFont;
 use Surface\Contracts\Framebuffers\Region;
 use Surface\Contracts\Framebuffers\ScanDirection;
 use Surface\Contracts\Rasterize\Edges;
@@ -23,6 +24,10 @@ use Surface\Fonts\ClassicFont;
 use Surface\Framebuffers\Native\NativeFullFramebuffer;
 use Surface\NutsAndBolts\Color;
 use Surface\Rasterize\Native\NativeRasterizeDriver;
+use Venusian\Surface\Tests\Support\Fakes\FakeFontDriver;
+
+// Engine packages load this file by path, outside Surface's test autoloader.
+require_once __DIR__.'/../Fakes/FakeFontDriver.php';
 
 /**
  * What every GPU engine is held to, run by each engine package against its
@@ -51,7 +56,7 @@ final class GpuParity
     public static function register(string $name, Closure $make): void
     {
         \it("{$name}: draws the scene as Velvet does", function (string $scene, string $edges) use ($make): void {
-            [$exact, $draw] = GpuParity::scenes()[$scene];
+            [$exact, $draw, $tolerance] = GpuParity::scenes()[$scene] + [2 => 0];
             $subject = $make(GpuParity::WIDTH, GpuParity::HEIGHT, Edges::from($edges));
             $velvet = GpuParity::velvet(GpuParity::WIDTH, GpuParity::HEIGHT, Edges::from($edges));
 
@@ -59,7 +64,7 @@ final class GpuParity
                 $subject->frame($draw);
                 $velvet->frame($draw);
 
-                \expect(GpuParity::mismatches($subject->framebuffer()->toRgba8(), $velvet->framebuffer()->toRgba8(), GpuParity::WIDTH, GpuParity::HEIGHT, $exact))->toBe([]);
+                \expect(GpuParity::mismatches($subject->framebuffer()->toRgba8(), $velvet->framebuffer()->toRgba8(), GpuParity::WIDTH, GpuParity::HEIGHT, $exact, $tolerance))->toBe([]);
             } finally {
                 GpuParity::release($subject);
             }
@@ -103,10 +108,26 @@ final class GpuParity
         ]);
     }
 
+    /** A round-capped stroke from (x1, y1) to (x2, y2), $width across, as one contour: two half circles of 8 steps. */
+    public static function capsule(float $x1, float $y1, float $x2, float $y2, float $width): array
+    {
+        $r = $width / 2;
+        $a = atan2($x2 - $x1, -($y2 - $y1));
+        $points = [];
+        foreach ([[$x2, $y2, $a], [$x1, $y1, $a + M_PI]] as [$cx, $cy, $start]) {
+            for ($i = 0; $i <= 8; $i++) {
+                $t = $start - M_PI * $i / 8;
+                $points[] = [$cx + $r * cos($t), $cy + $r * sin($t)];
+            }
+        }
+
+        return $points;
+    }
+
     /**
-     * The scene set: name => [exact on every pixel, the frame].
+     * The scene set: name => [exact on every pixel, the frame, and optionally a tolerance per channel at every pixel].
      *
-     * @return array<string, array{bool, Closure(RenderingEngine): void}>
+     * @return array<string, array{0: bool, 1: Closure(RenderingEngine): void, 2?: int}>
      */
     public static function scenes(): array
     {
@@ -126,6 +147,31 @@ final class GpuParity
                 $g->text('12:34', 4, 2, Color::rgb(255, 255, 255), new ClassicFont);
                 $g->push()->scale(2)->text('Ab', 2, 7, Color::rgb(255, 255, 0), new ClassicFont)->pop();
             }],
+            'truetype text' => [true, function (RenderingEngine $g): void {
+                // FakeFontDriver's masks are fixed, so every engine draws the same glyphs; the translate makes
+                // the glyph origins round.
+                $font = new TrueTypeFont('sans-serif', 9.0, new FakeFontDriver);
+                $g->clear(Color::rgb(0, 0, 0));
+                $g->push()->translate(0.4, 0.6);
+                $g->text("Hi\nAV", 2, 2, Color::rgb(255, 255, 255), $font);
+                $g->text('AV', 30, 4, Color::rgba(40, 200, 255, 0.5), $font);
+                $g->pop();
+            }],
+            'rounded rects' => [false, function (RenderingEngine $g): void {
+                $g->clear(Color::hex('#101820'));
+                $g->roundRect(2, 2, 24, 12, [4, 4, 4, 4], Color::hex('#ff6600'));
+                $g->roundRect(28, 3, 30, 14, [6, 0, 3, 9], Color::rgba(40, 200, 255, 0.6), Color::rgb(255, 255, 255), 2.0);
+                $g->roundRect(4, 18, 20, 10, [5, 5, 5, 5], Color::rgb(0, 200, 0), Color::rgba(255, 0, 255, 0.7), 6.0);
+                $g->clip(new Region(30, 20, 20, 8));
+                $g->roundRect(26, 16, 30, 16, [8, 8, 8, 8], Color::rgb(255, 255, 0));
+            }],
+            // Tolerant by 1: float32 on a GPU and double on the CPU can round a coverage step apart.
+            'shadows' => [true, function (RenderingEngine $g): void {
+                $g->clear(Color::rgb(240, 240, 240));
+                $g->shadow(6, 4, 20, 14, 4, 6, Color::rgba(0, 0, 0, 0.6));
+                $g->shadow(38, 6, 16, 10, 0, 3, Color::rgb(40, 80, 200));
+                $g->shadow(30, 22, 12, 6, 2, 0, Color::rgba(200, 0, 0, 0.5));
+            }, 1],
             'nearest images on whole pixels' => [true, function (RenderingEngine $g): void {
                 $g->clear(Color::rgb(0, 0, 0));
                 $g->image(GpuParity::tile(), 4, 4);
@@ -142,6 +188,17 @@ final class GpuParity
                 $g->fillTriangle(34, 1, 62, 2, 40, 30, Color::rgba(255, 0, 255, 0.7));
                 $g->fillPolygon([[20, 14], [30, 22], [30, 14], [20, 22]], Color::rgb(255, 255, 0), FillRule::EVEN_ODD);
             }],
+            // round-capped strokes at sub-pixel widths, as a module lowers a line to a path (Silk: Raven's
+            // max(1, thickness x scale), unrounded); straight and diagonal
+            'sub-pixel capsules' => [false, function (RenderingEngine $g): void {
+                $g->clear(Color::rgb(0, 0, 0));
+                foreach ([1.0, 1.25, 1.5, 2.5] as $i => $width) {
+                    $x = 3 + 15 * $i;
+                    $g->fillPath([GpuParity::capsule($x, 4.3, $x + 10, 4.3, $width)], Color::rgb(255, 255, 255));
+                    $g->fillPath([GpuParity::capsule($x + 0.4, 9, $x + 0.4, 18, $width)], Color::rgba(120, 220, 255, 0.8));
+                    $g->fillPath([GpuParity::capsule($x, 21, $x + 11, 29.5, $width)], Color::rgb(255, 180, 40));
+                }
+            }],
             'shapes under a clip and a turn' => [false, function (RenderingEngine $g): void {
                 $g->clear(Color::rgb(0, 0, 0));
                 $g->clip(new Region(6, 4, 50, 24));
@@ -151,6 +208,16 @@ final class GpuParity
                 $g->text('Ab', -6, -4, Color::rgb(0, 0, 0), new ClassicFont);
                 $g->pop();
                 $g->fillPath([[[8, 6], [30, 6], [30, 26], [8, 26]], [[12, 10], [12, 22], [26, 22], [26, 10]]], Color::rgb(0, 160, 255));
+            }],
+            // glyphs under a scale whose x and y differ (a module's chip stretched by its speed: Silk, Raven
+            // dock_area.c:1416-1442); every engine applies the affine to text as Velvet does
+            'glyphs scaled apart' => [false, function (RenderingEngine $g): void {
+                $font = new TrueTypeFont('sans-serif', 9.0, new FakeFontDriver);
+                $g->clear(Color::rgb(0, 0, 0));
+                $g->push()->translate(2, 2)->scale(2, 1)->text('Ab', 0, 0, Color::rgb(255, 255, 255), new ClassicFont)->pop();
+                $g->push()->translate(2, 14)->scale(1, 1.5)->text('Ab', 0, 0, Color::rgb(255, 255, 0), new ClassicFont)->pop();
+                $g->push()->translate(36.4, 3.6)->scale(1.6, 0.8)->text('AV', 0, 0, Color::rgb(120, 220, 255), $font)->pop();
+                $g->push()->translate(36.4, 16.6)->scale(0.8, 1.4)->text('AV', 0, 0, Color::rgba(255, 180, 40, 0.8), $font)->pop();
             }],
             'images scaled and turned' => [false, function (RenderingEngine $g): void {
                 $g->clear(Color::hex('#202020'));
@@ -210,7 +277,7 @@ final class GpuParity
      * @param  bool  $exact  Every pixel must match; otherwise only a pixel whose neighbours in $reference equal it.
      * @return list<string> One line a pixel; [] when the frames agree.
      */
-    public static function mismatches(string $subject, string $reference, int $width, int $height, bool $exact): array
+    public static function mismatches(string $subject, string $reference, int $width, int $height, bool $exact, int $tolerance = 0): array
     {
         if (strlen($subject) !== strlen($reference)) {
             return ['The frames differ in size: '.strlen($subject).' bytes, Velvet '.strlen($reference).'.'];
@@ -222,7 +289,7 @@ final class GpuParity
                 $at = ($y * $width + $x) * 4;
                 $want = substr($reference, $at, 4);
                 $got = substr($subject, $at, 4);
-                if ($got === $want || (! $exact && ! self::flat($reference, $width, $height, $x, $y))) {
+                if ($got === $want || ($tolerance > 0 && self::near($got, $want, $tolerance)) || (! $exact && ! self::flat($reference, $width, $height, $x, $y))) {
                     continue;
                 }
                 $out[] = sprintf('(%d, %d): %s, Velvet %s', $x, $y, bin2hex($got), bin2hex($want));
@@ -238,6 +305,18 @@ final class GpuParity
         if ($engine instanceof GpuRenderingEngine) {
             $engine->release();
         }
+    }
+
+    /** Whether no channel of two pixels differs by more than $tolerance. */
+    private static function near(string $a, string $b, int $tolerance): bool
+    {
+        for ($i = 0; $i < 4; $i++) {
+            if (abs(ord($a[$i]) - ord($b[$i])) > $tolerance) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /** Whether every neighbour of ($x, $y) inside the frame equals it. */
