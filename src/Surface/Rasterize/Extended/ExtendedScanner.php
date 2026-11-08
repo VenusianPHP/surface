@@ -101,4 +101,29 @@ final class ExtendedScanner implements Scanner
             throw new RasterizeException($e->getMessage(), previous: $e);
         }
     }
+
+    public function batch(array $ops): array
+    {
+        try {
+            return $this->scanner->batch($ops);
+        } catch (ValueError $e) {
+            throw new RasterizeException($e->getMessage(), previous: $e);
+        }
+    }
+
+    /**
+     * batch()'s ops painted into an FbBuffer through ext-fb's span sink, each at its colour.
+     *
+     * @param  list<list<mixed>>  $ops
+     * @param  list<int>  $colours
+     * @return list<Region|null> what each op painted
+     */
+    public function fill(array $ops, array $colours, \FbBuffer $target): array
+    {
+        try {
+            return array_map(fn (?array $r): ?Region => $r === null ? null : new Region(...$r), $this->scanner->fill($ops, $colours, $target));
+        } catch (ValueError $e) {
+            throw new RasterizeException($e->getMessage(), previous: $e);
+        }
+    }
 }

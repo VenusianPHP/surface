@@ -81,7 +81,8 @@ it('refuses arguments it cannot build an engine from, saying which', function (a
     'paged without its page rows' => [['width' => 8, 'height' => 8, 'mode' => 'paged'], "'paged' needs 'page_rows'"],
     'a format that is no FormatSpec' => [['width' => 8, 'height' => 8, 'format' => 'rgb565'], "'format' is a FormatSpec"],
     'edges that are neither' => [['width' => 8, 'height' => 8, 'edges' => 'soft'], "'edges' is 'hard' or 'antialiased', got 'soft'"],
-    'a misspelt argument' => [['width' => 8, 'hieght' => 8], "velvet does not take 'hieght'. It takes: output, framebuffer, width, height, mode, format, page_rows, frames, framebuffers, rasterize, edges."],
+    'a misspelt argument' => [['width' => 8, 'hieght' => 8], "velvet does not take 'hieght'. It takes: output, framebuffer, width, height, mode, format, page_rows, frames, framebuffers, rasterize, edges, direct_fill."],
+    'a direct fill that is neither' => [['width' => 8, 'height' => 8, 'direct_fill' => 'on'], "'direct_fill' is 'auto' or 'off', got 'on'"],
 ]);
 
 it('says which package brings an engine that is not installed', function (string $engine, string $package): void {

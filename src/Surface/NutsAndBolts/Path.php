@@ -25,12 +25,16 @@ final class Path
     /** @var array{float, float}|null The end of the last segment; after close(), the start it joined. */
     private ?array $current = null;
 
+    /** @var array{float, float, float, float}|null The box of every point and control point, once asked for; any new segment forgets it. */
+    private ?array $bounds = null;
+
     /** Whether the last op was close(): the next segment first moves to the start of the subpath it closed. */
     private bool $closed = false;
 
     public function moveTo(float $x, float $y): static
     {
         self::finite($x, $y);
+        $this->bounds = null;
         $this->ops[] = ['M', $x, $y];
         $this->start = $this->current = [$x, $y];
         $this->closed = false;
@@ -42,6 +46,7 @@ final class Path
     {
         self::finite($x, $y);
         $this->continue();
+        $this->bounds = null;
         $this->ops[] = ['L', $x, $y];
         $this->current = [$x, $y];
 
@@ -52,6 +57,7 @@ final class Path
     {
         self::finite($cx, $cy, $x, $y);
         $this->continue();
+        $this->bounds = null;
         $this->ops[] = ['Q', $cx, $cy, $x, $y];
         $this->current = [$x, $y];
 
@@ -62,6 +68,7 @@ final class Path
     {
         self::finite($c1x, $c1y, $c2x, $c2y, $x, $y);
         $this->continue();
+        $this->bounds = null;
         $this->ops[] = ['C', $c1x, $c1y, $c2x, $c2y, $x, $y];
         $this->current = [$x, $y];
 
@@ -91,8 +98,65 @@ final class Path
         return $this->ops;
     }
 
-    /** A copy with every point through the matrix: Béziers stay Béziers under an affine map. */
+    /**
+     * The box of every point and control point: [x0, y0, x1, y1], null for a path with no point. A curve stays inside the
+     * box of its control points, so the path does too. Kept until a segment is added.
+     *
+     * @return array{float, float, float, float}|null
+     */
+    public function bounds(): ?array
+    {
+        if ($this->bounds !== null || $this->ops === []) {
+            return $this->bounds;
+        }
+        $xs = [];
+        $ys = [];
+        foreach ($this->ops as $op) {
+            for ($i = 1, $count = count($op); $i < $count; $i += 2) {
+                $xs[] = $op[$i];
+                $ys[] = $op[$i + 1];
+            }
+        }
+
+        return $this->bounds = $xs === [] ? null : [min($xs), min($ys), max($xs), max($ys)];
+    }
+
+    /**
+     * A copy with every point through the matrix: Béziers stay Béziers under an affine map. The ops are mapped as they
+     * are (they already hold the moves close() makes), the same arithmetic as Affine::apply(); a result that is not
+     * finite goes the long way through the builder, which says which point failed.
+     */
     public function transformed(Affine $matrix): self
+    {
+        [$a, $b, $c, $d, $e, $f] = [$matrix->a, $matrix->b, $matrix->c, $matrix->d, $matrix->e, $matrix->f];
+        $ops = [];
+        $sum = 0.0;
+        foreach ($this->ops as $op) {
+            $count = count($op);
+            $mapped = [$op[0]];
+            for ($i = 1; $i < $count; $i += 2) {
+                $x = $op[$i];
+                $y = $op[$i + 1];
+                $mapped[] = $nx = $a * $x + $c * $y + $e;
+                $mapped[] = $ny = $b * $x + $d * $y + $f;
+                $sum += $nx + $ny;
+            }
+            $ops[] = $mapped;
+        }
+        if (! is_finite($sum)) {
+            return $this->replayed($matrix);
+        }
+        $copy = new self();
+        $copy->ops = $ops;
+        $copy->start = $this->start === null ? null : $matrix->apply(...$this->start);
+        $copy->current = $this->current === null ? null : $matrix->apply(...$this->current);
+        $copy->closed = $this->closed;
+
+        return $copy;
+    }
+
+    /** transformed() through the builder, point by point. */
+    private function replayed(Affine $matrix): self
     {
         $copy = new self();
         foreach ($this->ops as $op) {

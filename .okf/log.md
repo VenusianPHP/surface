@@ -1,5 +1,23 @@
 # Log
 
+## 2026-11-08
+
+* G1 and G2 parked in drawing.md and the drawing-path spec, with the profile (device draw 1 to 3 ms of 20 to 100 ms a frame).
+
+## 2026-11-08
+
+* drawing.md: the glass paragraph now describes what the code does (GlassGroups, shadow in the glass command, DrawsGlass ops, keep rule, levels), which it did not after G4; new paragraph on G3 reuse across the four GPU devices, with the measurement that says what it buys.
+
+## 2026-11-07
+
+* **Glass on the GPU** (G4): a device that is `Surface\Drawing\Gpu\DrawsGlass` gets `Op::GLASS_BACKDROP` (once a list: the panes' region, the depths) and one `Op::GLASS` draw a pane from `Lowering`; any other device is given each pane as a backdrop layer. Metal, OpenGL, Vulkan and SDL3 all are (glass tab, CPU time per frame at scale 2: 4.5, 5.4, 6.8 and 4.7 ms); each draws the same pixels as Velvet but for 0.15 to 0.5 % of channels at anti-aliased edges. A pyramid is kept across frames when `Lowering` marks its backdrop kept (same region and depths as last frame's, no damage touching it).
+* **Glass** (drawing-path spec, G4): `RenderingEngine::glass(x, y, w, h, radii, Glass, opacity)` records `['glass', area, geometry, look, blur, clip]`; its read area grows the damage as a backdrop layer's does. Velvet captures the union of a run's panes (each grown by `Glass::margin()`) once, takes a dual-filter (Kawase) pyramid down and up to half size (`Framebuffer::kawaseDown()` / `kawaseUp()`, pooled levels, kept while nothing under the region is damaged) and paints each pane in one `paintGlass()` over its box: ext-fb in C, `NativeGlass` the same bytes in PHP. GPU engines draw it through a backdrop layer until their glass pass lands. Glass tab, Velvet+ext, scale 2: 149.4 → 20.6 ms a frame. [drawing](architecture/drawing.md), [framebuffers](architecture/framebuffers.md)
+* **Direct fill** (drawing-path spec, C2b): with both drivers extended, Velvet's shape runs are scanned and painted in C, ext-rasterize writing into ext-fb's `FbBuffer` through its span sink (`Framebuffer::spanSink()` / `paintedSpans()`, `Rasterizer::fillBatch(..., $direct)`, `RasterScanner::fill()`). Config `drawing.velvet.direct_fill`: `'auto'` (default) or `'off'`. [rasterize](architecture/rasterize.md), [framebuffers](architecture/framebuffers.md), [drawing](architecture/drawing.md)
+* **Shapes are drawn in batches** (drawing-path spec, C1 + C4): `Rasterizer::fillBatch()` and `Scanner::batch()`, one scan call for each run of shape commands under one clip (ext-rasterize's `RasterScanner::batch()`); Velvet cuts a shared clip to the rows once and keys its rasterizers by four ints. A bad shape now throws before any shape of its run is painted (before: the shapes ahead of it were painted). Pixels unchanged (golden frames, `tests/Rasterize/BatchTest.php`). [rasterize](architecture/rasterize.md), [drawing](architecture/drawing.md)
+* **Interior runs without a step a pixel** (drawing-path spec, C1b): `NativeScanner` and ext-rasterize emit the stretch between two columns a row wrote as one span, and clear only those columns. Spans unchanged (golden frames, parity). [rasterize](architecture/rasterize.md)
+* **A shape is scanned over its own extent, not its clip** (drawing-path spec, C1a): `NativeScanner` and ext-rasterize walk the rows and columns the shape reaches, cut to the clip; before, every row of the clip was sampled 16 times for a 20 px button. Spans unchanged (golden frames, `tests/Rasterize/ExtentTest.php`). [rasterize](architecture/rasterize.md)
+* **Text is painted from cached masks** (drawing-path spec C3): `Framebuffer::paintMasks()` / `PixelStore::paintMasks()` on every kind, ext-fb's `FbBuffer::paintMasks()` in one call; VelvetGE keeps each glyph's mask once (8 MiB LRU) and paints a `glyphs` command with one call. `glyphSpans()` / `glyphRuns()` and their per-frame packing are gone. Pixels unchanged (golden frames). [framebuffers](architecture/framebuffers.md), [drawing](architecture/drawing.md)
+
 ## 2026-11-05
 
 * **roundRect and shadow are commands**: Rasterize `fillRoundRect`, `strokeRoundRect`, `shadow` (native scanner; ext-rasterize to follow); engine verbs `roundRect()` and `shadow()` recording `roundrect`, `roundring` and `shadow`; Velvet draws them through Rasterize. [rasterize](architecture/rasterize.md), [drawing](architecture/drawing.md)

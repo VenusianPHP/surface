@@ -16,6 +16,12 @@ class FramebufferException extends SurfaceException
         return new self("The 'extended' framebuffer driver needs ext-{$extension} {$version} or newer loaded in this PHP (".PHP_BINARY.').');
     }
 
+    /** @param list<string> $methods */
+    public static function extensionStale(string $extension, string $version, array $methods): self
+    {
+        return new self("ext-{$extension} {$version} is loaded but is an old build without ".implode(' and ', $methods).'(): rebuild ext-'.$extension.' ('.PHP_BINARY.').');
+    }
+
     public static function outOfRange(int $x, int $y, int $width, int $height): self
     {
         return new self("({$x}, {$y}) is outside a {$width}x{$height} framebuffer.");

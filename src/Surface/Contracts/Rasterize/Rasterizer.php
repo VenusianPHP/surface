@@ -2,6 +2,7 @@
 
 namespace Surface\Contracts\Rasterize;
 
+use Surface\Contracts\Framebuffers\Framebuffer;
 use Surface\Contracts\Framebuffers\Region;
 
 /**
@@ -78,4 +79,16 @@ interface Rasterizer
 
     /** A blurred rounded box: coverage 1 − smoothstep(−blur, blur, d) at each pixel centre. A blur ≤ 0 is the hard box. */
     public function shadow(float $x, float $y, float $width, float $height, float $radius, float $blur): string;
+
+    /**
+     * Many shapes painted in order, their geometry scanned in one call: each shape is a drawing command
+     * (Surface\Drawing\RenderingEngine) of kind path, polyline, ellipse, ring, roundrect, roundring or shadow, whose
+     * entries after its colour (the clip) are not read; the rasterizer's own clip cuts. Each shape paints what the
+     * method of its kind would answer, through $target->paintSpans() at its colour. A bad shape throws before any
+     * shape of the batch is painted. With $direct, a rasterizer may paint straight into $target->spanSink() (the
+     * extended one does, through ext-fb), the same pixels and damage; without, every shape goes through paintSpans().
+     *
+     * @param  list<array<int, mixed>>  $shapes
+     */
+    public function fillBatch(array $shapes, Framebuffer $target, bool $direct = true): void;
 }

@@ -11,17 +11,20 @@ use Surface\Contracts\Drawing\DrawingException;
  */
 final readonly class Noise extends FilterStep
 {
-    /** The most octaves of turbulence. */
-    public const int MAX_OCTAVES = 10;
+    /**
+     * The most octaves of turbulence: an octave is about 56 dependent reads of the lattice a pixel on a GPU (four channels, each corner a
+     * read), so 4 keeps a full-surface layer under a few hundred reads a pixel. The same on every path.
+     */
+    public const int MAX_OCTAVES = 4;
 
     /**
      * @param  float  $frequencyX  Turbulence: the base frequency along x, per pixel; 0 or more.
      * @param  float  $frequencyY  Turbulence: the base frequency along y.
      * @param  int  $octaves  Turbulence: 1..MAX_OCTAVES.
-     * @param  int  $seed  The seed: any integer (turbulence rounds it as SVG says).
+     * @param  int  $seed  The seed: a 32-bit integer (turbulence rounds it as SVG says).
      * @param  bool  $stitch  Turbulence: SVG's stitchTiles, for the layer's size.
      *
-     * @throws DrawingException When a frequency is negative or not finite, or the octaves are out of range.
+     * @throws DrawingException When a frequency is negative or not finite, the octaves are out of range, or the seed is not 32 bits.
      */
     public function __construct(
         public NoiseType $type,
@@ -37,6 +40,9 @@ final readonly class Noise extends FilterStep
         }
         if ($octaves < 1 || $octaves > self::MAX_OCTAVES) {
             throw new DrawingException('Noise takes 1 to '.self::MAX_OCTAVES.' octaves.');
+        }
+        if ($seed < -2147483648 || $seed > 2147483647) {
+            throw new DrawingException('A noise seed is a 32-bit integer.');
         }
     }
 

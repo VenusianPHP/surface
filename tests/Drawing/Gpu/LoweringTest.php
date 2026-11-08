@@ -265,3 +265,27 @@ it('lowers a gradient path to the stencil fill, a ramp upload and a cover in the
         ->and($ops[2][5])->toBe(2)
         ->and(vertices($list, $ops[2][1], 6))->toBe(quadOf(4.0, 4.0, 20.0, 12.0));
 });
+
+it('lowers a layer to a target of its own, a filter over it and an image laying it down', function () {
+    $blur = Surface\Contracts\Drawing\Effects\FilterChain::of(Surface\Contracts\Drawing\Effects\Blur::gaussian(3.0));
+    $commands = (new RecordingEngine)->commandsOf(fn (RenderingEngine $g) => $g->layer(8, 4, 20, 10, fn (RenderingEngine $l) => $l->fillRect(0, 0, 64, 32, Color::rgb(255, 0, 0)), 0.5, [4, 4, 4, 4], null, $blur));
+    $list = Lowering::lower($commands, 64, 32);
+    $ops = array_values(array_filter($list->operations, fn (array $o) => $o[0] !== Op::SCISSOR));
+    $names = array_map(fn (array $o) => $o[0], $ops);
+
+    // the backdrop first: read from the frame's target (0) into glass target 1, filtered, laid back; then the content in target 2
+    expect(array_slice($names, 0, 4))->toBe([Op::BACKDROP, Op::FILTER, Op::LAYER_SOURCE, Op::IMAGE])
+        ->and($ops[0][1])->toBe(0)->and($ops[0][2])->toBe(1)
+        ->and($ops[0][3])->toEqual(new Region(0, 0, 39, 25))   // the box grown by the blur reach (3 × 3 + 2 = 11), cut at the frame edge
+        ->and($ops[1][3])->toBe($blur)->and($ops[1][4])->toBeFalse()
+        ->and($ops[3][4])->toBe(255);
+    $content = array_slice($ops, 4);
+    expect($content[0][0])->toBe(Op::TARGET)->and($content[0][1])->toBe(2)->and($content[0][2])->toEqual(new Region(8, 4, 20, 10))
+        ->and(array_map(fn (array $o) => $o[0], array_slice($content, 1, 2)))->toBe([Op::STENCIL_FILL, Op::COVER]);
+    $last = array_slice($content, -4);
+    expect(array_map(fn (array $o) => $o[0], $last))->toBe([Op::TARGET, Op::FILTER, Op::LAYER_SOURCE, Op::IMAGE])
+        ->and($last[0][1])->toBe(0)->and($last[0][2])->toBeNull()
+        ->and($last[1][1])->toBe(2)->and($last[1][3]->steps)->toBe([])->and($last[1][4])->toBeTrue()
+        ->and($last[3][4])->toBe(128)
+        ->and($last[3][8][4])->toBe([4.0, 4.0, 4.0, 4.0]);
+});

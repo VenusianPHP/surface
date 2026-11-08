@@ -46,10 +46,13 @@ final class NativeScanner implements Scanner
     {
         // [ymin, ymax, x0, y0, slope, direction, order]: x on line y is x0 + (y - y0) * slope.
         $edges = [];
+        [$left, $top, $right, $bottom] = [INF, INF, -INF, -INF];
         foreach (array_values($contours) as $c => $contour) {
             $flat = self::flat($contour, "Contour {$c}");
             $n = intdiv(count($flat), 2);
             for ($i = 0; $i < $n; $i++) {
+                [$left, $right] = [min($left, $flat[2 * $i]), max($right, $flat[2 * $i])];
+                [$top, $bottom] = [min($top, $flat[2 * $i + 1]), max($bottom, $flat[2 * $i + 1])];
                 $j = ($i + 1) % $n;
                 [$x0, $y0, $x1, $y1] = [$flat[2 * $i], $flat[2 * $i + 1], $flat[2 * $j], $flat[2 * $j + 1]];
                 if ($y0 == $y1) {
@@ -68,7 +71,7 @@ final class NativeScanner implements Scanner
         $active = [];
 
         // Sample lines arrive in increasing y, so edges join once and leave once.
-        return $this->scan(function (float $y) use ($edges, $even_odd, &$next, &$active): array {
+        return $this->scan($left, $top, $right, $bottom, function (float $y) use ($edges, $even_odd, &$next, &$active): array {
             while ($next < count($edges) && $edges[$next][0] <= $y) {
                 $active[] = $edges[$next++];
             }
@@ -105,7 +108,7 @@ final class NativeScanner implements Scanner
             return '';
         }
 
-        return $this->scan(fn (float $y): array => self::across($cx, $cy, $rx, $ry, $y));
+        return $this->scan($cx - $rx, $cy - $ry, $cx + $rx, $cy + $ry, fn (float $y): array => self::across($cx, $cy, $rx, $ry, $y));
     }
 
     public function ring(float $cx, float $cy, float $rx, float $ry, float $stroke): string
@@ -116,7 +119,7 @@ final class NativeScanner implements Scanner
         }
         $half = $stroke / 2;
 
-        return $this->scan(function (float $y) use ($cx, $cy, $rx, $ry, $half): array {
+        return $this->scan($cx - ($rx + $half), $cy - ($ry + $half), $cx + ($rx + $half), $cy + ($ry + $half), function (float $y) use ($cx, $cy, $rx, $ry, $half): array {
             $outer = self::across($cx, $cy, $rx + $half, $ry + $half, $y);
             if ($outer === [] || $rx - $half <= 0 || $ry - $half <= 0) {
                 return $outer;
@@ -140,7 +143,7 @@ final class NativeScanner implements Scanner
         }
 
         // 2. one interval a sample line
-        return $this->scan(fn (float $y): array => self::roundAcross($x0, $y0, $x1, $y1, $r, $y));
+        return $this->scan($x0, $y0, $x1, $y1, fn (float $y): array => self::roundAcross($x0, $y0, $x1, $y1, $r, $y));
     }
 
     public function roundRing(float $x0, float $y0, float $x1, float $y1, array $radii, float $inset): string
@@ -161,7 +164,7 @@ final class NativeScanner implements Scanner
         $hollow = $ix1 > $ix0 && $iy1 > $iy0;
 
         // 3. a line: the outer interval, less the inner one when the line crosses it
-        return $this->scan(function (float $y) use ($x0, $y0, $x1, $y1, $r, $ix0, $iy0, $ix1, $iy1, $ir, $hollow): array {
+        return $this->scan($x0, $y0, $x1, $y1, function (float $y) use ($x0, $y0, $x1, $y1, $r, $ix0, $iy0, $ix1, $iy1, $ir, $hollow): array {
             $outer = self::roundAcross($x0, $y0, $x1, $y1, $r, $y);
             if ($outer === [] || ! $hollow) {
                 return $outer;
@@ -317,18 +320,25 @@ final class NativeScanner implements Scanner
     }
 
     /**
-     * Rows of the clip into span bytes, each sample line's intervals asked of $at.
+     * Rows of the clip into span bytes, each sample line's intervals asked of $at. Only the rows and columns of the
+     * shape's extent (x0, y0)-(x1, y1), a pixel more each side and cut to the clip, are walked: outside it a sample
+     * line has no interval, so the spans are the whole clip's.
      *
      * @param  Closure(float): list<array{float, float}>  $at
      */
-    private function scan(Closure $at): string
+    private function scan(float $x0, float $y0, float $x1, float $y1, Closure $at): string
     {
-        $left = $this->clip->x;
-        $right = $this->clip->right();
+        $left = (int) self::clamp(floor($x0) - 1, $this->clip->x, $this->clip->right());
+        $right = (int) self::clamp(ceil($x1) + 1, $this->clip->x, $this->clip->right());
+        $top = (int) self::clamp(floor($y0) - 1, $this->clip->y, $this->clip->bottom());
+        $bottom = (int) self::clamp(ceil($y1) + 1, $this->clip->y, $this->clip->bottom());
         $out = '';
+        if ($right <= $left || $bottom <= $top) {
+            return $out;
+        }
 
         if ($this->edges === Edges::HARD) {
-            for ($row = $this->clip->y; $row < $this->clip->bottom(); $row++) {
+            for ($row = $top; $row < $bottom; $row++) {
                 $start = $end = -1;
                 foreach ($at($row + 0.5) as [$a, $b]) {
                     $first = (int) self::clamp(ceil($a - 0.5), $left, $right);
@@ -358,9 +368,11 @@ final class NativeScanner implements Scanner
         $weight = 1.0 / self::SAMPLES;
         $cover = array_fill(0, $width, 0.0);
         $delta = array_fill(0, $width + 1, 0.0);
-        for ($row = $this->clip->y; $row < $this->clip->bottom(); $row++) {
+        for ($row = $top; $row < $bottom; $row++) {
             $low = $width;
             $high = -1;
+            // the columns this row wrote in $cover or $delta; between two of them both are 0, so every pixel has one value
+            $touched = [];
             for ($k = 0; $k < self::SAMPLES; $k++) {
                 foreach ($at($row + ($k + 0.5) / self::SAMPLES) as [$a, $b]) {
                     $a = max($a, (float) $left);
@@ -370,6 +382,7 @@ final class NativeScanner implements Scanner
                     }
                     $ia = (int) floor($a);
                     $ib = (int) floor($b);
+                    $touched[$ia - $left] = $touched[$ia + 1 - $left] = $touched[$ib - $left] = true;
                     if ($ia === $ib) {
                         $cover[$ia - $left] += ($b - $a) * $weight;
                     } else {
@@ -394,23 +407,48 @@ final class NativeScanner implements Scanner
             $running = 0.0;
             $start = -1;
             $value = 0;
-            for ($i = $low; $i <= $last; $i++) {
+            // many written columns (a grid, a dense path): sorting them costs more than walking the row pixel by pixel
+            $dense = count($touched) * 8 >= $last - $low + 1;
+            $dense || ksort($touched);
+            $columns = array_keys($touched);
+            $next = 0;
+            for ($i = $low; $i <= $last;) {
                 $running += $delta[$i];
                 $c = $cover[$i] + $running;
                 $v = (int) floor(self::clamp($c, 0.0, 1.0) * 255 + 0.5);
-                if ($start >= 0 && $v === $value) {
+                if (! ($start >= 0 && $v === $value)) {
+                    if ($start >= 0 && $value > 0) {
+                        $out .= pack('vvvC', $row, $left + $start, $i - $start, $value);
+                    }
+                    $start = $i;
+                    $value = $v;
+                }
+                if ($dense) {
+                    $i++;
+
                     continue;
                 }
-                if ($start >= 0 && $value > 0) {
-                    $out .= pack('vvvC', $row, $left + $start, $i - $start, $value);
+                // the pixels up to the next written column hold cover 0 and delta 0: each is $running's value
+                while ($next < count($columns) && $columns[$next] <= $i) {
+                    $next++;
                 }
-                $start = $i;
-                $value = $v;
+                $to = $next < count($columns) && $columns[$next] <= $last ? $columns[$next] : $last + 1;
+                if ($to > $i + 1) {
+                    $w = (int) floor(self::clamp($running, 0.0, 1.0) * 255 + 0.5);
+                    if ($w !== $value) {
+                        if ($value > 0) {
+                            $out .= pack('vvvC', $row, $left + $start, $i + 1 - $start, $value);
+                        }
+                        $start = $i + 1;
+                        $value = $w;
+                    }
+                }
+                $i = $to;
             }
             if ($value > 0) {
                 $out .= pack('vvvC', $row, $left + $start, $last + 1 - $start, $value);
             }
-            for ($i = $low; $i <= $high; $i++) {
+            foreach ($columns as $i) {
                 $delta[$i] = 0.0;
                 if ($i < $width) {
                     $cover[$i] = 0.0;
@@ -575,5 +613,19 @@ final class NativeScanner implements Scanner
                 throw RasterizeException::pastLimit('A coordinate', $value, self::LIMIT);
             }
         }
+    }
+
+    public function batch(array $ops): array
+    {
+        return array_map(fn (array $op): string => match ($op[0] ?? null) {
+            self::PATH => $this->path($op[1], $op[2] === 1 ? FillRule::EVEN_ODD : FillRule::NON_ZERO),
+            self::ELLIPSE => $this->ellipse($op[1], $op[2], $op[3], $op[4]),
+            self::RING => $this->ring($op[1], $op[2], $op[3], $op[4], $op[5]),
+            self::ROUND_RECT => $this->roundRect($op[1], $op[2], $op[3], $op[4], $op[5]),
+            self::ROUND_RING => $this->roundRing($op[1], $op[2], $op[3], $op[4], $op[5], $op[6]),
+            self::SHADOW => $this->shadow($op[1], $op[2], $op[3], $op[4], $op[5], $op[6]),
+            self::POLYLINE => $this->polyline($op[1], $op[2]),
+            default => throw new RasterizeException('An op is not a list that starts with a Scanner op.'),
+        }, $ops);
     }
 }

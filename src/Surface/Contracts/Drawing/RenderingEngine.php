@@ -2,6 +2,8 @@
 
 namespace Surface\Contracts\Drawing;
 
+use Surface\Contracts\Drawing\Effects\FilterChain;
+use Surface\Contracts\Drawing\Effects\Glass;
 use Surface\Contracts\Fonts\Font;
 use Surface\Contracts\Framebuffers\Filter;
 use Surface\Contracts\Framebuffers\Framebuffer;
@@ -206,6 +208,40 @@ interface RenderingEngine
      * @throws DrawingException When the radii or the source rect are malformed, or radii are given under a turn, shear or uneven scale.
      */
     public function image(Framebuffer $source, float $x, float $y, ?float $width = null, ?float $height = null, float $opacity = 1.0, Filter $filter = Filter::NEAREST, ?array $radii = null, ?Color $tint = null, ?array $sourceRect = null): static;
+
+    /**
+     * Draws a group of things apart, then lays it down in one piece: a layer, as SVG's group with opacity, CSS's
+     * stacking context or Skia's saveLayer. $draw is called with this engine and draws what the layer holds, under the
+     * transform in force (and any it adds); it is clipped to the box. The box is [$x, $y, $width, $height], under an
+     * upright transform that scales x and y alike.
+     *
+     * The group is drawn over nothing, then passes through $filter (a chain over the box's pixels: a blur of the group, noise
+     * made where there is none), then lands inside the box at $opacity (0..1) through the rounded box ($radii, as for
+     * roundRect()). With $backdrop, before the group lands the pixels already drawn under the box are read (the box and a
+     * margin of the chain's reach), put through the chain, and laid back inside the rounded box: CSS's backdrop-filter, Skia's
+     * saveLayer with a backdrop. The chains work in device pixels, and the group lands at the layer's opacity but the
+     * filtered backdrop does not fade with it.
+     *
+     * A frame that clears, drawn again, redraws a backdrop layer whole whenever anything under its read area changes.
+     * A framebuffer that holds one page of the surface cannot draw layers. An image or a displacement map inside a layer is
+     * read each frame, so such a layer is redrawn every frame.
+     *
+     * @param  callable(static): void  $draw
+     * @param  float  $opacity  0..1
+     * @param  array{float, float, float, float}|null  $radii  top-left, top-right, bottom-right, bottom-left
+     *
+     * @throws DrawingException When the transform is not upright and even, the radii are malformed, or $draw leaves a push() open.
+     */
+    public function layer(float $x, float $y, float $width, float $height, callable $draw, float $opacity = 1.0, ?array $radii = null, ?FilterChain $filter = null, ?FilterChain $backdrop = null): static;
+
+    /**
+     * A glass pane: what is drawn under the rounded box so far, blurred and seen through it as $glass says (see Glass),
+     * at $opacity. Every engine blurs one shared backdrop region by a dual-filter pyramid and draws each pane as one
+     * pass over its own box. Needs an upright transform that scales x and y alike, as layer() does.
+     *
+     * @param  array{float, float, float, float}|null  $radii  [tl, tr, br, bl], held to 0..min(w, h)/2
+     */
+    public function glass(float $x, float $y, float $width, float $height, ?array $radii, Glass $glass, float $opacity = 1.0): static;
 
     /**
      * Text. ($x, $y) is the top-left of the first line box; "\n" starts a new

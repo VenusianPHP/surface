@@ -2,6 +2,7 @@
 
 namespace Surface\Contracts\Framebuffers;
 
+use Surface\Contracts\Drawing\Effects\FilterChain;
 use Surface\NutsAndBolts\Affine;
 use Surface\NutsAndBolts\GradientSpread;
 
@@ -39,6 +40,51 @@ interface Framebuffer
     public function paintSpans(string $spans, int $rgba8): static;
 
     /**
+     * The native buffer a rasterizer may paint spans straight into, as paintSpans() would (ext-fb's FbBuffer), or
+     * null when spans must go through paintSpans(). Whoever paints into it reports what it touched with paintedSpans().
+     */
+    public function spanSink(): ?object;
+
+    /**
+     * Glass (drawing-path spec G4), on RGBA8 scratch frames of one driver: this frame, ceil(w / 2) x ceil(h / 2), as one
+     * dual-filter (Kawase) level down from the region of $source. See PixelStore::kawaseDown().
+     */
+    public function kawaseDown(Framebuffer $source, Region $region): static;
+
+    /** One level up: this RGBA8 frame, at most twice $source on each side, from it by the 8-tap tent. */
+    public function kawaseUp(Framebuffer $source): static;
+
+    /**
+     * A glass pane blended into this framebuffer inside $clip, from a blurred level ($scale pixels a pixel, from
+     * ($originX, $originY)) and the sharp capture, RGBA8 frames of the same driver. See PixelStore::paintGlass().
+     *
+     * @param  array{float, float, float, float, array{float, float, float, float}}  $geometry  x0, y0, x1, y1, radii
+     * @param  list<float|int>  $look  [frost, refraction, bevel, saturation, light, grain, tint, rim, alpha]
+     */
+    public function paintGlass(array $geometry, Framebuffer $blur, int $scale, ?Framebuffer $sharp, int $originX, int $originY, array $look, Region $clip): static;
+
+    /**
+     * Records what spans painted into spanSink() touched, as paintSpans() records what it paints: one region a
+     * span list, null for one that painted nothing.
+     *
+     * @param  list<Region|null>  $regions
+     */
+    public function paintedSpans(array $regions): static;
+
+    /**
+     * Paint coverage masks in one 0xRRGGBBAA colour, in list order, each cut to
+     * $clip. A mask is [string $coverage, int $width, int $left, int $top]: rows
+     * of $width coverage bytes 0..255, top-down, its top-left pixel at ($left,
+     * $top), which may lie off the surface (within ±2^30). Every pixel of
+     * coverage above 0 is painted as a span of that coverage is by
+     * paintSpans(). The whole list is checked first; a bad mask, or a clip
+     * empty or outside the surface, throws and nothing is written.
+     *
+     * @param  list<array{string, int, int, int}>  $masks
+     */
+    public function paintMasks(array $masks, int $rgba8, Region $clip): static;
+
+    /**
      * Paint another framebuffer's pixels through $placement, which maps the
      * source's pixel coordinates onto this surface: scaled, turned, moved. A
      * pixel here is painted when its centre maps inside the source, from the
@@ -73,6 +119,24 @@ interface Framebuffer
      * @param  array{float, float, float, float, float, float}  $inverse
      */
     public function paintGradient(string $spans, string $ramp, string $kind, GradientSpread $spread, array $inverse): static;
+
+    /**
+     * Replaces the pixels of $region (null: the whole surface) with the result of a filter chain run over them. The
+     * chain's `source` is those pixels as they are (straight RGBA8; the steps work on premultiplied values and the result
+     * is straightened again); a blur, a displacement or a flood reads and writes only inside the region, and noise is a
+     * function of the position on the surface, so the same chain over the same pixels gives the same bytes at any place
+     * and on every driver. A paged framebuffer takes a region inside its current page.
+     *
+     * With $premultiplied the region's pixels are premultiplied RGBA8, as a layer drawn over nothing leaves them: they
+     * are the chain's source as they are, and the result is still written straight. An empty chain then only straightens.
+     */
+    public function filter(FilterChain $chain, ?Region $region = null, bool $premultiplied = false): static;
+
+    /**
+     * A new framebuffer of $width x $height pixels, blank, in RGBA8, of this framebuffer's driver (native stays native,
+     * extended stays in C): somewhere to draw a layer before it lands.
+     */
+    public function scratch(int $width, int $height): Framebuffer;
 
     public function clear(): static;
 

@@ -2,6 +2,7 @@
 
 namespace Surface\Rasterize;
 
+use Surface\Contracts\Framebuffers\Framebuffer;
 use Surface\Contracts\Framebuffers\Region;
 use Surface\Contracts\Rasterize\Edges;
 use Surface\Contracts\Rasterize\FillRule;
@@ -84,15 +85,7 @@ abstract class Rasterizer implements RasterizerContract
 
     public function polyline(array $points, float $stroke = 1.0, bool $closed = false): string
     {
-        self::numbers(['stroke' => $stroke]);
-        $flat = self::flatten($points);
-        if ($stroke <= 0 || $flat === []) {
-            return '';
-        }
-
-        return $this->thin($stroke)
-            ? $this->scanner->polyline($flat, $closed)
-            : $this->outline(array_chunk($flat, 2), $stroke, $closed);
+        return $this->scan($this->polylineOp($points, $stroke, $closed));
     }
 
     public function fillTriangle(float $x0, float $y0, float $x1, float $y1, float $x2, float $y2): string
@@ -111,6 +104,101 @@ abstract class Rasterizer implements RasterizerContract
 
     public function fillPath(array $contours, FillRule $rule = FillRule::NON_ZERO): string
     {
+        return $this->scan($this->pathOp($contours, $rule));
+    }
+
+    public function fillEllipse(float $cx, float $cy, float $rx, float $ry): string
+    {
+        return $this->scan($this->ellipseOp($cx, $cy, $rx, $ry));
+    }
+
+    public function strokeEllipse(float $cx, float $cy, float $rx, float $ry, float $stroke = 1.0): string
+    {
+        return $this->scan($this->ringOp($cx, $cy, $rx, $ry, $stroke));
+    }
+
+    public function fillRoundRect(float $x, float $y, float $width, float $height, array $radii): string
+    {
+        return $this->scan($this->roundRectOp($x, $y, $width, $height, $radii));
+    }
+
+    public function strokeRoundRect(float $x, float $y, float $width, float $height, array $radii, float $stroke): string
+    {
+        return $this->scan($this->roundRingOp($x, $y, $width, $height, $radii, $stroke));
+    }
+
+    public function shadow(float $x, float $y, float $width, float $height, float $radius, float $blur): string
+    {
+        return $this->scan($this->shadowOp($x, $y, $width, $height, $radius, $blur));
+    }
+
+    public function fillBatch(array $shapes, Framebuffer $target, bool $direct = true): void
+    {
+        [$ops, $colours] = $this->lower($shapes);
+        if ($ops === []) {
+            return;
+        }
+        foreach ($this->scanner->batch($ops) as $i => $spans) {
+            if ($spans !== '') {
+                $target->paintSpans($spans, $colours[$i]);
+            }
+        }
+    }
+
+    /**
+     * Shape commands as scanner ops and their colours, every shape checked; shapes that cover nothing dropped.
+     *
+     * @param  list<array<int, mixed>>  $shapes
+     * @return array{list<list<mixed>>, list<int>}
+     */
+    protected function lower(array $shapes): array
+    {
+        [$ops, $colours] = [[], []];
+        foreach ($shapes as $i => $c) {
+            // lowered exactly as the methods of these kinds lower them; the box kinds carry corners, the methods sizes
+            $op = match ($c[0] ?? null) {
+                'path' => $this->pathOp($c[1], $c[2]),
+                'polyline' => $this->polylineOp($c[1], $c[2], $c[3]),
+                'ellipse' => $this->ellipseOp($c[1], $c[2], $c[3], $c[4]),
+                'ring' => $this->ringOp($c[1], $c[2], $c[3], $c[4], $c[5]),
+                'roundrect' => $this->roundRectOp($c[1], $c[2], $c[3] - $c[1], $c[4] - $c[2], $c[5]),
+                'roundring' => $this->roundRingOp($c[1], $c[2], $c[3] - $c[1], $c[4] - $c[2], $c[5], $c[6]),
+                'shadow' => $this->shadowOp($c[1], $c[2], $c[3] - $c[1], $c[4] - $c[2], $c[5], $c[6]),
+                default => throw new RasterizeException("Shape {$i} is not a path, polyline, ellipse, ring, roundrect, roundring or shadow command."),
+            };
+            if ($op !== null) {
+                $ops[] = $op;
+                $colours[] = $c[self::COLOUR[$c[0]]];
+            }
+        }
+
+        return [$ops, $colours];
+    }
+
+    /** Where each shape command holds its colour. */
+    private const array COLOUR = ['path' => 3, 'polyline' => 4, 'ellipse' => 5, 'ring' => 6, 'roundrect' => 6, 'roundring' => 7, 'shadow' => 7];
+
+    /** @param list<mixed>|null $op */
+    private function scan(?array $op): string
+    {
+        return $op === null ? '' : $this->scanner->batch([$op])[0];
+    }
+
+    /** @return list<mixed>|null The scanner op the shape lowers to; null when it covers nothing. */
+    private function polylineOp(array $points, float $stroke, bool $closed): ?array
+    {
+        self::numbers(['stroke' => $stroke]);
+        $flat = self::flatten($points);
+        if ($stroke <= 0 || $flat === []) {
+            return null;
+        }
+
+        return $this->thin($stroke) ? [Scanner::POLYLINE, $flat, $closed] : $this->outlineOp(array_chunk($flat, 2), $stroke, $closed);
+    }
+
+    /** @return list<mixed>|null */
+    private function pathOp(array $contours, FillRule $rule): ?array
+    {
         $flat = [];
         foreach (array_values($contours) as $position => $contour) {
             if (! is_array($contour) || ! array_is_list($contour)) {
@@ -122,47 +210,52 @@ abstract class Rasterizer implements RasterizerContract
             }
         }
 
-        return $flat === [] ? '' : $this->scanner->path($flat, $rule);
+        return $flat === [] ? null : [Scanner::PATH, $flat, $rule === FillRule::EVEN_ODD ? 1 : 0];
     }
 
-    public function fillEllipse(float $cx, float $cy, float $rx, float $ry): string
+    /** @return list<mixed>|null */
+    private function ellipseOp(float $cx, float $cy, float $rx, float $ry): ?array
     {
         self::numbers(['cx' => $cx, 'cy' => $cy, 'rx' => $rx, 'ry' => $ry]);
 
-        return $rx <= 0 || $ry <= 0 ? '' : $this->scanner->ellipse($cx, $cy, $rx, $ry);
+        return $rx <= 0 || $ry <= 0 ? null : [Scanner::ELLIPSE, $cx, $cy, $rx, $ry];
     }
 
-    public function strokeEllipse(float $cx, float $cy, float $rx, float $ry, float $stroke = 1.0): string
+    /** @return list<mixed>|null */
+    private function ringOp(float $cx, float $cy, float $rx, float $ry, float $stroke): ?array
     {
         self::numbers(['cx' => $cx, 'cy' => $cy, 'rx' => $rx, 'ry' => $ry, 'stroke' => $stroke]);
 
-        return $rx <= 0 || $ry <= 0 || $stroke <= 0 ? '' : $this->scanner->ring($cx, $cy, $rx, $ry, $stroke);
+        return $rx <= 0 || $ry <= 0 || $stroke <= 0 ? null : [Scanner::RING, $cx, $cy, $rx, $ry, $stroke];
     }
 
-    public function fillRoundRect(float $x, float $y, float $width, float $height, array $radii): string
+    /** @return list<mixed>|null */
+    private function roundRectOp(float $x, float $y, float $width, float $height, array $radii): ?array
     {
         self::numbers(['x' => $x, 'y' => $y, 'width' => $width, 'height' => $height]);
         $held = self::radii($radii, $width, $height);
 
-        return $width <= 0 || $height <= 0 ? '' : $this->scanner->roundRect($x, $y, $x + $width, $y + $height, $held);
+        return $width <= 0 || $height <= 0 ? null : [Scanner::ROUND_RECT, $x, $y, $x + $width, $y + $height, $held];
     }
 
-    public function strokeRoundRect(float $x, float $y, float $width, float $height, array $radii, float $stroke): string
+    /** @return list<mixed>|null */
+    private function roundRingOp(float $x, float $y, float $width, float $height, array $radii, float $stroke): ?array
     {
         self::numbers(['x' => $x, 'y' => $y, 'width' => $width, 'height' => $height, 'stroke' => $stroke]);
         $held = self::radii($radii, $width, $height);
 
-        return $width <= 0 || $height <= 0 || $stroke <= 0 ? '' : $this->scanner->roundRing($x, $y, $x + $width, $y + $height, $held, $stroke);
+        return $width <= 0 || $height <= 0 || $stroke <= 0 ? null : [Scanner::ROUND_RING, $x, $y, $x + $width, $y + $height, $held, $stroke];
     }
 
-    public function shadow(float $x, float $y, float $width, float $height, float $radius, float $blur): string
+    /** @return list<mixed>|null */
+    private function shadowOp(float $x, float $y, float $width, float $height, float $radius, float $blur): ?array
     {
         self::numbers(['x' => $x, 'y' => $y, 'width' => $width, 'height' => $height, 'radius' => $radius, 'blur' => $blur]);
         if ($width <= 0 || $height <= 0) {
-            return '';
+            return null;
         }
 
-        return $this->scanner->shadow($x, $y, $x + $width, $y + $height, self::hold($radius, $width, $height), max(0.0, $blur));
+        return [Scanner::SHADOW, $x, $y, $x + $width, $y + $height, self::hold($radius, $width, $height), max(0.0, $blur)];
     }
 
     /**
@@ -201,9 +294,18 @@ abstract class Rasterizer implements RasterizerContract
     /** @param list<array{float, float}> $points */
     private function outline(array $points, float $stroke, bool $closed): string
     {
+        return $this->scan($this->outlineOp($points, $stroke, $closed));
+    }
+
+    /**
+     * @param  list<array{float, float}>  $points
+     * @return list<mixed>|null
+     */
+    private function outlineOp(array $points, float $stroke, bool $closed): ?array
+    {
         $contours = Stroker::outline($points, $stroke, $closed);
 
-        return $contours === [] ? '' : $this->scanner->path($contours, FillRule::NON_ZERO);
+        return $contours === [] ? null : [Scanner::PATH, $contours, 0];
     }
 
     /** @return list<float> */

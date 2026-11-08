@@ -55,9 +55,25 @@ final class Rgba8Source implements Framebuffer
 
     public function paintSpans(string $spans, int $rgba8): static { throw new LogicException('read-only source'); }
 
+    public function paintMasks(array $masks, int $rgba8, Region $clip): static { throw new LogicException('read-only source'); }
+
+    public function spanSink(): ?object { return null; }
+
+    public function kawaseDown(Framebuffer $source, Region $region): static { throw new LogicException('read-only source'); }
+
+    public function kawaseUp(Framebuffer $source): static { throw new LogicException('read-only source'); }
+
+    public function paintGlass(array $geometry, Framebuffer $blur, int $scale, ?Framebuffer $sharp, int $originX, int $originY, array $look, Region $clip): static { throw new LogicException('read-only source'); }
+
+    public function paintedSpans(array $regions): static { throw new LogicException('read-only source'); }
+
     public function paintImage(Framebuffer $source, Affine $placement, int $opacity = 255, Filter $filter = Filter::NEAREST, ?Region $clip = null, int $tint = 0xFFFFFFFF, ?array $window = null, ?string $coverage = null): static { throw new LogicException('read-only source'); }
 
     public function paintGradient(string $spans, string $ramp, string $kind, GradientSpread $spread, array $inverse): static { throw new LogicException('read-only source'); }
+
+    public function scratch(int $width, int $height): Framebuffer { throw new LogicException('read-only source'); }
+
+    public function filter(\Surface\Contracts\Drawing\Effects\FilterChain $chain, ?Region $region = null, bool $premultiplied = false): static { throw new LogicException('read-only source'); }
 
     public function clear(): static { throw new LogicException('read-only source'); }
 

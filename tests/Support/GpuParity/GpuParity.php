@@ -10,6 +10,19 @@ use Surface\Contracts\Framebuffers\BitDepth;
 use Surface\Contracts\Framebuffers\BitOrder;
 use Surface\Contracts\Framebuffers\Endianness;
 use Surface\Contracts\Framebuffers\Filter;
+use Surface\Contracts\Drawing\Effects\Blend;
+use Surface\Contracts\Drawing\Effects\BlendMode;
+use Surface\Contracts\Drawing\Effects\Blur;
+use Surface\Contracts\Drawing\Effects\ColorMatrix;
+use Surface\Contracts\Drawing\Effects\Composite;
+use Surface\Contracts\Drawing\Effects\CompositeOperator;
+use Surface\Contracts\Drawing\Effects\Displace;
+use Surface\Contracts\Drawing\Effects\EdgeMode;
+use Surface\Contracts\Drawing\Effects\Field;
+use Surface\Contracts\Drawing\Effects\Table;
+use Surface\Contracts\Drawing\Effects\FilterChain;
+use Surface\Contracts\Drawing\Effects\Flood;
+use Surface\Contracts\Drawing\Effects\Noise;
 use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\Framebuffer;
 use Surface\Contracts\Framebuffers\PixelFormat;
@@ -262,6 +275,108 @@ final class GpuParity
                     new \Surface\Contracts\Drawing\StrokeStyle(width: 5.0, cap: \Surface\Contracts\Rasterize\StrokeCap::ROUND));
                 $g->fill($box(40, 18, 62, 30), new \Surface\NutsAndBolts\LinearGradient(40, 0, 62, 0, [[0.0, Color::rgba(0, 0, 0, 0.0)], [1.0, Color::rgba(0, 0, 0, 0.8)]]));
             }],
+            // A group drawn apart and laid down at its opacity: whole pixels, nested, no filter: every pixel is exact.
+            'layers' => [true, function (RenderingEngine $g): void {
+                $g->clear(Color::rgb(235, 235, 245));
+                $g->layer(4, 4, 24, 20, function (RenderingEngine $l): void {
+                    $l->fillRect(0, 0, 18, 14, Color::rgb(220, 30, 30));
+                    $l->fillRect(10, 8, 18, 14, Color::rgb(30, 30, 220));
+                }, 0.5);
+                $g->layer(32, 2, 28, 28, function (RenderingEngine $l): void {
+                    $l->fillRect(0, 0, 40, 40, Color::rgba(0, 150, 0, 0.6));
+                    $l->layer(40, 8, 12, 12, fn (RenderingEngine $m) => $m->fillRect(0, 0, 64, 32, Color::rgb(0, 0, 0)), 0.75);
+                });
+            }],
+            // A rounded box: the rounded coverage at the edge, so tolerant there like every rounded shape.
+            'rounded layers' => [false, function (RenderingEngine $g): void {
+                $g->clear(Color::rgb(235, 235, 245));
+                $g->layer(4, 4, 28, 24, fn (RenderingEngine $l) => $l->fillRect(0, 0, 64, 32, Color::rgb(30, 150, 90)), 0.8, [10, 4, 10, 4]);
+                $g->layer(36, 6, 24, 20, function (RenderingEngine $l): void {
+                    $l->fillRect(0, 0, 64, 16, Color::rgb(200, 120, 20));
+                    $l->fillRect(0, 16, 64, 16, Color::rgb(20, 120, 200));
+                }, 1.0, [8, 8, 8, 8]);
+            }],
+            // Box blurs and kernels are integer arithmetic: exact. A colour matrix and a composite are float: one level.
+            'layer filters' => [true, function (RenderingEngine $g): void {
+                $g->clear(Color::rgb(250, 250, 250));
+                $g->layer(2, 2, 28, 28, fn (RenderingEngine $l) => $l->fillRect(6, 6, 16, 16, Color::rgb(220, 40, 40)), 1.0, null,
+                    FilterChain::of(Blur::gaussian(2.5, 2.5)));
+                $g->layer(34, 2, 28, 28, fn (RenderingEngine $l) => $l->fillRect(6, 6, 16, 16, Color::rgb(40, 40, 220)), 1.0, null,
+                    FilterChain::of(Blur::gaussian(1.2, 0.6, EdgeMode::DUPLICATE)));
+            }],
+            'layer filters in float' => [true, function (RenderingEngine $g): void {
+                $g->clear(Color::rgb(250, 250, 250));
+                $g->layer(2, 2, 28, 28, fn (RenderingEngine $l) => $l->fillRect(4, 4, 20, 20, Color::rgb(220, 40, 40)), 1.0, null,
+                    FilterChain::of(ColorMatrix::saturate(0.4), ColorMatrix::hueRotate(60.0)));
+                $g->layer(34, 2, 28, 28, fn (RenderingEngine $l) => $l->fillRect(4, 4, 20, 20, Color::rgb(40, 40, 220)), 0.9, null,
+                    FilterChain::of(new Flood(Color::rgba(200, 40, 90, 0.6), 'f'), new Composite('source', CompositeOperator::ATOP, in: 'f'),
+                        new Flood(Color::rgb(30, 200, 90), 'g'), new Blend('g', BlendMode::MULTIPLY)));
+            }],
+            // A backdrop's blur reads what was drawn under the box: the box's own pixels are the only ones that change.
+            'backdrop blur' => [true, function (RenderingEngine $g): void {
+                $g->clear(Color::rgb(30, 30, 40));
+                $g->fillRect(0, 0, 32, 32, Color::rgb(230, 60, 60));
+                $g->fillRect(32, 0, 32, 32, Color::rgb(60, 60, 230));
+                $g->fillRect(24, 4, 16, 4, Color::rgb(240, 240, 80));
+                $g->layer(12, 8, 40, 18, fn (RenderingEngine $l) => $l->fillRect(0, 0, 64, 32, Color::rgba(255, 255, 255, 0.15)), 1.0, null, null,
+                    FilterChain::of(Blur::gaussian(3.0, 3.0, EdgeMode::DUPLICATE)));
+            }],
+            'backdrop spiral blur' => [true, function (RenderingEngine $g): void {
+                $g->clear(Color::rgb(30, 30, 40));
+                $g->fillRect(0, 0, 32, 32, Color::rgb(230, 60, 60));
+                $g->fillRect(32, 0, 32, 32, Color::rgb(60, 60, 230));
+                $g->layer(12, 8, 40, 18, fn () => null, 1.0, null, null, FilterChain::of(Blur::spiral(5.0, 16, EdgeMode::DUPLICATE)));
+            }],
+            // Hash noise is integer arithmetic of the surface position, and turbulence, spiral reads and displacement are worked in float32 to the same rounding: every engine measured equal to Velvet, so no tolerance.
+            'layer noise' => [true, function (RenderingEngine $g): void {
+                $g->clear(Color::rgb(200, 200, 210));
+                $g->layer(2, 2, 28, 28, fn () => null, 0.5, null, FilterChain::of(Noise::hash(7)));
+                $g->layer(34, 2, 28, 28, fn () => null, 0.8, null, FilterChain::of(Noise::turbulence(0.09, 0.09, 3, 11)));
+            }],
+            // A displacement map moves the pixels; with bands each channel samples along the displacement (dispersion).
+            'layer displacement' => [true, function (RenderingEngine $g): void {
+                $map = GpuParity::map();
+                $g->clear(Color::rgb(245, 245, 245));
+                $g->layer(2, 2, 28, 28, function (RenderingEngine $l): void {
+                    $l->fillRect(4, 4, 8, 20, Color::rgb(200, 30, 30));
+                    $l->fillRect(14, 4, 8, 20, Color::rgb(30, 30, 200));
+                }, 1.0, null, FilterChain::of(new Displace($map, 6.0)));
+                $g->layer(34, 2, 28, 28, fn (RenderingEngine $l) => $l->fillRect(6, 6, 16, 16, Color::rgb(30, 30, 30)), 1.0, null,
+                    FilterChain::of(new Displace($map, 8.0, bands: 7, spread: 0.4)));
+            }],
+            // Images made from the pixel position: a rounded box's distance and direction, its inside, a ramp. The distance is worked in float32 on a GPU and in double on the CPU, so a byte may differ by one.
+            'layer fields' => [true, function (RenderingEngine $g): void {
+                $g->clear(Color::rgb(90, 90, 100));
+                $g->layer(2, 2, 28, 28, fn () => null, 1.0, null, FilterChain::of(Field::roundedBox([4.3, 5.2, 27.6, 26.1], [6.0, 3.0, 8.5, 1.0], -6.0, 0.0)));
+                $g->layer(34, 2, 28, 12, fn () => null, 1.0, null, FilterChain::of(Field::inside([36.0, 3.0, 61.0, 13.0], [5.0, 5.0, 5.0, 5.0])));
+                $g->layer(34, 16, 28, 14, fn () => null, 0.8, null, FilterChain::of(Field::ramp(16.0, 30.0)));
+            }, 1],
+            // A table is a lookup of the straight colour: exact on every engine.
+            'layer tables' => [true, function (RenderingEngine $g): void {
+                $g->clear(Color::rgb(200, 200, 210));
+                $invert = array_map(fn (int $i): int => 255 - $i, range(0, 255));
+                $half = array_map(fn (int $i): int => intdiv($i, 2) + 40, range(0, 255));
+                $g->layer(2, 2, 28, 28, fn (RenderingEngine $l) => $l->fillRect(4, 4, 20, 20, Color::rgba(220, 40, 40, 0.7)), 1.0, null, FilterChain::of(new Table($invert, null, $half, $half)));
+                $g->layer(34, 2, 28, 28, fn () => null, 1.0, null, FilterChain::of(Field::ramp(2.0, 30.0), Table::rgb(fn (float $v): float => $v ** 3)));
+            }],
+            // A displacement whose map is made in the chain (the last colour matrix is float, so the map is off by one in places, which moves a sharp edge by a little: only the pixels away from an edge are held): a field, a table for the bend and a matrix for the shift, as a glass pane's rim.
+            'layer displacement by a made map' => [false, function (RenderingEngine $g): void {
+                $g->clear(Color::rgb(245, 245, 245));
+                $g->layer(2, 2, 28, 28, function (RenderingEngine $l): void {
+                    $l->fillRect(4, 4, 8, 20, Color::rgb(200, 30, 30));
+                    $l->fillRect(14, 4, 8, 20, Color::rgb(30, 30, 200));
+                }, 1.0, null, FilterChain::of(
+                    Field::roundedBox([3.0, 3.0, 29.0, 29.0], [6.0, 6.0, 6.0, 6.0], -8.0, 0.0, 'f'),
+                    Field::inside([3.0, 3.0, 29.0, 29.0], [6.0, 6.0, 6.0, 6.0], 'in'),
+                    new ColorMatrix([0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], 'f', 'x'),
+                    new ColorMatrix([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1], 'f', 't'),
+                    Table::rgb(fn (float $v): float => $v ** 3, 't', 'b'),
+                    Composite::arithmetic('in', 1.0, 0.0, 0.0, 0.0, in: 'b', result: 'p'),
+                    Composite::arithmetic('p', 1.0, 0.0, 0.0, 0.0, in: 'x', result: 'q'),
+                    new ColorMatrix([-1, 0, 0.5, 0, 0.5, 0, -1, 0.5, 0, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 'q', 'm'),
+                    new Displace('m', 8.0, in: 'source'),
+                ));
+            }, 4],
             'images scaled and turned' => [false, function (RenderingEngine $g): void {
                 $g->clear(Color::hex('#202020'));
                 $g->image(GpuParity::tile(), 2.5, 3.5, 20, 12, filter: Filter::LINEAR);
@@ -287,6 +402,19 @@ final class GpuParity
     }
 
     /** An 8 x 8 image with no symmetry: a red-to-green ramp across, blue growing down, one white corner. */
+    /** A 64 x 32 displacement map: red climbs along x, green along y, blue holds mid-grey. */
+    public static function map(): Framebuffer
+    {
+        $bytes = '';
+        for ($y = 0; $y < self::HEIGHT; $y++) {
+            for ($x = 0; $x < self::WIDTH; $x++) {
+                $bytes .= chr(($x * 4) % 256).chr(($y * 8) % 256)."\x80\xff";
+            }
+        }
+
+        return (new NativeFullFramebuffer(FormatSpec::rgba8(), self::WIDTH, self::HEIGHT))->writeRgba8($bytes, self::WIDTH, self::HEIGHT);
+    }
+
     public static function tile(): Framebuffer
     {
         $tile = new NativeFullFramebuffer(FormatSpec::rgba8(), 8, 8);

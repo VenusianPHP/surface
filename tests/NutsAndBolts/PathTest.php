@@ -198,3 +198,40 @@ it('measures the direction of a curve by its tangent', function (): void {
     expect($cubic->pointAt(0)['angle'])->toEqualWithDelta(M_PI / 2, 1e-9)
         ->and($cubic->pointAt($cubic->length())['angle'])->toEqualWithDelta(-M_PI / 2, 1e-9);
 });
+
+it('maps a path as the builder would, point by point, and goes on from where it ended', function () {
+    $path = (new Path())->moveTo(1, 2)->lineTo(5, 2)->quadTo(7, 3, 6, 6)->close()->lineTo(9, 9)->cubicTo(10, 1, 11, 2, 12, 3);
+    $matrix = new Affine(1.5, 0.25, -0.5, 2.0, 10.0, -4.0);
+
+    $by_builder = new Path();
+    foreach ($path->ops() as $op) {
+        $points = [];
+        for ($i = 1; $i < count($op); $i += 2) {
+            $points = [...$points, ...$matrix->apply($op[$i], $op[$i + 1])];
+        }
+        match ($op[0]) {
+            'M' => $by_builder->moveTo(...$points),
+            'L' => $by_builder->lineTo(...$points),
+            'Q' => $by_builder->quadTo(...$points),
+            'C' => $by_builder->cubicTo(...$points),
+            'Z' => $by_builder->close(),
+        };
+    }
+    $mapped = $path->transformed($matrix);
+
+    expect($mapped->ops())->toBe($by_builder->ops());
+    // both go on the same way: a segment after a close begins with a move to the start of the subpath
+    expect($mapped->close()->lineTo(0, 0)->ops())->toBe($by_builder->close()->lineTo(0, 0)->ops());
+});
+
+it('names the point a transform sends past the finite', function () {
+    (new Path())->moveTo(1, 1)->lineTo(2, 2)->transformed(new Affine(1.0e308, 0.0, 0.0, 1.0, 0.0, 0.0)->multiply(new Affine(10.0, 0.0, 0.0, 1.0, 0.0, 0.0)));
+})->throws(InvalidArgumentException::class);
+
+it('gives the box of its points and control points, and forgets it when a segment is added', function () {
+    $path = (new Path())->moveTo(2, 3)->cubicTo(-4, 10, 8, 12, 6, 1)->close();
+
+    expect($path->bounds())->toBe([-4.0, 1.0, 8.0, 12.0]);
+    expect($path->lineTo(20, -5)->bounds())->toBe([-4.0, -5.0, 20.0, 12.0])
+        ->and((new Path())->bounds())->toBeNull();
+});

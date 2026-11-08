@@ -19,6 +19,21 @@ interface Scanner
     /** 2³⁰: past it, the one-pixel line arithmetic would leave 64-bit integers. */
     public const float LIMIT = 1073741824.0;
 
+    /** The ops batch() takes, numbered as ext-rasterize's RASTER_OP_*. */
+    public const int PATH = 1;
+
+    public const int ELLIPSE = 2;
+
+    public const int RING = 3;
+
+    public const int ROUND_RECT = 4;
+
+    public const int ROUND_RING = 5;
+
+    public const int SHADOW = 6;
+
+    public const int POLYLINE = 7;
+
     public function clip(): Region;
 
     public function edges(): Edges;
@@ -60,4 +75,15 @@ interface Scanner
      * @param  list<float>  $points  A flat x, y, x, y… list.
      */
     public function polyline(array $points, bool $closed): string;
+
+    /**
+     * Many shapes in one call, answered as the calls of the same names answer them: one span string an op, in order.
+     * An op is [kind, ...that method's arguments, every one given], except a path's rule, which is 0 for non-zero and
+     * 1 for even-odd: [PATH, contours, 0|1], [ELLIPSE, cx, cy, rx, ry], [ROUND_RECT, x0, y0, x1, y1, radii]… A bad op
+     * throws, and the batch answers nothing.
+     *
+     * @param  list<list<mixed>>  $ops
+     * @return list<string>
+     */
+    public function batch(array $ops): array;
 }

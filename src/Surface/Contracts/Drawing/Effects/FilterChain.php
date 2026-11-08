@@ -7,7 +7,7 @@ use Surface\Contracts\Drawing\DrawingException;
 /**
  * Filters run in the order given, as the primitives of an SVG filter do, or the list of a CSS filter: each step reads
  * the result of the one before, unless it names another input ('source', the image the chain starts from, or the name
- * an earlier step gave its result). The chain's result is its last step's. Colours are sRGB values throughout.
+ * an earlier step gave its result). The chain's result is its last step's; a chain of no steps gives its source back. Colours are sRGB values throughout.
  */
 final readonly class FilterChain
 {
@@ -17,12 +17,12 @@ final readonly class FilterChain
     /**
      * @param  list<FilterStep>  $steps
      *
-     * @throws DrawingException When there is no step, a result is named 'source' or twice, or a step reads a name no earlier step made.
+     * @throws DrawingException When the steps are not a list, a result is named 'source' or twice, or a step reads a name no earlier step made.
      */
     public function __construct(array $steps)
     {
-        if ($steps === [] || ! array_is_list($steps)) {
-            throw new DrawingException('A filter chain is a list of steps, at least one.');
+        if (! array_is_list($steps)) {
+            throw new DrawingException('A filter chain is a list of steps.');
         }
         $known = [FilterStep::SOURCE => true];
         foreach ($steps as $i => $step) {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Surface\Drawing\Velvet;
+namespace Surface\Framebuffers\Native;
 
 use Surface\Contracts\Drawing\Effects\Blend;
 use Surface\Contracts\Drawing\Effects\BlendMode;
@@ -14,28 +14,40 @@ use Surface\Contracts\Drawing\Effects\Displace;
 use Surface\Contracts\Drawing\Effects\EdgeMode;
 use Surface\Contracts\Drawing\Effects\FilterChain;
 use Surface\Contracts\Drawing\Effects\FilterStep;
+use Surface\Contracts\Drawing\Effects\Field;
+use Surface\Contracts\Drawing\Effects\FieldKind;
 use Surface\Contracts\Drawing\Effects\Flood;
 use Surface\Contracts\Drawing\Effects\Noise;
 use Surface\Contracts\Drawing\Effects\NoiseType;
+use Surface\Contracts\Drawing\Effects\Table;
 use Surface\NutsAndBolts\Color;
 
 /**
- * Runs a FilterChain over an image, the reference every engine is held to. An image is a flat list of premultiplied
+ * Runs a FilterChain over pixels, in PHP: the native store's side of Framebuffer::filter() (ext-fb has the same in C), the reference every engine is held to. An image is a flat list of premultiplied
  * RGBA8 values (4 per pixel, row by row): a blur, a composite and a displacement are exact there, as on a GPU texture;
  * a colour matrix and a noise work on the straight colour and premultiply again. Every step rounds to nearest, halves up.
  */
-final class FilterRunner
+final class NativeFilters
 {
     /** Turbulence's lattice, per seed: the reference code of the SVG specification. */
     private static array $lattices = [];
 
     /**
-     * @param  list<int>  $source  Premultiplied RGBA8, $width x $height.
-     * @param  int  $originX  Where the image's top left lies on the surface: noise is a function of the surface's position.
-     * @return list<int> The chain's result, premultiplied RGBA8, the same size.
+     * Runs a chain over the pixels of a region. The pixels are straight RGBA8 in, straight RGBA8 out; inside, every step
+     * works on premultiplied values.
+     *
+     * @param  string  $rgba8  $width x $height straight RGBA8 pixels, the chain's `source`.
+     * @param  bool  $premultiplied  The pixels in are premultiplied already (a layer's): they are taken as they are.
+     * @param  int  $originX  Where the region's top left lies on the surface: noise is a function of the surface's position.
+     * @return string The chain's last result, straight RGBA8, the same size.
      */
-    public static function run(FilterChain $chain, array $source, int $width, int $height, int $originX = 0, int $originY = 0): array
+    public static function run(FilterChain $chain, string $rgba8, int $width, int $height, int $originX = 0, int $originY = 0, bool $premultiplied = false): string
     {
+        $source = [];
+        for ($i = 0, $n = $width * $height * 4; $i < $n; $i += 4) {
+            $a = ord($rgba8[$i + 3]);
+            array_push($source, $premultiplied ? ord($rgba8[$i]) : self::premultiply(ord($rgba8[$i]), $a), $premultiplied ? ord($rgba8[$i + 1]) : self::premultiply(ord($rgba8[$i + 1]), $a), $premultiplied ? ord($rgba8[$i + 2]) : self::premultiply(ord($rgba8[$i + 2]), $a), $a);
+        }
         $results = [FilterStep::SOURCE => $source];
         $previous = $source;
         foreach ($chain->steps as $step) {
@@ -47,15 +59,27 @@ final class FilterRunner
                 $step instanceof Composite => self::composite($input($step->in), $input($step->in2), $step),
                 $step instanceof Blend => self::blend($input($step->in), $input($step->in2), $step->mode),
                 $step instanceof Noise => self::noise($step, $width, $height, $originX, $originY),
-                $step instanceof Displace => self::displace($input($step->in), $width, $height, $step),
+                $step instanceof Displace => self::displace($input($step->in), $width, $height, $step, is_string($step->map) ? $results[$step->map] : []),
+                $step instanceof Field => self::field($step, $width, $height, $originX, $originY),
+                $step instanceof Table => self::table($input($step->in), $step),
             };
             $previous = $made;
             if (($name = $step->named()) !== null) {
                 $results[$name] = $made;
             }
         }
+        $out = '';
+        for ($i = 0, $n = $width * $height * 4; $i < $n; $i += 4) {
+            $a = $previous[$i + 3];
+            if ($a === 0) {
+                $out .= "\0\0\0\0";
 
-        return $previous;
+                continue;
+            }
+            $out .= chr(min(255, intdiv($previous[$i] * 255 + intdiv($a, 2), $a))).chr(min(255, intdiv($previous[$i + 1] * 255 + intdiv($a, 2), $a))).chr(min(255, intdiv($previous[$i + 2] * 255 + intdiv($a, 2), $a))).chr($a);
+        }
+
+        return $out;
     }
 
     /** @param list<int> $image */
@@ -85,16 +109,72 @@ final class FilterRunner
         if ($sigma < 2.0) {
             return self::kernelAxis($image, $width, $height, $horizontal, self::kernel($sigma), $edge);
         }
-        $d = (int) floor($sigma * 3 * sqrt(2 * M_PI) / 4 + 0.5);
-        if ($d % 2 === 1) {
-            $left = intdiv($d - 1, 2);
-
-            return self::boxAxis(self::boxAxis(self::boxAxis($image, $width, $height, $horizontal, $d, $left, $edge), $width, $height, $horizontal, $d, $left, $edge), $width, $height, $horizontal, $d, $left, $edge);
+        foreach (self::boxes($sigma) as [$size, $left]) {
+            $image = self::boxAxis($image, $width, $height, $horizontal, $size, $left, $edge);
         }
-        $image = self::boxAxis($image, $width, $height, $horizontal, $d, intdiv($d, 2), $edge);
-        $image = self::boxAxis($image, $width, $height, $horizontal, $d, intdiv($d, 2) - 1, $edge);
 
-        return self::boxAxis($image, $width, $height, $horizontal, $d + 1, intdiv($d, 2), $edge);
+        return $image;
+    }
+
+    /**
+     * The three box blurs of a deviation of 2 or more: [size, left] each, left being how many pixels of the window lie before the pixel.
+     *
+     * @return list<array{int, int}>
+     */
+    public static function boxes(float $sigma): array
+    {
+        $d = (int) floor($sigma * 3 * sqrt(2 * M_PI) / 4 + 0.5);
+
+        return $d % 2 === 1
+            ? [[$d, intdiv($d - 1, 2)], [$d, intdiv($d - 1, 2)], [$d, intdiv($d - 1, 2)]]
+            : [[$d, intdiv($d, 2)], [$d, intdiv($d, 2) - 1], [$d + 1, intdiv($d, 2)]];
+    }
+
+    /** @return list<int> Weights for offsets -R..R, summing to 256, for a deviation below 2. */
+    public static function kernelWeights(float $sigma): array
+    {
+        return self::kernel($sigma);
+    }
+
+    /**
+     * The sample offsets of a spiral blur: point i of N at radius √((i + ½) / N) × $radius, angle i × the golden angle.
+     *
+     * @return list<array{float, float}>
+     */
+    public static function spiralOffsets(float $radius, int $samples): array
+    {
+        $offsets = [];
+        for ($i = 0; $i < $samples; $i++) {
+            $reach = sqrt(($i + 0.5) / $samples) * $radius;
+            $offsets[] = [cos($i * 2.399963229728653) * $reach, sin($i * 2.399963229728653) * $reach];
+        }
+
+        return $offsets;
+    }
+
+    /**
+     * The frequencies a stitched noise uses over a tile: each moved to the whole number of periods the tile holds that is nearer.
+     *
+     * @return array{float, float}
+     */
+    public static function stitched(Noise $noise, int $tileWidth, int $tileHeight): array
+    {
+        $frequencyX = $noise->frequencyX;
+        $frequencyY = $noise->frequencyY;
+        if ($noise->stitch) {
+            if ($frequencyX != 0.0) {
+                $low = floor($tileWidth * $frequencyX) / $tileWidth;
+                $high = ceil($tileWidth * $frequencyX) / $tileWidth;
+                $frequencyX = $low > 0.0 && $frequencyX / $low < $high / $frequencyX ? $low : $high;
+            }
+            if ($frequencyY != 0.0) {
+                $low = floor($tileHeight * $frequencyY) / $tileHeight;
+                $high = ceil($tileHeight * $frequencyY) / $tileHeight;
+                $frequencyY = $low > 0.0 && $frequencyY / $low < $high / $frequencyY ? $low : $high;
+            }
+        }
+
+        return [$frequencyX, $frequencyY];
     }
 
     /** @return list<int> Weights for offsets -R..R, summing to 256. */
@@ -198,11 +278,7 @@ final class FilterRunner
      */
     private static function spiral(array $image, int $width, int $height, float $radius, int $samples, EdgeMode $edge): array
     {
-        $offsets = [];
-        for ($i = 0; $i < $samples; $i++) {
-            $reach = sqrt(($i + 0.5) / $samples) * $radius;
-            $offsets[] = [cos($i * 2.399963229728653) * $reach, sin($i * 2.399963229728653) * $reach];
-        }
+        $offsets = self::spiralOffsets($radius, $samples);
         $out = $image;
         for ($y = 0; $y < $height; $y++) {
             for ($x = 0; $x < $width; $x++) {
@@ -232,8 +308,9 @@ final class FilterRunner
      */
     private static function bilinear(array $image, int $width, int $height, float $u, float $v, EdgeMode $edge): array
     {
-        $fx = $u - 0.5;
-        $fy = $v - 0.5;
+        // far enough to be off any image, and a number a cast can hold
+        $fx = max(-1.0e9, min(1.0e9, $u - 0.5));
+        $fy = max(-1.0e9, min(1.0e9, $v - 0.5));
         $x0 = (int) floor($fx);
         $y0 = (int) floor($fy);
         $tx = (int) floor(($fx - $x0) * 256);
@@ -286,6 +363,98 @@ final class FilterRunner
             $out[$at + 1] = (int) floor($ng * $na * 255 + 0.5);
             $out[$at + 2] = (int) floor($nb * $na * 255 + 0.5);
             $out[$at + 3] = (int) floor($na * 255 + 0.5);
+        }
+
+        return $out;
+    }
+
+    /**
+     * Raven's sd_round_box_normal (ui.frag:42-57) at a point: the distance to the rounded box (negative inside) and the
+     * direction pointing out of it. $box is [x0, y0, x1, y1], $radii [top left, top right, bottom right, bottom left].
+     *
+     * @param  array{float, float, float, float}  $box
+     * @param  array{float, float, float, float}  $radii
+     * @return array{float, float, float}
+     */
+    public static function boxDistance(float $px, float $py, array $box, array $radii): array
+    {
+        [$x0, $y0, $x1, $y1] = $box;
+        $hx = ($x1 - $x0) / 2;
+        $hy = ($y1 - $y0) / 2;
+        $p = [$px - ($x0 + $x1) / 2, $py - ($y0 + $y1) / 2];
+        $radius = $p[0] < 0.0 ? ($p[1] < 0.0 ? $radii[0] : $radii[3]) : ($p[1] < 0.0 ? $radii[1] : $radii[2]);
+        $radius = min($radius, $hx, $hy);
+        $sideX = $p[0] < 0.0 ? -1.0 : 1.0;
+        $sideY = $p[1] < 0.0 ? -1.0 : 1.0;
+        $qx = abs($p[0]) - $hx + $radius;
+        $qy = abs($p[1]) - $hy + $radius;
+        $corner = hypot(max($qx, 0.0), max($qy, 0.0));
+        if ($qx > 0.0 && $qy > 0.0) {
+            $nx = $sideX * ($qx / max($corner, 1e-4));
+            $ny = $sideY * ($qy / max($corner, 1e-4));
+        } elseif ($qx > $qy) {
+            [$nx, $ny] = [$sideX, 0.0];
+        } else {
+            [$nx, $ny] = [0.0, $sideY];
+        }
+
+        return [min(max($qx, $qy), 0.0) + $corner - $radius, $nx, $ny];
+    }
+
+    private static function unitByte(float $v): int
+    {
+        return (int) floor(max(0.0, min(1.0, $v)) * 255 + 0.5);
+    }
+
+    /** @return list<int> */
+    private static function field(Field $step, int $width, int $height, int $originX, int $originY): array
+    {
+        $out = [];
+        $span = $step->to - $step->from;
+        for ($y = 0; $y < $height; $y++) {
+            for ($x = 0; $x < $width; $x++) {
+                $px = $x + $originX + 0.5;
+                $py = $y + $originY + 0.5;
+                if ($step->kind === FieldKind::RAMP) {
+                    $v = self::unitByte(($py - $step->from) / $span);
+                    array_push($out, $v, $v, $v, 255);
+
+                    continue;
+                }
+                [$d, $nx, $ny] = self::boxDistance($px, $py, $step->box, $step->radii);
+                if ($step->kind === FieldKind::INSIDE) {
+                    $v = $d < 0.0 ? 255 : 0;
+                    array_push($out, $v, $v, $v, 255);
+
+                    continue;
+                }
+                array_push($out, self::unitByte(($d - $step->from) / $span), self::unitByte(0.5 + 0.5 * $nx), self::unitByte(0.5 + 0.5 * $ny), 255);
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param  list<int>  $image
+     * @return list<int>
+     */
+    private static function table(array $image, Table $step): array
+    {
+        $out = $image;
+        for ($at = 0, $n = count($image); $at < $n; $at += 4) {
+            $a = $image[$at + 3];
+            $straight = [0, 0, 0];
+            if ($a !== 0) {
+                for ($c = 0; $c < 3; $c++) {
+                    $straight[$c] = min(255, intdiv($image[$at + $c] * 255 + intdiv($a, 2), $a));
+                }
+            }
+            $na = $step->alpha === null ? $a : $step->alpha[$a];
+            foreach ([$step->red, $step->green, $step->blue] as $c => $table) {
+                $out[$at + $c] = self::premultiply($table === null ? $straight[$c] : $table[$straight[$c]], $na);
+            }
+            $out[$at + 3] = $na;
         }
 
         return $out;
@@ -420,6 +589,23 @@ final class FilterRunner
         return ($h ^ ($h >> 16)) & 0xFFFFFFFF;
     }
 
+    /**
+     * The turbulence lattice of a seed as bytes for a GPU: 514 selector entries (uint16 LE), then the gradients of the four
+     * channels, 514 pairs each (float32 LE x, y).
+     */
+    public static function noiseTables(int $seed): string
+    {
+        [$selector, $gradient] = self::lattice($seed);
+        $bytes = pack('v*', ...$selector);
+        for ($k = 0; $k < 4; $k++) {
+            for ($i = 0; $i < 514; $i++) {
+                $bytes .= pack('g2', $gradient[$k][$i][0], $gradient[$k][$i][1]);
+            }
+        }
+
+        return $bytes;
+    }
+
     /** SVG's init(): the lattice selector and the gradients of the four channels, from the seed. @return array{list<int>, array<int, array<int, array{float, float}>>} */
     private static function lattice(int $seed): array
     {
@@ -452,7 +638,8 @@ final class FilterRunner
                     $pair[] = (($random() % ($size + $size)) - $size) / $size;
                 }
                 $length = sqrt($pair[0] * $pair[0] + $pair[1] * $pair[1]);
-                $gradient[$k][$i] = [$pair[0] / $length, $pair[1] / $length];
+                // a zero vector (one seed in 262144 per entry) stays zero: the reference code would divide by nothing
+                $gradient[$k][$i] = $length === 0.0 ? [0.0, 0.0] : [$pair[0] / $length, $pair[1] / $length];
             }
         }
         for ($i = $size - 1; $i > 0; $i--) {
@@ -474,20 +661,9 @@ final class FilterRunner
     /** @param array{list<int>, array<int, array<int, array{float, float}>>} $lattice */
     private static function turbulence(array $lattice, int $channel, int $px, int $py, Noise $noise, int $tileX, int $tileY, int $tileWidth, int $tileHeight): float
     {
-        $frequencyX = $noise->frequencyX;
-        $frequencyY = $noise->frequencyY;
+        [$frequencyX, $frequencyY] = self::stitched($noise, $tileWidth, $tileHeight);
         $stitch = null;
         if ($noise->stitch) {
-            if ($frequencyX != 0.0) {
-                $low = floor($tileWidth * $frequencyX) / $tileWidth;
-                $high = ceil($tileWidth * $frequencyX) / $tileWidth;
-                $frequencyX = $low > 0.0 && $frequencyX / $low < $high / $frequencyX ? $low : $high;
-            }
-            if ($frequencyY != 0.0) {
-                $low = floor($tileHeight * $frequencyY) / $tileHeight;
-                $high = ceil($tileHeight * $frequencyY) / $tileHeight;
-                $frequencyY = $low > 0.0 && $frequencyY / $low < $high / $frequencyY ? $low : $high;
-            }
             $width = (int) ($tileWidth * $frequencyX + 0.5);
             $height = (int) ($tileHeight * $frequencyY + 0.5);
             $stitch = [$width, $height, (int) ($tileX * $frequencyX + 4096 + $width), (int) ($tileY * $frequencyY + 4096 + $height)];
@@ -568,11 +744,21 @@ final class FilterRunner
      * @param  list<int>  $image
      * @return list<int>
      */
-    private static function displace(array $image, int $width, int $height, Displace $step): array
+    private static function displace(array $image, int $width, int $height, Displace $step, array $mapPixels = []): array
     {
-        $map = $step->map->toRgba8();
-        $mapWidth = $step->map->viewportWidth();
-        $mapHeight = $step->map->viewportHeight();
+        if (is_string($step->map)) {
+            // a map an earlier step made: premultiplied there, straight here, the size of the layer
+            [$mapWidth, $mapHeight] = [$width, $height];
+            $map = '';
+            for ($at = 0, $n = count($mapPixels); $at < $n; $at += 4) {
+                $a = $mapPixels[$at + 3];
+                $map .= $a === 0 ? "\0\0\0\0" : chr(min(255, intdiv($mapPixels[$at] * 255 + intdiv($a, 2), $a))).chr(min(255, intdiv($mapPixels[$at + 1] * 255 + intdiv($a, 2), $a))).chr(min(255, intdiv($mapPixels[$at + 2] * 255 + intdiv($a, 2), $a))).chr($a);
+            }
+        } else {
+            $map = $step->map->toRgba8();
+            $mapWidth = $step->map->viewportWidth();
+            $mapHeight = $step->map->viewportHeight();
+        }
         $bands = $step->bands;
         $weights = $step->weights ?? self::bandWeights($bands);
         $channel = fn (Channel $c): int => match ($c) {

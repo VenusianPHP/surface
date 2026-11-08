@@ -11,6 +11,9 @@ use Surface\Contracts\Framebuffers\Framebuffer;
  * straight colour) of the map at (x, y), read with bilinear weights of 1/256. The map starts at the top left of the
  * layer; where it ends, nothing moves.
  *
+ * The map is a Framebuffer, or the name of an earlier step's result (a map a Field and a few steps make): then it lies
+ * where the layer lies, and a pixel it does not reach moves nothing.
+ *
  * With $bands above 1 the colour is split, as a prism splits it: band i of N is read at the point moved by
  * scale × (1 + spread × k), k running from −1 (band 0) to +1 (band N − 1), and each band adds its weights to
  * red, green and blue. Three bands with the default weights are the red, green and blue channels each displaced
@@ -27,7 +30,7 @@ final readonly class Displace extends FilterStep
      * @throws DrawingException When the scale or spread is not finite, the bands are not 1..MAX_BANDS, or the weights are not one triple a band.
      */
     public function __construct(
-        public Framebuffer $map,
+        public Framebuffer|string $map,
         public float $scale,
         public Channel $xChannel = Channel::R,
         public Channel $yChannel = Channel::G,
@@ -62,7 +65,7 @@ final readonly class Displace extends FilterStep
 
     public function reads(): array
     {
-        return [$this->in ?? ''];
+        return is_string($this->map) ? [$this->in ?? '', $this->map] : [$this->in ?? ''];
     }
 
     public function named(): ?string

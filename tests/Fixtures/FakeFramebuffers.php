@@ -108,7 +108,39 @@ final class FakePixelStore implements PixelStore
         return $target;
     }
 
+    public function kawaseDown(PixelStore $source, Region $region): void {}
+
+    public function kawaseUp(PixelStore $source): void {}
+
+    /** Every pixel of the box inside the clip set to the look's tint, no blend: enough to see where a kind routes a pane. */
+    public function paintGlass(array $geometry, PixelStore $blur, int $scale, ?PixelStore $sharp, int $originX, int $originY, array $look, Region $clip): ?Region
+    {
+        $box = (new Region((int) floor($geometry[0]), (int) floor($geometry[1]), (int) ceil($geometry[2]) - (int) floor($geometry[0]), (int) ceil($geometry[3]) - (int) floor($geometry[1])))->intersect($clip);
+        if ($box !== null) {
+            $this->rect($box, $look[6]);
+        }
+
+        return $box;
+    }
+
     /** Writes the colour's low byte wherever coverage is non-zero: enough to see where a kind routes spans. */
+    /** As paintSpans(): every pixel with coverage set to the colour, no blend. */
+    public function paintMasks(array $masks, int $rgba8, Region $clip): ?Region
+    {
+        $box = null;
+        foreach ($masks as [$coverage, $width, $left, $top]) {
+            for ($i = 0, $n = strlen($coverage); $i < $n; $i++) {
+                [$x, $y] = [$left + $i % $width, $top + intdiv($i, $width)];
+                if ($coverage[$i] !== "\0" && $x >= $clip->x && $x < $clip->right() && $y >= $clip->y && $y < $clip->bottom()) {
+                    $this->set($x, $y, $rgba8);
+                    $box = is_null($box) ? new Region($x, $y, 1, 1) : $box->union(new Region($x, $y, 1, 1));
+                }
+            }
+        }
+
+        return $box;
+    }
+
     public function paintSpans(string $spans, int $rgba8): ?Region
     {
         $box = null;
@@ -123,6 +155,11 @@ final class FakePixelStore implements PixelStore
         }
 
         return $box;
+    }
+
+    public function filter(\Surface\Contracts\Drawing\Effects\FilterChain $chain, Region $region, int $row = 0, bool $premultiplied = false): void
+    {
+        throw new FramebufferException('the fake filters nothing');
     }
 
     public function paintGradient(string $spans, string $ramp, string $kind, \Surface\NutsAndBolts\GradientSpread $spread, array $inverse, int $row = 0): ?Region

@@ -5,7 +5,7 @@ description: Shapes into coverage spans, hard-edged or anti-aliased, geometry in
 resource: src/Surface/Rasterize/
 tags: [surface, rasterize, spans, antialiasing]
 status: draft
-generated: { by: claude-opus/5.5, at: 2026-10-03T23:06:29Z }
+generated: { by: claude-opus/5.5, at: 2026-11-07T23:00:00Z }
 sources:
   - id: contracts
     resource: src/Surface/Contracts/Rasterize/
@@ -35,7 +35,7 @@ Meets Framebuffers only at span bytes (`Spans`, 7 bytes: y, x, length, coverage)
 | Layer | Class | Does |
 |---|---|---|
 | Shapes | `Rasterizer` (abstract) | checks input (finite, ≤ 2²⁴), picks thin line or outline, `Stroker` contours, calls its scanner |
-| Row work | `Scanner` | `path`, `ellipse`, `ring`, `roundRect`, `roundRing`, `shadow`, `polyline` → spans |
+| Row work | `Scanner` | `path`, `ellipse`, `ring`, `roundRect`, `roundRing`, `shadow`, `polyline` → spans; `batch(ops)` many in one call |
 | Flavor | `NativeRasterizer` / `ExtendedRasterizer` | only `mint()` the scanner |
 
 | Driver | Scanner | Geometry |
@@ -44,6 +44,8 @@ Meets Framebuffers only at span bytes (`Spans`, 7 bytes: y, x, length, coverage)
 | `extended` | `ExtendedScanner` over `RasterScanner` | C (ext-rasterize 0.10); detected by `class_exists(RasterScanner::class)` |
 
 Shapes: `fillRect`, `strokeRect`, `line`, `polyline`, `fillTriangle`, `fillPolygon` (any polygon), `fillPath` (contours: holes, unions), `fillEllipse`, `strokeEllipse`, `fillRoundRect`, `strokeRoundRect`, `shadow`. Circles = ellipses.
+
+Batches: `Rasterizer::fillBatch(shapes, Framebuffer)` takes shape commands as RenderingEngine records them (`path`, `polyline`, `ellipse`, `ring`, `roundrect`, `roundring`, `shadow`; the clip after the colour is not read), lowers each exactly as its method would, scans them all with one `Scanner::batch()` and paints each non-empty answer with `paintSpans()` at its colour, in order. A bad shape throws before any of the batch is painted. A scanner op is `[Scanner::PATH…POLYLINE, ...the method's arguments]`, a path's rule as 0 (non-zero) or 1 (even-odd); the numbers are ext-rasterize's `RASTER_OP_*`, so `ExtendedScanner::batch()` is one `RasterScanner::batch()` call. The single-shape methods lower to the same op and scan it alone. Direct fill: `fillBatch(shapes, target, direct: true)` on the extended rasterizer, when `RasterScanner::fills()` (ext-fb loaded, exporting its span sink) and `$target->spanSink()` is an `FbBuffer`, scans and paints in one `RasterScanner::fill()` call, no span strings in PHP, and reports each op's bounds with `$target->paintedSpans()`; otherwise, or with `direct: false`, the spans path. Same pixels and damage (`tests/Rasterize/DirectFillTest.php`).
 
 Rounded shapes:[^scanner]
 
@@ -58,6 +60,8 @@ Pixel `(x, y)` covers `[x, x+1) × [y, y+1)`; integer coordinates are pixel edge
 
 * `HARD`: one sample per row at pixel centres; centre on left/top edge in, right/bottom out. Coverage 255.
 * `ANTIALIASED`: 16 sample lines per row, exact horizontal overlap per pixel, summed; coverage 1..255; equal neighbours join.
+* Both modes walk only the rows and columns of the shape's extent (a pixel more each side, cut to the clip), not the whole clip: a shape's cost follows its own size, and outside the extent no sample line has an interval, so the spans are the same.
+* `ANTIALIASED` rows are emitted run by run: the scanner keeps the columns a row's sample lines wrote; between two of them coverage and delta are 0, so every pixel holds the running value and the stretch is one span. A large shape's cost follows its edges, not its area.
 * Thin hard lines (stroke ≤ 1): one-pixel lines between floored endpoints, every pixel once. Everything else: outlines filled non-zero; butt ends; miter ≤ 4 half-strokes, bevel past it; contours turned one way so pieces unite.
 * `strokeRect` above thin = outer minus inner rect, even-odd. Stroked ellipse = ring between `r ± stroke/2`.
 

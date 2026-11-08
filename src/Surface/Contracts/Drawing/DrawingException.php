@@ -6,6 +6,16 @@ use Surface\Contracts\Core\SurfaceException;
 
 class DrawingException extends SurfaceException
 {
+    public static function unevenLayer(): self
+    {
+        return new self('layer() needs an upright transform that scales x and y alike.');
+    }
+
+    public static function badLayer(string $why): self
+    {
+        return new self("layer(): {$why}");
+    }
+
     public static function unevenShadow(): self
     {
         return new self('shadow() needs an upright transform that scales x and y alike.');
