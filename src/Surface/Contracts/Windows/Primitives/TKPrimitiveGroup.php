@@ -250,4 +250,20 @@ interface TKPrimitiveGroup extends TKPrimitive
      * @throws WindowException When the container needs at() and none is pending.
      */
     public function takePlacement(): Placement;
+
+    /**
+     * Whether a primary click on this group posts GroupClicked: a press and its release on the group
+     * itself or on passive content inside it (a label, image, separator, spinner, progress bar or inner
+     * group that is not clickable itself). A control inside keeps its own mail and posts no GroupClicked.
+     * Nothing while the group or one of its groups is disabled. Posts nothing.
+     *
+     * @param bool $on
+     * @return $this
+     */
+    public function setClickable(bool $on = true): static;
+
+    /**
+     * @return bool
+     */
+    public function isClickable(): bool;
 }

@@ -7,6 +7,8 @@ use Surface\Contracts\Windows\Primitives\HasEnabledState;
 use Surface\Contracts\Windows\Primitives\Placement;
 use Surface\Contracts\Windows\Primitives\PrimitiveRegistry;
 use Surface\Contracts\Windows\Primitives\TKPrimitive as PrimitiveContract;
+use Surface\Contracts\Windows\Primitives\TKTransition;
+use Closure;
 use Surface\Contracts\Windows\Menus\ContextMenu as ContextMenuContract;
 use Surface\Contracts\Windows\ToolkitWindow;
 use Surface\Contracts\Windows\WindowException;
@@ -36,6 +38,18 @@ abstract class TKPrimitive implements PrimitiveContract
     protected bool $watching_size = false;
 
     protected ?Color $background = null;
+
+    protected float $corner_radius = 0.0;
+
+    protected float $opacity = 1.0;
+
+    protected ?TKTransition $appear_as = null;
+
+    protected float $appear_seconds = 0.25;
+
+    protected ?TKTransition $disappear_as = null;
+
+    protected float $disappear_seconds = 0.25;
 
     protected ?ContextMenuContract $context_menu = null;
 
@@ -132,10 +146,67 @@ abstract class TKPrimitive implements PrimitiveContract
     public function setVisible(bool $visible): static
     {
         $this->live();
-        if ($this->visible !== $visible) {
-            $this->visible = $visible;
+        if ($this->visible === $visible) {
+            return $this;
+        }
+
+        $this->visible = $visible;
+
+        if ($visible && ! is_null($this->appear_as)) {
+            $this->applyVisible(true);
+            $this->applyTransition($this->appear_as, true, $this->appear_seconds, null);
+        } elseif (! $visible && ! is_null($this->disappear_as)) {
+            // Hidden once the transition lands, unless something showed it again meanwhile.
+            $this->applyTransition($this->disappear_as, false, $this->disappear_seconds, function (): void {
+                if (! $this->visible && ! $this->removed) {
+                    $this->applyVisible(false);
+                }
+            });
+        } else {
             $this->applyVisible($visible);
         }
+
+        return $this;
+    }
+
+    public function setOpacity(float $opacity): static
+    {
+        $this->live();
+        if ($opacity < 0.0 || $opacity > 1.0) {
+            throw new WindowException("Opacity must be between 0.0 and 1.0, {$opacity} given.");
+        }
+
+        $this->opacity = $opacity;
+        $this->applyOpacity($opacity);
+
+        return $this;
+    }
+
+    public function opacity(): float
+    {
+        return $this->opacity;
+    }
+
+    public function appear(?TKTransition $transition, float $seconds = 0.25): static
+    {
+        $this->live();
+        if ($seconds < 0.0) {
+            throw new WindowException("A transition cannot last {$seconds} seconds.");
+        }
+
+        [$this->appear_as, $this->appear_seconds] = [$transition, $seconds];
+
+        return $this;
+    }
+
+    public function disappear(?TKTransition $transition, float $seconds = 0.25): static
+    {
+        $this->live();
+        if ($seconds < 0.0) {
+            throw new WindowException("A transition cannot last {$seconds} seconds.");
+        }
+
+        [$this->disappear_as, $this->disappear_seconds] = [$transition, $seconds];
 
         return $this;
     }
@@ -279,6 +350,23 @@ abstract class TKPrimitive implements PrimitiveContract
         return $this;
     }
 
+    public function setCornerRadius(float $radius): static
+    {
+        $this->live();
+        if ($radius < 0.0) {
+            throw new WindowException("'{$this->path()}': a corner radius is not negative; got {$radius}.");
+        }
+        $this->corner_radius = $radius;
+        $this->applyCornerRadius($radius);
+
+        return $this;
+    }
+
+    public function cornerRadius(): float
+    {
+        return $this->corner_radius;
+    }
+
     public function fill(bool $horizontal = true, bool $vertical = true): static
     {
         $this->live();
@@ -385,6 +473,27 @@ abstract class TKPrimitive implements PrimitiveContract
      * @return void
      */
     abstract protected function applyBackground(?Color $color): void;
+
+    /** Round the background's corners, without clipping the content; 0.0 is square. */
+    abstract protected function applyCornerRadius(float $radius): void;
+
+    /**
+     * @param float $opacity 0.0..1.0, already checked
+     * @return void
+     */
+    abstract protected function applyOpacity(float $opacity): void;
+
+    /**
+     * Run $transition in the toolkit over $seconds: entering, from transparent at TKTransition::offset()
+     * to opacity() in place (the native is already shown); leaving, the reverse. Call $done once it lands,
+     * on the thread PHP runs on. A driver whose native cannot animate lands at once and calls $done.
+     * @param TKTransition $transition
+     * @param bool $entering
+     * @param float $seconds
+     * @param Closure(): void|null $done
+     * @return void
+     */
+    abstract protected function applyTransition(TKTransition $transition, bool $entering, float $seconds, ?Closure $done): void;
 
     /**
      * @param bool $horizontal

@@ -60,7 +60,9 @@ interface TKPrimitive
     public function remove(): void;
 
     /**
-     * Native visibility; hiding a container hides its subtree.
+     * Native visibility; hiding a container hides its subtree. With an appear() transition set, showing
+     * plays it; with a disappear() transition set, hiding plays it and the view hides when it lands.
+     * isVisible() answers the new value at once either way.
      * @param bool $visible
      * @return $this
      */
@@ -80,6 +82,37 @@ interface TKPrimitive
      * @return $this
      */
     public function hide(): static;
+
+    /**
+     * How opaque the view and its subtree draw: 0.0 (invisible, still laid out and hit) to 1.0.
+     * @param float $opacity
+     * @return $this
+     * @throws WindowException When removed, or $opacity is outside 0.0..1.0.
+     */
+    public function setOpacity(float $opacity): static;
+
+    /**
+     * @return float
+     */
+    public function opacity(): float;
+
+    /**
+     * Play $transition each time setVisible(true) shows the view; null shows it at once.
+     * @param TKTransition|null $transition
+     * @param float $seconds how long it runs
+     * @return $this
+     * @throws WindowException When removed, or $seconds is negative.
+     */
+    public function appear(?TKTransition $transition, float $seconds = 0.25): static;
+
+    /**
+     * Play $transition backwards each time setVisible(false) hides the view, then hide it; null hides it at once.
+     * @param TKTransition|null $transition
+     * @param float $seconds how long it runs
+     * @return $this
+     * @throws WindowException When removed, or $seconds is negative.
+     */
+    public function disappear(?TKTransition $transition, float $seconds = 0.25): static;
 
     /**
      * Native sensitivity; containers cascade to their subtree.
@@ -164,6 +197,20 @@ interface TKPrimitive
      * @return $this
      */
     public function setBackground(?Color $color): static;
+
+    /**
+     * Round the corners of the view's background (setBackground); its content is not clipped.
+     * 0.0 (the start) is square. Posts nothing.
+     * @param float $radius in points
+     * @return $this
+     * @throws \Surface\Contracts\Windows\WindowException When the radius is negative.
+     */
+    public function setCornerRadius(float $radius): static;
+
+    /**
+     * @return float
+     */
+    public function cornerRadius(): float;
 
     /**
      * Expand into spare space along each axis.

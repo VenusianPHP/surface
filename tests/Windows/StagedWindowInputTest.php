@@ -16,6 +16,8 @@ use Surface\Contracts\Windows\Mail\Staged\StagedMoved;
 use Surface\Contracts\Windows\Mail\Staged\StagedPressed;
 use Surface\Contracts\Windows\Mail\Staged\StagedReleased;
 use Surface\Contracts\Windows\Mail\Staged\StagedTextCommitted;
+use Surface\Contracts\Windows\Mail\Staged\StagedEditCommanded;
+use Surface\Contracts\Windows\Input\EditCommand;
 use Surface\Contracts\Windows\Mail\Staged\StagedWheeled;
 use Surface\Contracts\Windows\Mail\View\ScrollPhase;
 use Surface\Contracts\Windows\Mail\WindowFocused;
@@ -48,6 +50,7 @@ it('posts each input callback as its mail, in order', function () {
     $window->nativeInput('wheeled', 0.0, -3.0, true, $mods, ScrollPhase::NONE);
     $window->nativeInput('keyPressed', Key::A, 'A', $mods, false);
     $window->nativeInput('textCommitted', 'é');
+    $window->nativeInput('editCommanded', EditCommand::Paste);
     $window->nativeInput('keyReleased', Key::A, $mods);
     $window->nativeInput('pointerLeft');
 
@@ -59,6 +62,7 @@ it('posts each input callback as its mail, in order', function () {
         new StagedWheeled('game', 0.0, -3.0, true, $mods),
         new StagedKeyPressed('game', Key::A, 'A', $mods, false),
         new StagedTextCommitted('game', 'é'),
+        new StagedEditCommanded('game', EditCommand::Paste),
         new StagedKeyReleased('game', Key::A, $mods),
         new StagedLeft('game'),
     ]);
@@ -114,6 +118,7 @@ it('posts no input mail once closed', function () {
 
     $window->nativeInput('pressed', 1.0, 1.0, MouseButton::LEFT, 1, new Modifiers());
     $window->nativeInput('textCommitted', 'x');
+    $window->nativeInput('editCommanded', EditCommand::Paste);
     $window->nativeInput('pointerLeft');
     $window->session()->flushLatest();
 

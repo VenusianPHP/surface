@@ -2,8 +2,15 @@
 
 namespace Surface\Bridge;
 
+use Exception;
+use Illuminate\Contracts\Container\CircularDependencyException;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use ReflectionException;
 use Surface\Contracts\Bridge\BridgeException;
 use Surface\Contracts\HumanInput\InputTap;
+use Voyager\Contracts\Vessel\CircleDepException;
+use Voyager\Vessel\EntryNotFoundException;
 use WeakMap;
 use Voyager\Contracts\IOPools\Loop as LoopInterface;
 use Surface\Contracts\Bridge\BridgedToolkitSession as SessionBridge;
@@ -109,6 +116,11 @@ abstract class BridgedToolkitSession implements SessionBridge
     /**
      * Bring the session up, initializing the engine first if it has never run.
      * @return $this
+     * @throws ReflectionException
+     * @throws EntryNotFoundException
+     * @throws CircularDependencyException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function connect(): static
     {
@@ -119,6 +131,15 @@ abstract class BridgedToolkitSession implements SessionBridge
         $this->connectToEngine();
         $this->connected = true;
         self::live()[$this] = true;
+
+        // In an application run, a session joins the loop when it connects. Without the
+        // framework (a driver's own tests, a bare script) there is no run to join.
+        if (function_exists('app')) {
+            $app = app();
+            if ($app->isApplicationRunning() && $app->isResolved('event-loop')) {
+                $this->joinLoop($app->get('event-loop'));
+            }
+        }
 
         return $this;
     }
@@ -307,6 +328,10 @@ abstract class BridgedToolkitSession implements SessionBridge
     {
         if (! $this->connected) {
             throw new BridgeException('Connect the session before joining a loop.');
+        }
+
+        if ($this->loop === $loop) {
+            return;
         }
 
         if ($this->sleepsNatively()) {

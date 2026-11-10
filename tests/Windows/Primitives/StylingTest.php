@@ -83,3 +83,13 @@ it('measures a scroll position as content fractions and turns a fraction back in
         ->and(fn () => new ScrollPosition(0.0, 1.5, 1.0, 1.0))->toThrow(InvalidArgumentException::class, '0..1')
         ->and(fn () => new ScrollPosition(INF, 0.0, 1.0, 1.0))->toThrow(InvalidArgumentException::class, '0..1');
 });
+
+it('rounds corners to the radius it is given, and refuses a negative one', function (): void {
+    $card = (new \Venusian\Surface\Tests\Fixtures\FakeHost('main'))->column('m')->column('card');
+    $card->log = [];
+
+    expect($card->cornerRadius())->toBe(0.0)
+        ->and($card->setCornerRadius(8.0)->cornerRadius())->toBe(8.0)
+        ->and($card->log)->toBe(['corner:8'])
+        ->and(fn () => $card->setCornerRadius(-1.0))->toThrow(\Surface\Contracts\Windows\WindowException::class);
+});

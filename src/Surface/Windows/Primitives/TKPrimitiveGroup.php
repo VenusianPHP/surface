@@ -59,6 +59,46 @@ abstract class TKPrimitiveGroup extends TKPrimitive implements PrimitiveContract
      */
     protected ?Placement $pending = null;
 
+    protected bool $clickable = false;
+
+    public function setClickable(bool $on = true): static
+    {
+        $this->live();
+        $this->clickable = $on;
+
+        return $this;
+    }
+
+    public function isClickable(): bool
+    {
+        return $this->clickable;
+    }
+
+    /**
+     * The group a primary press on $hit (the innermost primitive under it) clicks: the nearest
+     * clickable group from $hit up, through passive content only; null when a control is in the way,
+     * when none is clickable, or when the group or one of its groups is disabled.
+     */
+    public static function clickTarget(Child $hit): ?self
+    {
+        $target = null;
+        for ($at = $hit; ! is_null($at); $at = $at->parent()) {
+            if (is_null($target)) {
+                if ($at instanceof self && $at->clickable) {
+                    $target = $at;
+                } elseif (! ($at instanceof self || $at instanceof TKLabel || $at instanceof TKImage
+                    || $at instanceof TKSeparator || $at instanceof TKSpinner || $at instanceof TKProgressBar)) {
+                    return null;
+                }
+            }
+            if (! $at->isEnabled()) {
+                return null;
+            }
+        }
+
+        return $target;
+    }
+
     public function label(string $name, string $text): TKLabel
     {
         return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintLabel($this, $name, $text));

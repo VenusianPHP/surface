@@ -276,6 +276,19 @@ trait FakeNative
 
     protected function applyBackground(?Color $color): void { $this->log[] = 'background:'.($color?->toHex() ?? 'none'); }
 
+    protected function applyOpacity(float $opacity): void { $this->log[] = "opacity:{$opacity}"; }
+
+    protected function applyCornerRadius(float $radius): void { $this->log[] = "corner:{$radius}"; }
+
+    /** The pending transition's $done: a test lands it with ($this->landing)(). */
+    public ?\Closure $landing = null;
+
+    protected function applyTransition(\Surface\Contracts\Windows\Primitives\TKTransition $transition, bool $entering, float $seconds, ?\Closure $done): void
+    {
+        $this->log[] = 'transition:'.$transition->value.':'.($entering ? 'in' : 'out').":{$seconds}";
+        $this->landing = $done;
+    }
+
     protected function applyFill(bool $horizontal, bool $vertical): void { $this->log[] = 'fill:'.(int) $horizontal.','.(int) $vertical; }
 
     protected function applyAlign(Align $horizontal, Align $vertical): void { $this->log[] = "align:{$horizontal->value},{$vertical->value}"; }

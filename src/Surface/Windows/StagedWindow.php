@@ -23,6 +23,8 @@ use Surface\Contracts\Windows\Mail\Staged\StagedMoved;
 use Surface\Contracts\Windows\Mail\Staged\StagedPressed;
 use Surface\Contracts\Windows\Mail\Staged\StagedReleased;
 use Surface\Contracts\Windows\Mail\Staged\StagedTextCommitted;
+use Surface\Contracts\Windows\Mail\Staged\StagedEditCommanded;
+use Surface\Contracts\Windows\Input\EditCommand;
 use Surface\Contracts\Windows\Mail\Staged\StagedWheeled;
 use Surface\Contracts\Windows\Mail\View\ScrollPhase;
 use Surface\Contracts\Windows\Mail\WindowCloseRequested;
@@ -741,6 +743,12 @@ abstract class StagedWindow implements StagedWindowContract
     protected function textCommitted(string $text): void
     {
         $this->postInput(new StagedTextCommitted($this->name, $text));
+    }
+
+    /** An edit command from the platform's key bindings or Edit menu. */
+    protected function editCommanded(EditCommand $command): void
+    {
+        $this->postInput(new StagedEditCommanded($this->name, $command));
     }
 
     /** Nothing drawn in the window shows now; nothing once closed or already occluded. */

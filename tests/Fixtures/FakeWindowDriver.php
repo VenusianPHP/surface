@@ -104,7 +104,11 @@ final class FakeDesktop implements Desktop
 {
     public ?string $path = null;
 
+    public ?string $url = null;
+
     public function open(string $path): void { $this->path = $path; }
+
+    public function browse(string $url): void { $this->url = \Surface\Windows\Services\WebAddress::checked($url); }
 }
 
 final class FakeSystemAccent implements SystemAccent
