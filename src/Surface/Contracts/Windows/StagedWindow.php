@@ -188,6 +188,23 @@ interface StagedWindow extends OSWindow, WindowOutput
     /** HDR state of the window's display; null when the backend does not report it. */
     public function hdr(): ?Hdr;
 
+    /**
+     * A video in this window, from the source asked for: Surface does not
+     * choose. Native is the toolkit's own player in a view over the output (a
+     * NativeVideo) and needs Video. Decoded is ext-ffmpeg's frames in a
+     * framebuffer the app draws with its engine (a DecodedVideo) and needs
+     * ext-ffmpeg and ext-fb. The name is as a primitive's ([A-Za-z0-9_-]+),
+     * unique among the window's videos.
+     *
+     * @param  string|null  $file  null makes it with nothing loaded
+     *
+     * @throws WindowException for a malformed or taken name, or a source this window cannot make
+     */
+    public function video(VideoSource $source, string $name, ?string $file = null): StagedVideo;
+
+    /** @return array<string, StagedVideo> the window's videos by name */
+    public function videos(): array;
+
     /** Terminal: a lent surface is reclaimed, the native window destroyed, WindowClosed posted; every later call throws. */
     public function close(): void;
 

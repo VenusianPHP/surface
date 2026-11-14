@@ -5,7 +5,7 @@ description: Native widgets inside a ToolkitWindow - containers, registry, paths
 resource: src/Surface/Windows/Primitives/
 tags: [surface, windows, primitives, widgets]
 status: draft
-generated: { by: claude-opus/5.5, at: 2026-10-19T03:30:00Z }
+generated: { by: claude-opus/5.5, at: 2026-11-11T09:00:00Z }
 sources:
   - id: contracts
     resource: src/Surface/Contracts/Windows/Primitives/
@@ -100,12 +100,17 @@ Every primitive: `setVisible`/`show`/`hide`, `setEnabled`/`enable`/`disable` (`H
 | `TKMenuButton` | label, ContextMenu | `applyLabel`, `applyImage(?fb, scale)`, `applyMenu`, `applyBordered` (change-only) | — (driver posts `MenuActivated`) |
 | `TKDatepicker` | ?date | `applyDate` (null = native default, `date()` stays null) | `nativeDateChanged(DateTimeImmutable)` |
 | `TKTable` | list<TableColumn>, rows | `applyRows(list<list<string>>)` then `applySelectedRow(?int)` | `nativeRowSelected(?int)` |
+| `TKSegmentedControl` | list<string> segments, selected | `applySegments` then `applySelected`, `applySegment(index, label)` | `nativeSelected(int)` (driver posts `SelectionChanged`) |
+| `TKItemView` → `TKCollectionView`, `TKListView` | list of items (`CollectionItem`: image, caption, corner action button, status `icons` over the top-right corner left of it / `ListRow`); cell size (200×150) / row height (64) | `applyItems`, `applyInserted(at, items)`, `applyRemoved(at, count)`, `applyUpdated(index, item)`, `applyScrollTo` (clamped), `applyCellSize` / `applyRowHeight`; reads `nativeScrollPosition()` | — (driver posts `ItemActivated`, `ItemActionClicked` for `enabled(index)` items, `ViewScrolled` while watched) |
 | `TKTree` | list<TableColumn>, list<TreeNode> | `applyNodes`, `applyExpanded(id, bool)` (ancestors all expanded), `applySelected(?id)`, `nativeSelected()` | `nativeNodeExpanded(id, bool)` → changed |
 | `TKVideo` | ?file | `applyFile`, `applyPlay`, `applyPause`, `applySeek`, `applyMuted`, `applyLoop`; reads `nativePosition()`, `nativeDuration()` | `nativeStateChanged(bool playing)` |
+| `TKWebView` | — (`load(url)`, `loadHtml(html, ?baseUrl)`: absolute URLs only, else `WindowException`) | `applyLoad`, `applyHtml`, `applyReload`, `applyStop`; `mintWebView` throws `WindowException` where the engine has no web engine | `nativeLoadChanged(bool loading, ?url, ?title)` |
 
 A link's URL needs a scheme (WindowException otherwise, before the native exists or changes); the toolkit opens it on a click and nothing posts.
 
 * Guards (`WindowException`): NAN/INF in a progress fraction, slider range or value, or `seek()`; fraction outside 0..1, slider `min >= max`, dropdown index out of range / options not a list of strings, table row out of range / cell not scalar|null / column ids not unique, `seek()` < 0.
+* Item views keep every item; the native builds only the items in view. `insertItems` takes 0..count, `removeItems` a range of ≥ 1 inside the items; an item of the wrong class throws. A `ListRow` with `enabled: false` posts nothing.
+* Segmented control: `selected` = -1 exactly when no segments; `setSegments` keeps an in-range selection else 0.
 * Dropdown: `selected` = -1 exactly when no options; `setOptions` keeps an in-range selection else 0.
 * Combo: a hidden completion list is cleared (`completions()` = []); hide = Esc, focus loss, a choice, `setValue`, `setCompletions([])`. SelectionChanged index = position in options, -1 for a completion.
 * Button images (`HasButtonImage`, trait `ShowsButtonImage`): RGBA8 framebuffer shown at width / scale × height / scale points; scale must be > 0; `ImagePosition` LEADING, ABOVE, ONLY.

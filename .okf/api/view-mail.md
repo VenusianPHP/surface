@@ -5,7 +5,7 @@ description: Mail primitive natives post - clicks, canvas pointer and wheel, tex
 resource: src/Surface/Contracts/Windows/Mail/View/
 tags: [surface, mail, signals, primitives]
 status: draft
-generated: { by: claude-opus/5.5, at: 2026-10-02T19:45:27Z }
+generated: { by: claude-fable/5.2, at: 2026-11-11T14:48:28Z }
 sources:
   - id: mail
     resource: src/Surface/Contracts/Windows/Mail/View/
@@ -39,18 +39,22 @@ All readonly `NamedSignal` + `PrimitiveMail` (`window()`, `path()`, `uuid()`); b
 | `TextSubmitted` | value | `view.text-submitted.<window>.<path>` | `TKTextInput` (return) |
 | `Toggled` | on | `view.toggled.<window>.<path>` | `TKCheckbox`, `TKToggle`, `TKToggleButton` |
 | `ValueChanged` | float value | `view.value-changed.<window>.<path>` | `TKSlider` |
-| `SelectionChanged` | int index, ?option | `view.selection-changed.<window>.<path>` | `TKDropdown` (-1 / null = no options) |
+| `SelectionChanged` | int index, ?option | `view.selection-changed.<window>.<path>` | `TKDropdown` (-1 / null = no options), `TKSegmentedControl` (option = the segment's label) |
 | `DateChanged` | DateTimeImmutable date | `view.date-changed.<window>.<path>` | `TKDatepicker` |
 | `RowSelected` | ?int row, ?array cells (column id => text) | `view.row-selected.<window>.<path>` | `TKTable` (null = cleared) |
 | `ViewResized` | width, height | `view.resized.<window>.<path>` | any primitive after `watchSize()` |
-| `ViewScrolled` | position (ScrollPosition) | `view.scrolled.<window>.<path>` | `TKTextArea` while watched; latest-only |
+| `ViewScrolled` | position (ScrollPosition) | `view.scrolled.<window>.<path>` | `TKTextArea`, `TKCollectionView`, `TKListView` while watched; latest-only |
 | `SplitMoved` | positions (list<float>) | `view.split-moved.<window>.<path>` | `TKSplitView`: once a user divider drag ends with positions changed; not window resizes or `setPositions()` |
 | `TabSelected` | page (name) | `view.tab-selected.<window>.<path>` | `TKTabView`: user tab switch; not `select()`, `addPage()` or removing a page |
 | `NodeSelected` | ?id | `view.node-selected.<window>.<path>` | `TKTree`: user selection (null = cleared); not `selectNode()` or `setNodes()` |
 | `NodeActivated` | id | `view.node-activated.<window>.<path>` | `TKTree`: double click, Enter or Return |
+| `ItemActivated` | int index | `view.item-activated.<window>.<path>` | on an enabled item: `TKCollectionView` a click, `TKListView` a double click, Enter or Return |
+| `ItemActionClicked` | int index | `view.item-action-clicked.<window>.<path>` | `TKCollectionView` corner action, `TKListView` action button, on an enabled item |
 | `NodeExpanded` | id, expanded | `view.node-expanded.<window>.<path>` | `TKTree`: user expand / collapse; not `expand()`, `selectNode()` or `setNodes()` |
-| `VideoPlaying` / `VideoPaused` / `VideoEnded` | — | `view.video-playing.<window>.<path>` etc. | `TKVideo` |
-| `VideoFailed` | reason | `view.video-failed.<window>.<path>` | `TKVideo` (bad file, codec) |
+| `VideoPlaying` / `VideoPaused` / `VideoEnded` | — | `view.video-playing.<window>.<path>` etc. | `TKVideo`; a staged window's `StagedVideo` (path = its name) |
+| `VideoFailed` | reason | `view.video-failed.<window>.<path>` | `TKVideo`, `StagedVideo` (bad file, codec) |
+| `WebViewLoaded` | ?url | `view.web-view-loaded.<window>.<path>` | `TKWebView` (a page finished loading) |
+| `WebViewFailed` | ?url, reason | `view.web-view-failed.<window>.<path>` | `TKWebView` (the engine's reason) |
 
 Window-level: `WindowResized(window, width, height)` → `window.resized.<window>` ([window mail](/api/mail.md)).
 

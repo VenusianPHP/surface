@@ -5,7 +5,7 @@ description: Pest suite with fakes in a workbench of path repos.
 resource: tests/
 tags: [surface, pest]
 status: draft
-generated: { by: claude-opus/5.5, at: 2026-10-04T01:28:52Z }
+generated: { by: claude-fable/5.2, at: 2026-11-11T14:48:28Z }
 sources:
   - id: fixtures
     resource: tests/Fixtures/
@@ -34,6 +34,8 @@ GPU engines: `tests/Fixtures/FakeGpu.php`: `FakeGLFramebuffer` (target = native 
 `FakeCapableGpuDevice` (tests/Fixtures/FakeStagedGpu.php): FakeGpuDevice + every optional device interface, calls in `$inner->log`; `FakeFloatGLFramebuffer` = HDR target reading back 2.0 red. `gpuStage()` in GpuStagingTest = 640x480-pixel staged window lending a Metal layer.
 
 Images: `PngWriter` and `TiffWriter` (tests/Support/Images) write each file sample by sample (palettes, tRNS, 16-bit, Adam7; byte orders, strips, tiles, PackBits, LZW, Deflate, predictor), so `PngTest` and `TiffTest` expect hand-worked RGBA8; native PNG alpha through `Pixels::asPng()` (gd's 7 bits). `JpegTest`: gd-written and two ImageMagick fixtures (grey, Adobe CMYK) within a tolerance. `ImagesTest`: sniffing, refusals, minting. `ImagesManagerTest`: config. `ParityTest`: both drivers, same JPEG bytes, same PNG bytes but for gd's alpha, the 16-bit tRNS split. `image decoders` dataset: native always, extended when `imgdec_png()` exists. `WriteRgba8Test` (Framebuffers): every kind, both flavors.
+
+Staged video (`tests/Windows/StagedVideoTest.php`): Native against `FakeNativeVideo` (tests/Fixtures/FakeStager.php; hooks append to `$log`), with `FakeStagedWindow::$capabilities = [WindowCapability::Video]`. Decoded runs ext-ffmpeg for real on `tests/Windows/fixtures/ramp-64x48-10fps-1s.mp4.b64` (base64 text; 10 frames, frame N a flat grey of about 23 N, key frames at 0 and 0.5 s, so a pixel says which frame shows) with a clock the test moves (`VideoClock`); those rows skip without ext-ffmpeg or ext-fb.
 
 Real toolkit behaviour is tested in each jovian driver's suite.
 

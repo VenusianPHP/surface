@@ -2,6 +2,7 @@
 
 namespace Surface\Core\Providers;
 
+use Surface\Audio\AudioServiceProvider;
 use Surface\Bridge\BridgeServiceProvider;
 use Surface\Drawing\DrawingServiceProvider;
 use Surface\EmbeddedDisplays\EmbeddedDisplaysServiceProvider;
@@ -10,6 +11,7 @@ use Surface\Framebuffers\FramebuffersServiceProvider;
 use Surface\HumanInput\HumanInputServiceProvider;
 use Surface\Images\ImagesServiceProvider;
 use Surface\Rasterize\RasterizeServiceProvider;
+use Surface\Video\VideoServiceProvider;
 use Surface\Windows\WindowsServiceProvider;
 use Voyager\NutsAndBolts\AggregateServiceProvider;
 
@@ -25,6 +27,8 @@ class SurfaceServiceProvider extends AggregateServiceProvider
         ImagesServiceProvider::class,
         FontsServiceProvider::class,
         DrawingServiceProvider::class,
+        AudioServiceProvider::class,
+        VideoServiceProvider::class,
     ];
 
     /**
@@ -37,6 +41,7 @@ class SurfaceServiceProvider extends AggregateServiceProvider
         $dir = dirname(__DIR__, 4).'/config';
 
         return [
+            'audio' => "{$dir}/audio.php",
             'bridge' => "{$dir}/bridge.php",
             'drawing' => "{$dir}/drawing.php",
             'embedded-displays' => "{$dir}/embedded-displays.php",
@@ -45,6 +50,7 @@ class SurfaceServiceProvider extends AggregateServiceProvider
             'human-input' => "{$dir}/human-input.php",
             'images' => "{$dir}/images.php",
             'rasterize' => "{$dir}/rasterize.php",
+            'video' => "{$dir}/video.php",
             'windows' => "{$dir}/windows.php",
         ];
     }

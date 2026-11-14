@@ -22,6 +22,8 @@ use Surface\Contracts\Windows\Mail\View\RightClicked;
 use Surface\Contracts\Windows\Mail\View\RowSelected;
 use Surface\Contracts\Windows\Mail\View\SelectionChanged;
 use Surface\Contracts\Windows\Mail\View\NodeActivated;
+use Surface\Contracts\Windows\Mail\View\ItemActivated;
+use Surface\Contracts\Windows\Mail\View\ItemActionClicked;
 use Surface\Contracts\Windows\Mail\View\NodeExpanded;
 use Surface\Contracts\Windows\Mail\View\NodeSelected;
 use Surface\Contracts\Windows\Mail\View\SplitMoved;
@@ -76,6 +78,8 @@ it('names each primitive mail view.<event>.<window>.<path>', function (Primitive
     'tab selected' => [new TabSelected('main', 'main.toolbar.save', 'u1', 'two'), 'view.tab-selected.main.main.toolbar.save'],
     'node selected' => [new NodeSelected('main', 'main.toolbar.save', 'u1', null), 'view.node-selected.main.main.toolbar.save'],
     'node activated' => [new NodeActivated('main', 'main.toolbar.save', 'u1', 'a'), 'view.node-activated.main.main.toolbar.save'],
+    'item activated' => [new ItemActivated('main', 'main.toolbar.save', 'u1', 3), 'view.item-activated.main.main.toolbar.save'],
+    'item action clicked' => [new ItemActionClicked('main', 'main.toolbar.save', 'u1', 3), 'view.item-action-clicked.main.main.toolbar.save'],
     'node expanded' => [new NodeExpanded('main', 'main.toolbar.save', 'u1', 'a', true), 'view.node-expanded.main.main.toolbar.save'],
 ]);
 

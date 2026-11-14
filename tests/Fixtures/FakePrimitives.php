@@ -39,6 +39,7 @@ use Surface\Contracts\Windows\Primitives\TKTextInput;
 use Surface\Contracts\Windows\Primitives\TKToggle;
 use Surface\Contracts\Windows\Primitives\TKToggleButton;
 use Surface\Contracts\Windows\Primitives\TKVideo;
+use Surface\Contracts\Windows\Primitives\TKWebView;
 use Surface\Contracts\Windows\Styling\FontSpec;
 use Surface\Contracts\Windows\Styling\ScrollPosition;
 use Surface\Contracts\Windows\Styling\TextAlignment;
@@ -69,12 +70,19 @@ use Surface\Windows\Primitives\TKScrollBar as ScrollBarAbstract;
 use Surface\Windows\Primitives\TKSlider as SliderAbstract;
 use Surface\Windows\Primitives\TKSpinner as SpinnerAbstract;
 use Surface\Windows\Primitives\TKTable as TableAbstract;
+use Surface\Windows\Primitives\TKSegmentedControl as SegmentedControlAbstract;
+use Surface\Windows\Primitives\TKCollectionView as CollectionViewAbstract;
+use Surface\Windows\Primitives\TKListView as ListViewAbstract;
+use Surface\Contracts\Windows\Primitives\TKSegmentedControl;
+use Surface\Contracts\Windows\Primitives\TKCollectionView;
+use Surface\Contracts\Windows\Primitives\TKListView;
 use Surface\Windows\Primitives\TKTree as TreeAbstract;
 use Surface\Windows\Primitives\TKTextArea as TextAreaAbstract;
 use Surface\Windows\Primitives\TKTextInput as TextInputAbstract;
 use Surface\Windows\Primitives\TKToggle as ToggleAbstract;
 use Surface\Windows\Primitives\TKToggleButton as ToggleButtonAbstract;
 use Surface\Windows\Primitives\TKVideo as VideoAbstract;
+use Surface\Windows\Primitives\TKWebView as WebViewAbstract;
 use Surface\Windows\Primitives\TKColumn;
 use Surface\Windows\Primitives\TKFixed;
 use Surface\Windows\Primitives\TKGrid;
@@ -228,9 +236,17 @@ final class FakePrimitiveFactory implements PrimitiveFactory
 
     public function mintTable(GroupContract $host, string $name, array $columns, array $rows): TKTable { return new FakeTable($name, ...[...$this->slot($host, $name, 'Table'), $columns, $rows]); }
 
+    public function mintSegmentedControl(GroupContract $host, string $name, array $segments, int $selected): TKSegmentedControl { return new FakeSegmentedControl($name, ...[...$this->slot($host, $name, 'SegmentedControl'), $segments, $selected]); }
+
+    public function mintCollectionView(GroupContract $host, string $name, array $items): TKCollectionView { return new FakeCollectionView($name, ...[...$this->slot($host, $name, 'CollectionView'), $items]); }
+
+    public function mintListView(GroupContract $host, string $name, array $items): TKListView { return new FakeListView($name, ...[...$this->slot($host, $name, 'ListView'), $items]); }
+
     public function mintTree(GroupContract $host, string $name, array $columns, array $nodes): TKTree { return (new FakeTree($name, ...[...$this->slot($host, $name, 'Tree'), $columns, $nodes]))->built(); }
 
     public function mintVideo(GroupContract $host, string $name, ?string $file): TKVideo { return new FakeVideo($name, ...[...$this->slot($host, $name, 'Video'), $file]); }
+
+    public function mintWebView(GroupContract $host, string $name): TKWebView { return new FakeWebView($name, ...$this->slot($host, $name, 'WebView')); }
 
     public function mintColumn(?GroupContract $host, string $name, int $spacing, int $padding): ColumnContract { return new FakeColumn($name, ...[...$this->groupSlot($host, $name, 'Column'), $spacing, $padding]); }
 
@@ -722,6 +738,50 @@ final class FakeTable extends TableAbstract
     protected function applySelectedRow(?int $row): void { $this->log[] = 'selected:'.($row ?? 'none'); }
 }
 
+final class FakeSegmentedControl extends SegmentedControlAbstract
+{
+    use FakeNative;
+
+    protected function applySegments(array $segments): void { $this->log[] = 'segments:'.implode('|', $segments); }
+
+    protected function applySegment(int $index, string $label): void { $this->log[] = "segment:{$index}={$label}"; }
+
+    protected function applySelected(int $index): void { $this->log[] = "selected:{$index}"; }
+}
+
+trait FakeItemNative
+{
+    public ScrollPosition $position;
+
+    protected function applyItems(array $items): void { $this->log[] = 'items:'.count($items); }
+
+    protected function applyInserted(int $at, array $items): void { $this->log[] = "inserted:{$at}+".count($items); }
+
+    protected function applyRemoved(int $at, int $count): void { $this->log[] = "removed:{$at}+{$count}"; }
+
+    protected function applyUpdated(int $index, object $item): void { $this->log[] = "updated:{$index}"; }
+
+    protected function applyScrollTo(float $x, float $y): void { $this->log[] = "scroll:{$x},{$y}"; }
+
+    protected function nativeScrollPosition(): ScrollPosition { return $this->position ?? new ScrollPosition(0.0, 0.0, 1.0, 1.0); }
+}
+
+final class FakeCollectionView extends CollectionViewAbstract
+{
+    use FakeNative;
+    use FakeItemNative;
+
+    protected function applyCellSize(int $width, int $height): void { $this->log[] = "cell:{$width}x{$height}"; }
+}
+
+final class FakeListView extends ListViewAbstract
+{
+    use FakeNative;
+    use FakeItemNative;
+
+    protected function applyRowHeight(int $height): void { $this->log[] = "row:{$height}"; }
+}
+
 final class FakeTree extends TreeAbstract
 {
     use FakeNative;
@@ -790,4 +850,17 @@ final class FakeVideo extends VideoAbstract
     protected function nativePosition(): float { return $this->position; }
 
     protected function nativeDuration(): ?float { return $this->duration; }
+}
+
+final class FakeWebView extends WebViewAbstract
+{
+    use FakeNative;
+
+    protected function applyLoad(string $url): void { $this->log[] = "load:{$url}"; }
+
+    protected function applyHtml(string $html, ?string $baseUrl): void { $this->log[] = 'html:'.strlen($html).':'.($baseUrl ?? 'none'); }
+
+    protected function applyReload(): void { $this->log[] = 'reload'; }
+
+    protected function applyStop(): void { $this->log[] = 'stop'; }
 }

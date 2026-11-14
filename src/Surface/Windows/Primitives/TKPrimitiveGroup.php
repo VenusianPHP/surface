@@ -10,6 +10,7 @@ use Surface\Contracts\Windows\Primitives\PrimitiveRegistry;
 use Surface\Contracts\Windows\Primitives\TKButton;
 use Surface\Contracts\Windows\Primitives\TKCanvas;
 use Surface\Contracts\Windows\Primitives\TKCheckbox;
+use Surface\Contracts\Windows\Primitives\TKCollectionView;
 use Surface\Contracts\Windows\Primitives\TKColumn;
 use Surface\Contracts\Windows\Primitives\TKDatepicker;
 use Surface\Contracts\Windows\Menus\ContextMenu as ContextMenuContract;
@@ -22,11 +23,13 @@ use Surface\Contracts\Windows\Primitives\TKGrid;
 use Surface\Contracts\Windows\Primitives\TKImage;
 use Surface\Contracts\Windows\Primitives\TKLabel;
 use Surface\Contracts\Windows\Primitives\TKLink;
+use Surface\Contracts\Windows\Primitives\TKListView;
 use Surface\Contracts\Windows\Primitives\TKPrimitive as Child;
 use Surface\Contracts\Windows\Primitives\TKPrimitiveGroup as PrimitiveContract;
 use Surface\Contracts\Windows\Primitives\TKProgressBar;
 use Surface\Contracts\Windows\Primitives\TKRow;
 use Surface\Contracts\Windows\Primitives\TKScrollView;
+use Surface\Contracts\Windows\Primitives\TKSegmentedControl;
 use Surface\Contracts\Windows\Primitives\TKSeparator;
 use Surface\Contracts\Windows\Primitives\TKScrollBar;
 use Surface\Contracts\Windows\Primitives\TKSlider;
@@ -40,6 +43,7 @@ use Surface\Contracts\Windows\Primitives\TKTextInput;
 use Surface\Contracts\Windows\Primitives\TKToggle;
 use Surface\Contracts\Windows\Primitives\TKToggleButton;
 use Surface\Contracts\Windows\Primitives\TKVideo;
+use Surface\Contracts\Windows\Primitives\TKWebView;
 use Surface\Contracts\Windows\WindowException;
 
 /**
@@ -201,6 +205,21 @@ abstract class TKPrimitiveGroup extends TKPrimitive implements PrimitiveContract
         return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintTable($this, $name, $columns, $rows));
     }
 
+    public function segmentedControl(string $name, array $segments, int $selected = 0): TKSegmentedControl
+    {
+        return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintSegmentedControl($this, $name, $segments, $selected));
+    }
+
+    public function collectionView(string $name, array $items = []): TKCollectionView
+    {
+        return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintCollectionView($this, $name, $items));
+    }
+
+    public function listView(string $name, array $items = []): TKListView
+    {
+        return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintListView($this, $name, $items));
+    }
+
     public function tree(string $name, array $columns, array $nodes = []): TKTree
     {
         return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintTree($this, $name, $columns, $nodes));
@@ -209,6 +228,11 @@ abstract class TKPrimitiveGroup extends TKPrimitive implements PrimitiveContract
     public function video(string $name, ?string $file = null): TKVideo
     {
         return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintVideo($this, $name, $file));
+    }
+
+    public function webView(string $name): TKWebView
+    {
+        return $this->create($name, false, fn (PrimitiveFactory $factory) => $factory->mintWebView($this, $name));
     }
 
     public function column(string $name, int $spacing = 0, int $padding = 0): TKColumn

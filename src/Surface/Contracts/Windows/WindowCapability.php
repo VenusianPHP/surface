@@ -35,4 +35,7 @@ enum WindowCapability: string
 
     /** hitTest(): drag and resize regions the app decides. */
     case HitTest = 'hit-test';
+
+    /** video(VideoSource::Native): the toolkit's own media player, in a view over the window's output. */
+    case Video = 'video';
 }

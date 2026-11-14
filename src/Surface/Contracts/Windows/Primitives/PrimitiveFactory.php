@@ -188,6 +188,31 @@ interface PrimitiveFactory
     /**
      * @param TKPrimitiveGroup $host
      * @param string $name
+     * @param list<string> $segments
+     * @param int $selected ignored when there are no segments
+     * @return TKSegmentedControl
+     */
+    public function mintSegmentedControl(TKPrimitiveGroup $host, string $name, array $segments, int $selected): TKSegmentedControl;
+
+    /**
+     * @param TKPrimitiveGroup $host
+     * @param string $name
+     * @param list<CollectionItem> $items
+     * @return TKCollectionView
+     */
+    public function mintCollectionView(TKPrimitiveGroup $host, string $name, array $items): TKCollectionView;
+
+    /**
+     * @param TKPrimitiveGroup $host
+     * @param string $name
+     * @param list<ListRow> $items
+     * @return TKListView
+     */
+    public function mintListView(TKPrimitiveGroup $host, string $name, array $items): TKListView;
+
+    /**
+     * @param TKPrimitiveGroup $host
+     * @param string $name
      * @param list<TableColumn> $columns
      * @param list<TreeNode> $nodes
      * @return TKTree
@@ -202,6 +227,14 @@ interface PrimitiveFactory
      * @throws WindowException When the engine has no media runtime.
      */
     public function mintVideo(TKPrimitiveGroup $host, string $name, ?string $file): TKVideo;
+
+    /**
+     * @param TKPrimitiveGroup $host
+     * @param string $name
+     * @return TKWebView
+     * @throws WindowException When the engine has no web engine.
+     */
+    public function mintWebView(TKPrimitiveGroup $host, string $name): TKWebView;
 
     /**
      * @param TKPrimitiveGroup|null $host null = the window's content container

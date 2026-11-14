@@ -8,6 +8,7 @@ use Surface\Contracts\Drawing\VSync;
 use Surface\Contracts\HumanInput\Key;
 use Surface\Contracts\HumanInput\Modifiers;
 use Surface\Contracts\HumanInput\MouseButton;
+use Surface\Contracts\Framebuffers\FormatSpec;
 use Surface\Contracts\Framebuffers\Region;
 use Surface\Contracts\Windows\Display;
 use Surface\Contracts\Windows\DisplayMode;
@@ -39,13 +40,18 @@ use Surface\Contracts\Windows\Mail\WindowMoved;
 use Surface\Contracts\Windows\Mail\WindowOccluded;
 use Surface\Contracts\Windows\Mail\WindowResized;
 use Surface\Contracts\Windows\Mail\WindowScaleChanged;
+use Surface\Contracts\Windows\Primitives\PrimitiveRegistry;
 use Surface\Contracts\Windows\ScaleFilter;
 use Surface\Contracts\Windows\ScaleFit;
+use Surface\Contracts\Windows\StagedVideo as StagedVideoContract;
 use Surface\Contracts\Windows\StagedWindow as StagedWindowContract;
+use Surface\Contracts\Windows\VideoSource;
 use Surface\Contracts\Windows\WindowCapability;
 use Surface\Contracts\Windows\WindowException;
 use Surface\Contracts\Windows\WindowMode;
+use Surface\Framebuffers\Extended\ExtendedFramebufferDriver;
 use Surface\Windows\Concerns\HostsDrawing;
+use Surface\Windows\Video\FfmpegVideo;
 
 /**
  * The staged window, toolkit-neutral: state, validation, capabilities, mail
@@ -58,6 +64,11 @@ use Surface\Windows\Concerns\HostsDrawing;
  * already applied, then calls stage(). It overrides the apply hook of each
  * optional capability it lists in nativeCapabilities(); the base never calls
  * the others.
+ *
+ * Videos: video() makes the source it is asked for and keeps it by name. A
+ * Decoded one is Surface's own (FfmpegVideo), the same under every stager; a
+ * Native one is the stager's, from makeVideo(), for a stager that lists Video.
+ * They are removed, in the order made, before the native window goes.
  */
 abstract class StagedWindow implements StagedWindowContract
 {
@@ -124,6 +135,9 @@ abstract class StagedWindow implements StagedWindowContract
 
     /** Read by the stager's input source; nothing is written to the native. */
     private bool $watching_input = false;
+
+    /** @var array<string, StagedVideo> */
+    private array $videos = [];
 
     /**
      * @param  array<string, mixed>  $options  From options(): validated, every key present.
@@ -586,12 +600,66 @@ abstract class StagedWindow implements StagedWindowContract
         return $this->live()->nativeHdr();
     }
 
+    public function video(VideoSource $source, string $name, ?string $file = null): StagedVideoContract
+    {
+        $this->live();
+        PrimitiveRegistry::guardName($name);
+        if (isset($this->videos[$name])) {
+            throw new WindowException("{$this->hostName()} already has a video '{$name}'.");
+        }
+
+        return $this->videos[$name] = match ($source) {
+            VideoSource::Native => $this->needs(WindowCapability::Video, 'play a video in a view of its own')->makeVideo($name, $file),
+            VideoSource::Decoded => $this->decodedVideo($name, $file),
+        };
+    }
+
+    public function videos(): array
+    {
+        return $this->videos;
+    }
+
+    /** A video's remove() ends here: the name is free again. */
+    public function forgetVideo(StagedVideo $video): void
+    {
+        if (($this->videos[$video->name()] ?? null) === $video) {
+            unset($this->videos[$video->name()]);
+        }
+    }
+
+    /**
+     * The frames convert in place at the framebuffer's address, so it is ext-fb's whatever the
+     * application's default framebuffer driver is: a native one keeps its bytes in a PHP string.
+     *
+     * @throws WindowException Without ext-ffmpeg or ext-fb.
+     */
+    private function decodedVideo(string $name, ?string $file): FfmpegVideo
+    {
+        if (! FfmpegVideo::available()) {
+            $missing = extension_loaded('ffmpeg') ? 'ext-fb' : 'ext-ffmpeg';
+
+            throw new WindowException("{$this->hostName()} cannot decode a video: {$missing} is not loaded.");
+        }
+        $driver = static::$framebuffers ? (static::$framebuffers)('extended') : new ExtendedFramebufferDriver();
+
+        return new FfmpegVideo($name, $this, $file, fn (int $width, int $height) => $driver->full(FormatSpec::rgba8(), $width, $height));
+    }
+
+    /** In the order made; each leaves the list as it goes. */
+    private function removeVideos(): void
+    {
+        foreach ($this->videos as $video) {
+            $video->remove();
+        }
+    }
+
     public function close(): void
     {
         if (! $this->open) {
             return;
         }
         $this->reclaim();
+        $this->removeVideos();
         $this->destroyNative();
         $this->closed();
     }
@@ -819,7 +887,8 @@ abstract class StagedWindow implements StagedWindowContract
     /**
      * The one close path, from close() or a native close: a lent surface is
      * reclaimed while the native window still lives, then the pending latest
-     * mail goes out, then WindowClosed, then the stager forgets the name.
+     * mail goes out, then WindowClosed, then the stager forgets the name. The
+     * window's videos are removed with the surface, while the native window lives.
      *
      * A stager calls this itself only when the toolkit destroys the window on
      * its own (AppKit's windowWillClose), from that callback, while the native
@@ -833,6 +902,7 @@ abstract class StagedWindow implements StagedWindowContract
             return;
         }
         $this->reclaim();
+        $this->removeVideos();
         $this->open = false;
         $this->visible = false;
         $this->session->flushLatest();
@@ -979,6 +1049,15 @@ abstract class StagedWindow implements StagedWindowContract
     protected function applyIcon(string $rgba8, int $width, int $height): void
     {
         throw $this->unapplied(WindowCapability::Icon);
+    }
+
+    /**
+     * Video. The toolkit's own player in a view over the output, for video(VideoSource::Native):
+     * a StagedVideo that is a NativeVideo. It loads $file and shows nothing until placed.
+     */
+    protected function makeVideo(string $name, ?string $file): StagedVideo
+    {
+        throw $this->unapplied(WindowCapability::Video);
     }
 
     /**

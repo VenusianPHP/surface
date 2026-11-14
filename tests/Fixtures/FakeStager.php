@@ -13,6 +13,8 @@ use Surface\Contracts\Windows\StagedWindowDriver;
 use Surface\Contracts\Windows\WindowCapability;
 use Surface\Contracts\Windows\WindowException;
 use Surface\Contracts\Windows\WindowMode;
+use Surface\Windows\NativeVideo;
+use Surface\Windows\StagedVideo;
 use Surface\Windows\StagedWindow;
 use Venusian\Surface\Tests\Fixtures\FakeSession;
 
@@ -199,14 +201,63 @@ final class FakeStagedWindow extends StagedWindow
     /** What the toolkit's press handler asks. */
     public function press(int $x, int $y): mixed { return ($this->hit_test)($x, $y); }
 
+    protected function makeVideo(string $name, ?string $file): StagedVideo
+    {
+        $this->log[] = "video:{$name}";
+
+        return new FakeNativeVideo($name, $this, $file);
+    }
+
     protected function destroyNative(): void { $this->log[] = 'destroy'; }
 
     protected function forget(): void { $this->stager->forget($this->name); }
 }
 
+/** A stager's player view that logs every hook; the test stands in for the toolkit through its public state. */
+final class FakeNativeVideo extends NativeVideo
+{
+    /** @var list<string> */
+    public array $log = [];
+
+    public float $at = 0.0;
+
+    public ?float $length = null;
+
+    public function __construct(string $name, StagedWindow $window, ?string $file)
+    {
+        parent::__construct($name, $window, $file);
+        $this->applyFile($file);
+    }
+
+    protected function applyFile(?string $file): void { $this->log[] = 'file:'.($file ?? 'none'); }
+
+    protected function applyPlay(): void { $this->log[] = 'play'; }
+
+    protected function applyPause(): void { $this->log[] = 'pause'; }
+
+    protected function applySeek(float $seconds): void { $this->log[] = "seek:{$seconds}"; $this->at = $seconds; }
+
+    protected function applyMuted(bool $muted): void { $this->log[] = 'muted:'.(int) $muted; }
+
+    protected function applyLoop(bool $loop): void { $this->log[] = 'loop:'.(int) $loop; }
+
+    protected function nativePosition(): float { return $this->at; }
+
+    protected function nativeDuration(): ?float { return $this->length; }
+
+    protected function releaseNative(): void { $this->log[] = 'release'; }
+
+    protected function applyFrame(array $frame, array $visible): void { $this->log[] = 'frame:'.implode(',', $frame).' visible:'.implode(',', $visible); }
+
+    protected function applyHidden(): void { $this->log[] = 'hidden'; }
+}
+
 /** A staged window whose stager lists a capability and leaves its apply hook alone. */
 final class ForgetfulStagedWindow extends StagedWindow
 {
+    /** @var list<WindowCapability> */
+    public static array $lists = [WindowCapability::Opacity];
+
     public function __construct(FakeSession $session)
     {
         parent::__construct('forgetful', $session, StagedWindow::options([], 'forgetful'));
@@ -218,7 +269,7 @@ final class ForgetfulStagedWindow extends StagedWindow
 
     public function surfaces(): array { return []; }
 
-    protected function nativeCapabilities(): array { return [WindowCapability::Opacity]; }
+    protected function nativeCapabilities(): array { return self::$lists; }
 
     protected function nativePosition(): array { return [0, 0]; }
 

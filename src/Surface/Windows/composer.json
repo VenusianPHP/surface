@@ -30,6 +30,8 @@
         "venusian-voyager/nuts-and-bolts": "^0.11.0"
     },
     "suggest": {
+        "ext-fb": "^0.11.1 - With ext-ffmpeg, for a staged window's decoded video: the frames convert into its memory.",
+        "ext-ffmpeg": "^0.11.0 - Decodes a staged window's video (VideoSource::Decoded).",
         "jovian/venusian-appkit": "^0.11.0 - To bridge to AppKit and open AppKit windows on macOS.",
         "jovian/venusian-gtk": "^0.11.0 - To bridge to GTK 4 and open GTK windows on Linux or macOS.",
         "jovian/venusian-qt": "^0.11.0 - To bridge to Qt 6 and open Qt windows on Linux or macOS."

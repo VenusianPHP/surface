@@ -29,6 +29,10 @@ use Surface\Contracts\Windows\Primitives\TKSlider;
 use Surface\Contracts\Windows\Primitives\TKSpinner;
 use Surface\Contracts\Windows\Primitives\TKSplitView;
 use Surface\Contracts\Windows\Primitives\TKTable;
+use Surface\Contracts\Windows\Primitives\TKSegmentedControl;
+use Surface\Contracts\Windows\Primitives\TKItemView;
+use Surface\Contracts\Windows\Primitives\TKCollectionView;
+use Surface\Contracts\Windows\Primitives\TKListView;
 use Surface\Contracts\Windows\Primitives\TKTabView;
 use Surface\Contracts\Windows\Primitives\TKTree;
 use Surface\Contracts\Windows\Primitives\TKTextArea;
@@ -40,7 +44,7 @@ use Surface\Contracts\Windows\ToolkitWindow;
 
 $methods = [
     TKPrimitive::class => ['name', 'path', 'uuid', 'window', 'parent', 'placement', 'isRemoved', 'remove', 'setVisible', 'isVisible', 'show', 'hide', 'setEnabled', 'isEnabled', 'enable', 'disable', 'size', 'watchSize', 'isWatchingSize', 'setContextMenu', 'contextMenu', 'setBackground', 'fill', 'align', 'minSize', 'moveBefore', 'moveAfter', 'moveTo'],
-    TKPrimitiveGroup::class => ['label', 'link', 'button', 'image', 'separator', 'spinner', 'progressBar', 'textInput', 'textArea', 'checkbox', 'toggle', 'toggleButton', 'slider', 'scrollBar', 'dropdown', 'datepicker', 'table', 'tree', 'video', 'column', 'row', 'grid', 'fixed', 'scrollView', 'split', 'tabs', 'view', 'children', 'takePlacement'],
+    TKPrimitiveGroup::class => ['label', 'link', 'button', 'image', 'separator', 'spinner', 'progressBar', 'textInput', 'textArea', 'checkbox', 'toggle', 'toggleButton', 'slider', 'scrollBar', 'dropdown', 'datepicker', 'table', 'segmentedControl', 'collectionView', 'listView', 'tree', 'video', 'column', 'row', 'grid', 'fixed', 'scrollView', 'split', 'tabs', 'view', 'children', 'takePlacement'],
     TKColumn::class => ['spacing', 'setSpacing'],
     TKRow::class => ['spacing', 'setSpacing'],
     TKGrid::class => ['at', 'spacing', 'setSpacing'],
@@ -65,9 +69,13 @@ $methods = [
     TKDropdown::class => ['options', 'setOptions', 'selected', 'select', 'selectedOption'],
     TKDatepicker::class => ['date', 'setDate'],
     TKTable::class => ['columns', 'rows', 'setRows', 'appendRow', 'clearRows', 'selectedRow', 'selectRow'],
+    TKSegmentedControl::class => ['segments', 'setSegments', 'setSegment', 'selected', 'select'],
+    TKItemView::class => ['count', 'items', 'item', 'setItems', 'insertItems', 'removeItems', 'updateItem', 'scrollPosition', 'scrollTo', 'watchScroll', 'isWatchingScroll'],
+    TKCollectionView::class => ['cellSize', 'setCellSize'],
+    TKListView::class => ['rowHeight', 'setRowHeight'],
     TKTree::class => ['columns', 'setNodes', 'nodes', 'expand', 'isExpanded', 'selectedNode', 'selectNode'],
     TKVideo::class => ['file', 'setFile', 'play', 'pause', 'seek', 'position', 'duration', 'isPlaying', 'setMuted', 'isMuted', 'setLoop', 'isLooping'],
-    PrimitiveFactory::class => ['mintLabel', 'mintLink', 'mintButton', 'mintImage', 'mintSeparator', 'mintSpinner', 'mintProgressBar', 'mintTextInput', 'mintTextArea', 'mintCheckbox', 'mintToggle', 'mintToggleButton', 'mintSlider', 'mintScrollBar', 'mintDropdown', 'mintComboBox', 'mintMenuButton', 'mintDatepicker', 'mintTable', 'mintTree', 'mintVideo', 'mintColumn', 'mintRow', 'mintGrid', 'mintFixed', 'mintScrollView', 'mintSplit', 'mintTabs'],
+    PrimitiveFactory::class => ['mintLabel', 'mintLink', 'mintButton', 'mintImage', 'mintSeparator', 'mintSpinner', 'mintProgressBar', 'mintTextInput', 'mintTextArea', 'mintCheckbox', 'mintToggle', 'mintToggleButton', 'mintSlider', 'mintScrollBar', 'mintDropdown', 'mintComboBox', 'mintMenuButton', 'mintDatepicker', 'mintTable', 'mintSegmentedControl', 'mintCollectionView', 'mintListView', 'mintTree', 'mintVideo', 'mintColumn', 'mintRow', 'mintGrid', 'mintFixed', 'mintScrollView', 'mintSplit', 'mintTabs'],
     ToolkitWindow::class => ['column', 'row', 'grid', 'fixed', 'content', 'view', 'uuid', 'size', 'registry', 'factory', 'forgetContent'],
 ];
 
@@ -87,7 +95,7 @@ it('nests every container and leaf under the primitive contracts', function (): 
     foreach ([TKColumn::class, TKRow::class, TKGrid::class, TKFixed::class, TKScrollView::class, TKSplitView::class] as $group) {
         expect(is_subclass_of($group, TKPrimitiveGroup::class))->toBeTrue();
     }
-    foreach ([TKLabel::class, TKLink::class, TKButton::class, TKImage::class, TKSeparator::class, TKSpinner::class, TKProgressBar::class, TKTextInput::class, TKTextArea::class, TKCheckbox::class, TKToggle::class, TKToggleButton::class, TKSlider::class, TKDropdown::class, TKDatepicker::class, TKTable::class, TKTree::class, TKVideo::class, TKTabView::class] as $leaf) {
+    foreach ([TKLabel::class, TKLink::class, TKButton::class, TKImage::class, TKSeparator::class, TKSpinner::class, TKProgressBar::class, TKTextInput::class, TKTextArea::class, TKCheckbox::class, TKToggle::class, TKToggleButton::class, TKSlider::class, TKDropdown::class, TKDatepicker::class, TKTable::class, TKSegmentedControl::class, TKCollectionView::class, TKListView::class, TKTree::class, TKVideo::class, TKTabView::class] as $leaf) {
         expect(is_subclass_of($leaf, TKPrimitive::class))->toBeTrue()
             ->and(is_subclass_of($leaf, TKPrimitiveGroup::class))->toBeFalse();
     }

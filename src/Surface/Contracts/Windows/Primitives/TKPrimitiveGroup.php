@@ -166,6 +166,28 @@ interface TKPrimitiveGroup extends TKPrimitive
 
     /**
      * @param string $name
+     * @param list<string> $segments
+     * @param int $selected ignored when there are no segments
+     * @return TKSegmentedControl
+     */
+    public function segmentedControl(string $name, array $segments, int $selected = 0): TKSegmentedControl;
+
+    /**
+     * @param string $name
+     * @param list<CollectionItem> $items
+     * @return TKCollectionView
+     */
+    public function collectionView(string $name, array $items = []): TKCollectionView;
+
+    /**
+     * @param string $name
+     * @param list<ListRow> $items
+     * @return TKListView
+     */
+    public function listView(string $name, array $items = []): TKListView;
+
+    /**
+     * @param string $name
      * @param list<TableColumn> $columns the first holds the expander
      * @param list<TreeNode> $nodes
      * @return TKTree
@@ -179,6 +201,13 @@ interface TKPrimitiveGroup extends TKPrimitive
      * @throws WindowException When the engine has no media runtime.
      */
     public function video(string $name, ?string $file = null): TKVideo;
+
+    /**
+     * @param string $name
+     * @return TKWebView
+     * @throws WindowException When the engine has no web engine.
+     */
+    public function webView(string $name): TKWebView;
 
     /**
      * @param string $name

@@ -1,5 +1,15 @@
 # Log
 
+## 2026-11-11
+
+* Video in a staged window: `StagedWindow::video(VideoSource, name, ?file)` → `NativeVideo` (the stager's player view; `WindowCapability::Video`, `makeVideo()`) or `DecodedVideo` (`FfmpegVideo`: ext-ffmpeg frames in an RGBA8 framebuffer, drawn by `image()`). Surface makes what it is asked for; the app chooses. [Windows](architecture/windows.md), [view mail](api/view-mail.md), [testing](runbooks/testing.md). Suite: 2827 passed, 5 skipped.
+
+## 2026-11-10
+
+* New TK primitive `TKWebView` (`webView(name)`): `load(url)`, `loadHtml(html, ?baseUrl)`, `url()`, `title()`, `isLoading()`, `reload()`, `stop()`; mails `WebViewLoaded`, `WebViewFailed`. [Primitives](architecture/primitives.md), [view mail](api/view-mail.md).
+* `CollectionItem` gains `icons`: status image files over the cell's top-right corner, left of the action button; shown only, as `ListRow::$icons`. [Primitives](architecture/primitives.md).
+* New TK primitives: `TKSegmentedControl` (posts `SelectionChanged`), and the item views `TKCollectionView` (`CollectionItem` cells) and `TKListView` (`ListRow` rows) over `TKItemView`, with mails `ItemActivated` and `ItemActionClicked`. [Primitives](architecture/primitives.md), [view mail](api/view-mail.md).
+
 ## 2026-11-08
 
 * G1 and G2 parked in drawing.md and the drawing-path spec, with the profile (device draw 1 to 3 ms of 20 to 100 ms a frame).

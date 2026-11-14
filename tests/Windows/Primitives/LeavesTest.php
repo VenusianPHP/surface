@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Surface\Contracts\Windows\Primitives\ImageScaling;
+use Surface\Contracts\Windows\Primitives\CollectionItem;
+use Surface\Contracts\Windows\Primitives\ListRow;
 use Surface\Contracts\Windows\Primitives\TableColumn;
 use Surface\Contracts\Windows\Primitives\TKPrimitiveGroup;
 use Surface\Contracts\Windows\Styling\FontSpec;
@@ -189,6 +191,56 @@ it('normalises table rows to every column, in column order, missing keys as empt
         ->and(fn () => leafHost()->table('w', ['title']))->toThrow(WindowException::class, 'TableColumn');
 });
 
+it('keeps a segmented control\'s selection through relabels and replaces, -1 with no segments', function (): void {
+    $control = leafHost()->segmentedControl('s', ['Today', 'Recently', 'Favorites'], 1);
+    $control->setSegment(0, 'Yesterday')->setSegments(['Today', 'Recently']);
+    $empty = leafHost()->segmentedControl('e', []);
+
+    expect($control->selected())->toBe(1)
+        ->and($control->segments())->toBe(['Today', 'Recently'])
+        ->and($control->log)->toBe(['segment:0=Yesterday', 'segments:Today|Recently', 'selected:1'])
+        ->and($control->setSegments(['Only'])->selected())->toBe(0)
+        ->and($empty->selected())->toBe(-1)
+        ->and(fn () => $control->select(1))->toThrow(WindowException::class, 'Segment 1 is out of range (1 segments).')
+        ->and(fn () => $control->setSegment(-1, 'x'))->toThrow(WindowException::class, 'out of range')
+        ->and(fn () => leafHost()->segmentedControl('b', ['a', 2]))->toThrow(WindowException::class, 'list of strings')
+        ->and(fn () => leafHost()->segmentedControl('c', ['a'], 4))->toThrow(WindowException::class, 'out of range');
+});
+
+it('splices collection items and tells the native each change', function (): void {
+    $items = fn (string ...$captions): array => array_map(fn (string $c): CollectionItem => new CollectionItem(null, $c), $captions);
+    $view = leafHost()->collectionView('c', $items('a', 'b'));
+    $view->insertItems(2, $items('c', 'd'))->insertItems(0, $items('z'))->removeItems(1, 2)->updateItem(0, new CollectionItem('/z.png', 'z', '/heart.png'))->setCellSize(220, 136);
+
+    expect(array_map(fn (CollectionItem $i): string => $i->caption, $view->items()))->toBe(['z', 'c', 'd'])
+        ->and($view->item(0)->action)->toBe('/heart.png')
+        ->and($view->cellSize())->toBe([220, 136])
+        ->and($view->log)->toBe(['inserted:2+2', 'inserted:0+1', 'removed:1+2', 'updated:0', 'cell:220x136'])
+        ->and(fn () => $view->insertItems(4, $items('x')))->toThrow(WindowException::class, 'Insert index 4 is out of range (0..3).')
+        ->and(fn () => $view->removeItems(2, 2))->toThrow(WindowException::class, 'out of range')
+        ->and(fn () => $view->removeItems(0, 0))->toThrow(WindowException::class, 'out of range')
+        ->and(fn () => $view->item(3))->toThrow(WindowException::class, 'Item 3 is out of range (3 items).')
+        ->and(fn () => $view->setItems([new ListRow(null, 'x')]))->toThrow(WindowException::class, 'list of '.CollectionItem::class)
+        ->and(fn () => $view->setCellSize(0, 10))->toThrow(WindowException::class, 'at least 1x1')
+        ->and($view->count())->toBe(3);
+});
+
+it('holds list rows, answers which rows may post, and clamps scrolls', function (): void {
+    $view = leafHost()->listView('l', [new ListRow('/a.png', 'a', 'detail', 'NEW', ['/heart.png'], 'Open'), new ListRow(null, '???', enabled: false)]);
+    $view->setRowHeight(104)->watchScroll()->scrollTo(-1.0, 2.0);
+
+    expect($view->enabled(0))->toBeTrue()
+        ->and($view->enabled(1))->toBeFalse()
+        ->and($view->enabled(2))->toBeFalse()
+        ->and($view->rowHeight())->toBe(104)
+        ->and($view->isWatchingScroll())->toBeTrue()
+        ->and($view->scrollPosition()->height)->toBe(1.0)
+        ->and($view->log)->toBe(['row:104', 'scroll:0,1'])
+        ->and(fn () => $view->scrollTo(NAN, 0.0))->toThrow(WindowException::class, 'must be finite')
+        ->and(fn () => $view->setRowHeight(0))->toThrow(WindowException::class, 'at least 1')
+        ->and(leafHost()->collectionView('c', [new CollectionItem(null)])->enabled(0))->toBeTrue();
+});
+
 it('selects table rows in range, keeps the selection through appends and clears it on replace', function (): void {
     $table = leafHost()->table('t', [new TableColumn('title', 'Title')], [['title' => 'a'], ['title' => 'b']]);
     $table->selectRow(1)->appendRow(['title' => 'c']);
@@ -232,6 +284,23 @@ it('drives a video and reads position and duration from the engine', function ()
         ->and($video->log)->toHaveCount(6);
 });
 
+it('loads a web view by absolute URL or HTML with a base, and reads the engine\'s report', function (): void {
+    $web = leafHost()->webView('w');
+    $web->load('https://example.test/a')->loadHtml('<p>hi</p>', 'https://example.test/')->loadHtml('<p>x</p>')->reload()->stop();
+
+    expect($web->log)->toBe(['load:https://example.test/a', 'html:9:https://example.test/', 'html:8:none', 'reload', 'stop'])
+        ->and($web->url())->toBeNull()
+        ->and($web->isLoading())->toBeFalse()
+        ->and(fn () => $web->load('example.test/a'))->toThrow(WindowException::class, 'absolute URL')
+        ->and(fn () => $web->loadHtml('<p>', '/relative'))->toThrow(WindowException::class, 'absolute URL')
+        ->and($web->log)->toHaveCount(5);
+
+    $web->nativeLoadChanged(true, 'https://example.test/a', null);
+    expect([$web->isLoading(), $web->url(), $web->title()])->toBe([true, 'https://example.test/a', null]);
+    $web->nativeLoadChanged(false, 'https://example.test/a', 'A');
+    expect([$web->isLoading(), $web->title()])->toBe([false, 'A']);
+});
+
 it('refuses every setter and native read once removed', function (Closure $create, Closure $call): void {
     $leaf = $create(leafHost());
     $leaf->remove();
@@ -253,6 +322,9 @@ it('refuses every setter and native read once removed', function (Closure $creat
     'dropdown' => [fn ($h) => $h->dropdown('x', ['a']), fn ($l) => $l->select(0)],
     'datepicker' => [fn ($h) => $h->datepicker('x'), fn ($l) => $l->setDate(null)],
     'table' => [fn ($h) => $h->table('x', [new TableColumn('a', 'A')]), fn ($l) => $l->appendRow(['a' => 1])],
+    'segmented control' => [fn ($h) => $h->segmentedControl('x', ['a']), fn ($l) => $l->select(0)],
+    'collection view' => [fn ($h) => $h->collectionView('x'), fn ($l) => $l->setCellSize(10, 10)],
+    'list view' => [fn ($h) => $h->listView('x'), fn ($l) => $l->scrollPosition()],
     'video play' => [fn ($h) => $h->video('x'), fn ($l) => $l->play()],
     'video position' => [fn ($h) => $h->video('x'), fn ($l) => $l->position()],
 ]);
